@@ -132,7 +132,7 @@ export default function CountMeInApp() {
     <div className={`p-4 relative min-h-screen transition-colors duration-300 ${darkMode ? 'bg-yellow-100 text-yellow-900' : 'bg-white text-black'}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <img src="https://drive.google.com/uc?export=view&id=1aoPBVMIUHudlq-MEL5i2qF6oLaXGrbyG" alt="A's Online Logo" className="w-12 h-12 rounded" />
+          <img src="/as-online-logo.svg" alt="A's Online" className="h-12 w-auto" />
           <div>
             <h1 className="text-3xl font-bold">Count Me In!</h1>
             <p className="text-sm text-gray-600">Powered by A's Online</p>
