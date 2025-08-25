@@ -16,7 +16,9 @@ const formatTime = (milliseconds) => {
   const minutes = Math.floor(milliseconds / 60000);
   const seconds = Math.floor((milliseconds % 60000) / 1000);
   const ms = Math.floor((milliseconds % 1000) / 10);
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+  return `${minutes.toString().padStart(2, '0')}:${seconds
+    .toString()
+    .padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
 };
 
 export default function CountMeInApp() {
@@ -28,8 +30,17 @@ export default function CountMeInApp() {
   const [elapsed, setElapsed] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
-  const [formData, setFormData] = useState({ name: '', school: '', email: '', category: 'Primary' });
-  const [topPlayers, setTopPlayers] = useState({ Primary: null, Secondary: null, NoSchool: null });
+  const [formData, setFormData] = useState({
+    name: '',
+    school: '',
+    email: '',
+    category: 'Primary'
+  });
+  const [topPlayers, setTopPlayers] = useState({
+    Primary: null,
+    Secondary: null,
+    NoSchool: null
+  });
 
   const timerRef = useRef(null);
   const timerStartedRef = useRef(false);
@@ -73,7 +84,7 @@ export default function CountMeInApp() {
       setCompleted(true);
       clearInterval(timerRef.current);
       setElapsed(stopTime - startTime);
-      setTimeout(() => setShowForm(true), 300);
+      setTimeout(() => setShowForm(true), 500);
     }
   };
 
@@ -96,8 +107,8 @@ export default function CountMeInApp() {
       const newGrid = [...grid];
       newGrid[rowIdx][colIdx].value = '';
       newGrid[rowIdx][colIdx].correct = null;
-      setGrid(newGrid);
       checkCompletion(newGrid);
+      setGrid(newGrid);
     } else if (/^[0-9]$/.test(e.key)) {
       e.preventDefault();
       const newGrid = [...grid];
@@ -105,7 +116,6 @@ export default function CountMeInApp() {
       const newValue = currentValue + e.key;
       newGrid[rowIdx][colIdx].value = newValue;
       newGrid[rowIdx][colIdx].correct = parseInt(newValue) === newGrid[rowIdx][colIdx].answer;
-      setGrid(newGrid);
       if (!timerStartedRef.current && currentValue === '') {
         const now = Date.now();
         setStartTime(now);
@@ -115,20 +125,11 @@ export default function CountMeInApp() {
         timerStartedRef.current = true;
       }
       checkCompletion(newGrid);
+      setGrid(newGrid);
     }
   };
 
   const displayTime = formatTime(elapsed);
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFormSubmit = () => {
-    alert(`Submitted: ${formData.name} - ${formData.category} - ${displayTime}`);
-    window.location.reload();
-  };
 
   return (
     <div className={`p-4 min-h-screen transition-colors duration-300 ${darkMode ? 'bg-yellow-100 text-yellow-900' : 'bg-white text-black'}`}>
@@ -150,8 +151,8 @@ export default function CountMeInApp() {
           </div>
         </div>
       ) : (
-        <>
-          <div className="flex items-center justify-between mb-4">
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
               <img src="/as-online-logo.svg" alt="A's Online" className="h-12 w-auto" />
               <div>
@@ -167,15 +168,16 @@ export default function CountMeInApp() {
             </div>
           </div>
 
-          <div className="max-w-screen-md mx-auto mb-6 p-4 bg-blue-100 text-blue-900 rounded shadow text-center">
-            <h2 className="font-bold text-lg mb-2">Top Players</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {['Primary', 'Secondary', 'NoSchool'].map((cat) => (
-                <div key={cat} className="bg-white border border-blue-300 px-4 py-2 rounded">
-                  <strong>{cat}</strong><br />
-                  {topPlayers[cat]?.name || '---'} – <span className="font-mono">{topPlayers[cat]?.time || '--:--.--'}</span>
-                </div>
-              ))}
+          <div className="max-w-screen-md mx-auto">
+            <div className="bg-white rounded-lg shadow p-4 border border-yellow-300">
+              <h2 className="text-center font-bold text-xl mb-2">🏆 Top Players</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-center">
+                {['Primary', 'Secondary', 'NoSchool'].map((cat) => (
+                  <div key={cat} className="bg-blue-100 text-blue-800 px-4 py-2 rounded shadow">
+                    <strong>{cat}:</strong> {topPlayers[cat]?.name || '---'} – <span className="font-mono">{topPlayers[cat]?.time || '--:--.--'}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -197,28 +199,28 @@ export default function CountMeInApp() {
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          {showForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white text-black p-6 rounded shadow max-w-sm w-full space-y-4">
-                <h3 className="text-lg font-bold">🎉 Game Complete!</h3>
-                <p className="font-mono text-center text-2xl">⏱ {displayTime}</p>
-                <input type="text" name="name" placeholder="Student Name" value={formData.name} onChange={handleFormChange} className="w-full border p-2 rounded" />
-                <input type="text" name="school" placeholder="School (optional)" value={formData.school} onChange={handleFormChange} className="w-full border p-2 rounded" />
-                <input type="email" name="email" placeholder="Email (optional)" value={formData.email} onChange={handleFormChange} className="w-full border p-2 rounded" />
-                <select name="category" value={formData.category} onChange={handleFormChange} className="w-full border p-2 rounded">
-                  <option value="Primary">Primary School</option>
-                  <option value="Secondary">Secondary School</option>
-                  <option value="NoSchool">No School</option>
-                </select>
-                <div className="flex justify-between pt-2">
-                  <button onClick={handleFormSubmit} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">✅ Submit Time</button>
-                  <button onClick={() => window.location.reload()} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">🔁 Reset Game</button>
-                </div>
-              </div>
+      {showForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white text-black p-6 rounded shadow max-w-md w-full space-y-4">
+            <h2 className="text-xl font-bold text-center">🎉 Game Complete!</h2>
+            <p className="text-center">Well done! Your time: <span className="font-mono font-semibold">{displayTime}</span></p>
+            <input type="text" placeholder="Student Name" className="w-full border px-3 py-2 rounded" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            <select className="w-full border px-3 py-2 rounded" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
+              <option value="Primary">Primary School</option>
+              <option value="Secondary">Secondary School</option>
+              <option value="NoSchool">No School</option>
+            </select>
+            <input type="text" placeholder="School (Optional)" className="w-full border px-3 py-2 rounded" value={formData.school} onChange={(e) => setFormData({ ...formData, school: e.target.value })} />
+            <input type="email" placeholder="Email (Optional)" className="w-full border px-3 py-2 rounded" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+            <div className="flex justify-between gap-2 pt-2">
+              <button className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">✅ Submit Time</button>
+              <button onClick={() => window.location.reload()} className="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">🔁 Reset Game</button>
             </div>
-          )}
-        </>
+          </div>
+        </div>
       )}
     </div>
   );
