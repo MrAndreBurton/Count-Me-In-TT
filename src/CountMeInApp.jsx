@@ -130,6 +130,36 @@ export default function CountMeInApp() {
   };
 
   const displayTime = formatTime(elapsed);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const webhookURL = "https://script.google.com/macros/s/AKfycbyLBvT9IGpdm81NK9lR1D0LDfsaeWkHsiGIUhDMStZV8NpFPjG55q0GVgRfbX6qPo9K/exec";
+
+  const payload = {
+    name: formData.name,
+    email: formData.email,
+    school: formData.school,
+    category: formData.category,
+    time: formatTime(elapsed),
+  };
+
+  try {
+    await fetch(webhookURL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    alert("✅ Time submitted successfully!");
+    setShowForm(false);
+  } catch (error) {
+    console.error("❌ Submission failed:", error);
+    alert("There was an error submitting your time.");
+  }
+};
 
   return (
     <div className={`p-4 min-h-screen transition-colors duration-300 ${darkMode ? 'bg-yellow-100 text-yellow-900' : 'bg-white text-black'}`}>
@@ -203,27 +233,64 @@ export default function CountMeInApp() {
       )}
 
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-white text-black p-6 rounded shadow max-w-md w-full space-y-4">
-            <h2 className="text-xl font-bold text-center">🎉 Game Complete!</h2>
-            <p className="text-center">Well done! Your time: <span className="font-mono font-semibold">{displayTime}</span></p>
-            <input type="text" placeholder="Student Name" className="w-full border px-3 py-2 rounded" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-            <select className="w-full border px-3 py-2 rounded" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
-              <option value="Primary">Primary School</option>
-              <option value="Secondary">Secondary School</option>
-              <option value="NoSchool">No School</option>
-            </select>
-            <input type="text" placeholder="School (Optional)" className="w-full border px-3 py-2 rounded" value={formData.school} onChange={(e) => setFormData({ ...formData, school: e.target.value })} />
-            <input type="email" placeholder="Email (Optional)" className="w-full border px-3 py-2 rounded" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-            <div className="flex justify-between gap-2 pt-2">
-              <button className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">✅ Submit Time</button>
-              <button onClick={() => window.location.reload()} className="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">🔁 Reset Game</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+    <form onSubmit={handleSubmit} className="bg-white text-black p-6 rounded shadow max-w-md w-full space-y-4">
+      <h2 className="text-xl font-bold text-center">🎉 Game Complete!</h2>
+      <p className="text-center">
+        Well done! Your time: <span className="font-mono font-semibold">{displayTime}</span>
+      </p>
+      <input
+        type="text"
+        placeholder="Student Name"
+        className="w-full border px-3 py-2 rounded"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        required
+      />
+      <select
+        className="w-full border px-3 py-2 rounded"
+        value={formData.category}
+        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+        required
+      >
+        <option value="Primary">Primary School</option>
+        <option value="Secondary">Secondary School</option>
+        <option value="NoSchool">No School</option>
+      </select>
+      <input
+        type="text"
+        placeholder="School (Optional)"
+        className="w-full border px-3 py-2 rounded"
+        value={formData.school}
+        onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+      />
+      <input
+        type="email"
+        placeholder="Email (Optional)"
+        className="w-full border px-3 py-2 rounded"
+        value={formData.email}
+        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+      />
+      <div className="flex justify-between gap-2 pt-2">
+        <button
+          type="submit"
+          className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+        >
+          ✅ Submit Time
+        </button>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+        >
+          🔁 Reset Game
+        </button>
+      </div>
+    </form>
+  </div>
+) }
+</div>
+);
 }
 
 
