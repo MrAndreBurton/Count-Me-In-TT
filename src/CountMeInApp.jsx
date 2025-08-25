@@ -41,7 +41,7 @@ export default function CountMeInApp() {
     Secondary: null,
     NoSchool: null
   });
-
+  const [focusedCell, setFocusedCell] = useState(null);
   const timerRef = useRef(null);
   const timerStartedRef = useRef(false);
   const inputRefs = useRef([...Array(12)].map(() => Array(12).fill(null)));
@@ -156,7 +156,7 @@ export default function CountMeInApp() {
             <div className="flex items-center space-x-3">
               <img src="/as-online-logo.svg" alt="A's Online" className="h-12 w-auto" />
               <div>
-                <h1 className="text-3xl font-bold">Count Me In TT!</h1>
+                <h1 className="text-3xl font-bold">Count Me In!</h1>
                 <p className="text-sm text-gray-600">Powered by A's Online</p>
               </div>
             </div>
@@ -192,8 +192,8 @@ export default function CountMeInApp() {
                   <React.Fragment key={`row-${rowIdx}`}>
                     <div className="h-10 w-full text-center font-bold bg-yellow-300 text-black flex items-center justify-center text-xs sm:text-sm">{rowIdx + 1}</div>
                     {row.map((cell, colIdx) => (
-                      <input key={`cell-${rowIdx}-${colIdx}`} type="text" value={cell.value} onChange={() => {}} onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)} ref={(el) => (inputRefs.current[rowIdx][colIdx] = el)} className={`h-10 w-full text-center border ${cell.correct === null ? 'border-gray-400' : cell.correct ? 'bg-green-200' : 'bg-red-200'}`} />
-                    ))}
+  <input key={`cell-${rowIdx}-${colIdx}`} type="text" inputMode="numeric" pattern="[0-9]*" value={cell.value} onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })} onChange={(e) => {const newGrid = [...grid]; const newValue = e.target.value;  newGrid[rowIdx][colIdx].value = newValue; newGrid[rowIdx][colIdx].correct = parseInt(newValue) === newGrid[rowIdx][colIdx].answer; setGrid(newGrid); checkCompletion(newGrid); if (!timerStartedRef.current && newValue !== '') {const now = Date.now(); setStartTime(now); timerRef.current = setInterval(() => {setElapsed(Date.now() - now);}, 10); timerStartedRef.current = true;}}} onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)} ref={(el) => (inputRefs.current[rowIdx][colIdx] = el)} className={`h-10 w-full text-center border ${cell.correct === null ? 'border-gray-400' : cell.correct ? 'bg-green-200' : 'bg-red-200'}`} />
+))}
                   </React.Fragment>
                 ))}
               </div>
