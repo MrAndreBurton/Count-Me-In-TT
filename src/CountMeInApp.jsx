@@ -185,7 +185,7 @@ const handleSubmit = async (e) => {
             <div className="flex items-center space-x-3">
               <img src="/as-online-logo.svg" alt="A's Online" className="h-12 w-auto" />
               <div>
-                <h1 className="text-3xl font-bold">Count Me In!</h1>
+                <h1 className="text-3xl font-bold">Count Me In TT!</h1>
                 <p className="text-sm text-gray-600">Powered by A's Online</p>
               </div>
             </div>
