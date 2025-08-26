@@ -129,28 +129,27 @@ export default function CountMeInApp() {
     }
   };
 
-  const displayTime = formatTime(elapsed);
+ const displayTime = formatTime(elapsed);
 const handleSubmit = async (e) => {
   e.preventDefault();
 
   const webhookURL = "https://script.google.com/macros/s/AKfycbyLBvT9IGpdm81NK9lR1D0LDfsaeWkHsiGIUhDMStZV8NpFPjG55q0GVgRfbX6qPo9K/exec";
 
-  const payload = {
-    name: formData.name,
-    email: formData.email,
-    school: formData.school,
-    category: formData.category,
-    time: formatTime(elapsed),
-  };
+  const formDataEncoded = new URLSearchParams();
+  formDataEncoded.append("name", formData.name);
+  formDataEncoded.append("email", formData.email);
+  formDataEncoded.append("school", formData.school);
+  formDataEncoded.append("category", formData.category);
+  formDataEncoded.append("time", displayTime); // ⏱️
 
   try {
     await fetch(webhookURL, {
       method: "POST",
       mode: "no-cors",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: JSON.stringify(payload),
+      body: formDataEncoded.toString(),
     });
 
     alert("✅ Time submitted successfully!");
