@@ -177,8 +177,29 @@ const handleSubmit = async (e) => {
               </ul>
             </div>
             <button onClick={() => setShowIntro(false)} className="bg-blue-600 text-white px-4 py-2 rounded">Start Game</button>
+<div className="mt-3 text-xs text-gray-600 text-center">
+            By clicking <strong>Start</strong>, you agree to our{' '}
+            <a
+              href="https://countmeintt.com/privacy-policy.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline"
+            >
+              Privacy Policy
+            </a>{' '}
+            and{' '}
+            <a
+              href="https://countmeintt.com/terms-of-use.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline"
+            >
+              Terms of Use
+            </a>.
           </div>
         </div>
+      </div>
+
       ) : (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
