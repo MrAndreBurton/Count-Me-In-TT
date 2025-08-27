@@ -230,7 +230,11 @@ const handleSubmit = async (e) => {
           </div>
         </div>
       )}
-
+<div className="w-full mt-8 flex justify-center">
+  <p className="text-[11px] text-gray-400 text-center italic">
+    © 2025 <span className="font-semibold">Count Me In TT</span>. Developed by <span className="font-semibold">Andre Burton</span>. Powered by <span className="font-semibold">A’s Online</span>. All rights reserved.
+  </p>
+</div>
       {showForm && (
   <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
     <form onSubmit={handleSubmit} className="bg-white text-black p-6 rounded shadow max-w-md w-full space-y-4">
