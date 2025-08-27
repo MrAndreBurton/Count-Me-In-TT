@@ -1,4 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link
+} from 'react-router-dom';
+import Leaderboard from './Leaderboard';
 
 const generateGrid = () => {
   const grid = [];
@@ -161,6 +168,11 @@ const handleSubmit = async (e) => {
 };
 
   return (
+<Router>
+    <Routes>
+      <Route
+        path="/"
+        element={
     <div className={`p-4 min-h-screen transition-colors duration-300 ${darkMode ? 'bg-yellow-100 text-yellow-900' : 'bg-white text-black'}`}>
       {showIntro ? (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
@@ -213,7 +225,11 @@ const handleSubmit = async (e) => {
             <div className="flex flex-col items-end space-y-2">
               <button onClick={() => setDarkMode(!darkMode)}>{darkMode ? '🌙' : '☀️'}</button>
               <div className="text-xl font-mono bg-yellow-300 text-black px-3 py-1 rounded shadow">{displayTime}</div>
-              <button onClick={() => window.location.href = '/leaderboard'} className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 shadow">View Leaderboard</button>
+              <Link to="/leaderboard">
+  <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 shadow">
+    View Leaderboard
+  </button>
+</Link>
               <button onClick={() => window.location.reload()} className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 shadow">Reset Game</button>
             </div>
           </div>
@@ -313,8 +329,14 @@ const handleSubmit = async (e) => {
     </form>
   </div>
 ) }
-</div>
+ </div>
+      }
+    />
+    <Route path="/leaderboard" element={<Leaderboard />} />
+  </Routes>
+</Router>
 );
 }
+
 
 
