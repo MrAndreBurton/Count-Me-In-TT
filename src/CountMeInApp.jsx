@@ -52,6 +52,7 @@ export default function CountMeInApp() {
   const timerRef = useRef(null);
   const timerStartedRef = useRef(false);
   const inputRefs = useRef([...Array(12)].map(() => Array(12).fill(null)));
+const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const sheetURLs = {
@@ -140,6 +141,9 @@ export default function CountMeInApp() {
 const handleSubmit = async (e) => {
   e.preventDefault();
 
+if (isSubmitting) return;
+  setIsSubmitting(true);
+
   const webhookURL = "https://script.google.com/macros/s/AKfycbyLBvT9IGpdm81NK9lR1D0LDfsaeWkHsiGIUhDMStZV8NpFPjG55q0GVgRfbX6qPo9K/exec";
 
   const formDataEncoded = new URLSearchParams();
@@ -164,6 +168,8 @@ const handleSubmit = async (e) => {
   } catch (error) {
     console.error("❌ Submission failed:", error);
     alert("There was an error submitting your time.");
+} finally {
+    setIsSubmitting(false);
   }
 };
 
@@ -190,7 +196,7 @@ const handleSubmit = async (e) => {
             </div>
             <button onClick={() => setShowIntro(false)} className="bg-blue-600 text-white px-4 py-2 rounded">Start Game</button>
 <div className="mt-3 text-xs text-gray-600 text-center">
-            By clicking <strong>Start</strong>, you agree to our{' '}
+            By clicking <strong>Start Game</strong>, you agree to our{' '}
             <a
               href="https://countmeintt.com/privacy-policy.pdf"
               target="_blank"
@@ -313,11 +319,12 @@ const handleSubmit = async (e) => {
       />
       <div className="flex justify-between gap-2 pt-2">
         <button
-          type="submit"
-          className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-        >
-          ✅ Submit Time
-        </button>
+  type="submit"
+  disabled={isSubmitting}
+  className={`flex-1 px-4 py-2 rounded text-white ${isSubmitting ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+>
+  {isSubmitting ? "Submitting..." : "✅ Submit Time"}
+</button>
         <button
           type="button"
           onClick={() => window.location.reload()}
