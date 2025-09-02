@@ -56,30 +56,41 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const sheetURLs = {
-      Primary: 'https://docs.google.com/spreadsheets/d/1-vWT6uF71RCzqEWWrM0EGmVoeOMNnAcxkMZ3y0fdwos/gviz/tq?tqx=out:csv&gid=0',
-      Secondary: 'https://docs.google.com/spreadsheets/d/1-vWT6uF71RCzqEWWrM0EGmVoeOMNnAcxkMZ3y0fdwos/gviz/tq?tqx=out:csv&gid=860089786',
-      NoSchool: 'https://docs.google.com/spreadsheets/d/1-vWT6uF71RCzqEWWrM0EGmVoeOMNnAcxkMZ3y0fdwos/gviz/tq?tqx=out:csv&gid=87155907'
+      Primary: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQIm6uIsWGD3h7D9T27ReAL9IrFhNcaYmNsez4xLp5N7InbXL9OjbTCHD93e4VKsF0uOPx20c3WJC-b/pub?gid=0&single=true&output=csv',
+      Secondary: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQIm6uIsWGD3h7D9T27ReAL9IrFhNcaYmNsez4xLp5N7InbXL9OjbTCHD93e4VKsF0uOPx20c3WJC-b/pub?gid=1127334724&single=true&output=csv',
+      NoSchool: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQIm6uIsWGD3h7D9T27ReAL9IrFhNcaYmNsez4xLp5N7InbXL9OjbTCHD93e4VKsF0uOPx20c3WJC-b/pub?gid=1462166071&single=true&output=csv'
     };
 
     const parseCSV = (text) => {
-      const [headers, ...rows] = text.trim().split('\n').map(r => r.split(','));
-      return rows.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val])));
-    };
-
+  let [headers, ...rows] = text.trim().split('\n').map(r => r.split(','));
+  headers = headers.map(h => h.trim().replace(/['"]+/g, ''));
+  return rows.map(row =>
+    Object.fromEntries(row.map((val, i) => [headers[i], val.trim().replace(/['"]+/g, '')]))
+  );
+};
     const loadTopPlayers = async () => {
-      const results = await Promise.all(Object.entries(sheetURLs).map(async ([category, url]) => {
-        try {
-          const res = await fetch(url);
-          const text = await res.text();
-          const entries = parseCSV(text);
-          const sorted = entries.sort((a, b) => a.time.localeCompare(b.time));
-          return [category, sorted[0]];
-        } catch {
-          return [category, null];
-        }
-      }));
-      setTopPlayers(Object.fromEntries(results));
-    };
+  const results = await Promise.all(
+    Object.entries(sheetURLs).map(async ([category, url]) => {
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        console.log(`Raw CSV for ${category}:\n`, text);
+        const entries = parseCSV(text);
+        console.log(`Parsed entries for ${category}:`, entries);
+        const sorted = entries
+          .filter(e => e.Time && e.Time.trim() !== '')
+          .sort((a, b) => a.Time.localeCompare(b.Time));
+        console.log(`Top player for ${category}:`, sorted[0]);
+        return [category, sorted[0]];
+      } catch (err) {
+        console.error(`Error fetching or parsing ${category} data`, err);
+        return [category, null];
+      }
+    })
+  );
+
+  setTopPlayers(Object.fromEntries(results));
+};
 
     loadTopPlayers();
   }, []);
@@ -246,7 +257,7 @@ if (isSubmitting) return;
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-center">
                 {['Primary', 'Secondary', 'NoSchool'].map((cat) => (
                   <div key={cat} className="bg-blue-100 text-blue-800 px-4 py-2 rounded shadow">
-                    <strong>{cat}:</strong> {topPlayers[cat]?.name || '---'} – <span className="font-mono">{topPlayers[cat]?.time || '--:--.--'}</span>
+                    <strong>{cat}:</strong> {topPlayers[cat]?.Name || '---'} – <span className="font-mono">{topPlayers[cat]?.Time || '--:--.--'}</span>
                   </div>
                 ))}
               </div>
