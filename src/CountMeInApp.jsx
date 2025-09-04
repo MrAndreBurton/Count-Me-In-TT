@@ -159,8 +159,8 @@ if (isSubmitting) return;
 
   const formDataEncoded = new URLSearchParams();
   formDataEncoded.append("name", formData.name);
-  formDataEncoded.append("email", formData.email);
-  formDataEncoded.append("school", formData.school);
+  formDataEncoded.append("email", formData.email.trim() || "N/A");
+  formDataEncoded.append("school", formData.school.trim() || "N/A");
   formDataEncoded.append("category", formData.category);
   formDataEncoded.append("time", displayTime); // ⏱️
 

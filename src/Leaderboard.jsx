@@ -191,18 +191,24 @@ export default function Leaderboard() {
                 {category}
               </h2>
               {players.length > 0 ? (
-                <ol style={{ textAlign: "left", paddingLeft: 20 }}>
-                  {players.map((p, idx) => (
-                    <li key={idx} style={{ marginBottom: 10 }}>
-                      <strong>{p.Name}</strong>
-                      {p.School && <span> – {p.School}</span>}
-                      <br />⏱ {p.Time}
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <p>No entries yet</p>
-              )}
+  <ol style={{ textAlign: "left", paddingLeft: 20 }}>
+    {players.map((p, idx) => {
+      const medalEmoji = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "";
+
+      return (
+        <li key={idx} style={{ marginBottom: 10 }}>
+          <strong>
+            {medalEmoji} {p.Name}
+          </strong>
+          {p.School && <span> – {p.School}</span>}
+          <br />⏱ {p.Time}
+        </li>
+      );
+    })}
+  </ol>
+) : (
+  <p>No entries yet</p>
+)}
             </div>
           ))}
         </div>
