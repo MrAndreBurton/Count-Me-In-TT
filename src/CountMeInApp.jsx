@@ -241,7 +241,6 @@ if (isSubmitting) return;
             </div>
             <div className="flex flex-col items-end space-y-2">
               <button onClick={() => setDarkMode(!darkMode)}>{darkMode ? '🌙' : '☀️'}</button>
-              <div className="text-xl font-mono bg-yellow-300 text-black px-3 py-1 rounded shadow">{displayTime}</div>
               <Link to="/leaderboard">
   <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 shadow">
     View Leaderboard
@@ -263,7 +262,12 @@ if (isSubmitting) return;
               </div>
             </div>
           </div>
-
+<div className="text-center mt-4 space-y-2">
+  <p className="text-sm text-gray-500">Your Timer</p>
+  <p className="text-2xl font-mono bg-yellow-300 text-black inline-block px-6 py-2 rounded shadow">
+    ⏱️ {displayTime}
+  </p>
+</div>
           <div className="overflow-x-auto w-full max-w-screen-xl mx-auto px-2">
             <div className="inline-block w-full">
               <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-1 w-full">
@@ -296,6 +300,9 @@ if (isSubmitting) return;
       <p className="text-center">
         Well done! Your time: <span className="font-mono font-semibold">{displayTime}</span>
       </p>
+<p className="text-center text-sm text-gray-600">
+  Enter info & submit time, to appear on the Leaderboard.
+</p>
       <input
         type="text"
         placeholder="Student Name"
