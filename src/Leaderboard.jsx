@@ -272,12 +272,26 @@ overflow: "hidden",
     }}
   />
 </div>
-          </div>
+<div style={{ textAlign: "center", marginTop: "40px", marginBottom: "20px" }}>
+  <a
+    href="/about-us-contact.pdf"
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{
+      color: "#000",
+      fontWeight: "bold",
+      textDecoration: "underline",
+      fontSize: "16px",
+    }}
+  >
+    About Us/Contact
+  </a>
+</div>
       <div style={{ width: "100%", marginTop: "60px", display: "flex", justifyContent: "center" }}>
         <p
           style={{
             fontSize: "11px",
-            color: "gray",
+            color: "black",
             textAlign: "center",
             fontStyle: "italic",
           }}
@@ -289,5 +303,6 @@ overflow: "hidden",
 </div>
        </div>
     </div>
+</div>
   );
 }
