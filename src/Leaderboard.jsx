@@ -90,23 +90,22 @@ export default function Leaderboard() {
   }, []);
 
   return (
-    <div
-      style={{
-        fontFamily: "sans-serif",
-        backgroundColor: "#fce500",
-        backgroundImage: `url("/math-bg.svg")`,
-        backgroundRepeat: "repeat",
-        backgroundSize: "300px",
-        backgroundAttachment: "fixed",
-        padding: "30px 20px",
-        minHeight: "100vh",
-        textAlign: "center",
-        color: "#000",
-        position: "relative",
-        zIndex: 0,
-        overflow: "hidden",
-      }}
-    >
+  <div
+style={{ fontFamily: "sans-serif",
+backgroundColor: "#fce500",
+backgroundImage: url("/math-bg.svg"),
+backgroundRepeat: "repeat",
+backgroundSize: "300px",
+backgroundAttachment: "fixed",
+padding: "30px 20px",
+minHeight: "100vh",
+textAlign: "center",
+color: "#000",
+position: "relative",
+zIndex: 0,
+overflow: "hidden",
+}}
+>
 <a
   href="/"
   style={{

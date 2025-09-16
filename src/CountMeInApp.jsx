@@ -29,7 +29,6 @@ const formatTime = (milliseconds) => {
 };
 
 export default function CountMeInApp() {
-  const [darkMode, setDarkMode] = useState(true);
   const [grid, setGrid] = useState(generateGrid());
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
@@ -190,7 +189,24 @@ if (isSubmitting) return;
       <Route
         path="/"
         element={
-    <div className={`p-4 min-h-screen transition-colors duration-300 ${darkMode ? 'bg-yellow-100 text-yellow-900' : 'bg-white text-black'}`}>
+    <div
+  className="p-4 min-h-screen transition-colors duration-300 text-black"
+   style={{
+    backgroundColor: "#fff058",
+    backgroundImage: `url("/my-bg.svg")`,
+    backgroundRepeat: "repeat",
+    backgroundSize: "800px",
+    backgroundAttachment: "fixed",
+    minHeight: "100vh",
+    fontFamily: "sans-serif",
+    padding: "30px 20px",
+    textAlign: "center",
+    color: "#000",
+    overflow: "hidden",
+    position: "relative",
+    zIndex: 0,
+  }}
+>
       {showIntro ? (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-white text-black p-6 rounded shadow max-w-md text-center space-y-4">
@@ -233,14 +249,13 @@ if (isSubmitting) return;
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
-              <img src="/as-online-logo.svg" alt="A's Online" className="h-12 w-auto" />
+              <img src="/as-online-logo.svg" alt="A's Online" className="h-12 w-auto drop-shadow-md ring-1 ring-black/20 rounded" />
               <div>
                 <h1 className="text-3xl font-bold">Count Me In TT!</h1>
-                <p className="text-sm text-gray-600">Powered by A's Online</p>
+                <p className="text-sm text-black font-bold">Powered by A's Online</p>
               </div>
             </div>
             <div className="flex flex-col items-end space-y-2">
-              <button onClick={() => setDarkMode(!darkMode)}>{darkMode ? '🌙' : '☀️'}</button>
               <Link to="/leaderboard">
   <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 shadow">
     View Leaderboard
@@ -251,19 +266,21 @@ if (isSubmitting) return;
           </div>
 
           <div className="max-w-screen-md mx-auto">
-            <div className="bg-white rounded-lg shadow p-4 border border-yellow-300">
-              <h2 className="text-center font-bold text-xl mb-2">🏆 Top Players</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-center">
-                {['Primary', 'Secondary', 'NoSchool'].map((cat) => (
-                  <div key={cat} className="bg-blue-100 text-blue-800 px-4 py-2 rounded shadow">
-                    <strong>{cat}:</strong> {topPlayers[cat]?.Name || '---'} – <span className="font-mono">{topPlayers[cat]?.Time || '--:--.--'}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+  <div className="bg-white rounded-lg shadow p-4 border border-yellow-300">
+    <h2 className="text-center font-bold text-xl mb-2 text-blue-600">🏆 Top Players</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-center">
+      {['Primary', 'Secondary', 'NoSchool'].map((cat) => (
+        <div key={cat} className="bg-blue-100 px-4 py-2 rounded shadow">
+          <strong className="text-black">{cat}:</strong>{' '}
+          <span className="text-black">{topPlayers[cat]?.Name || '---'}</span>{' '}
+          – <span className="font-mono text-black">{topPlayers[cat]?.Time || '--:--.--'}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
 <div className="text-center mt-4 space-y-2">
-  <p className="text-sm text-gray-500">Your Timer</p>
+  <p className="text-sm text-black font-bold">Your Timer</p>
   <p className="text-2xl font-mono bg-yellow-300 text-black inline-block px-6 py-2 rounded shadow">
     ⏱️ {displayTime}
   </p>
@@ -289,7 +306,7 @@ if (isSubmitting) return;
         </div>
       )}
 <div className="w-full mt-8 flex justify-center">
-  <p className="text-[11px] text-gray-400 text-center italic">
+  <p className="text-[11px] text-black text-center italic">
     © 2025 <span className="font-semibold">Count Me In TT</span>. Developed by <span className="font-semibold">Andre Burton</span>. Powered by <span className="font-semibold">A’s Online</span>. All rights reserved.
   </p>
 </div>
