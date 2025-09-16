@@ -93,7 +93,7 @@ export default function Leaderboard() {
   <div
 style={{ fontFamily: "sans-serif",
 backgroundColor: "#fce500",
-backgroundImage: url("/math-bg.svg"),
+backgroundImage: `url("/math-bg.svg")`,
 backgroundRepeat: "repeat",
 backgroundSize: "300px",
 backgroundAttachment: "fixed",
