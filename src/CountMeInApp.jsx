@@ -277,6 +277,11 @@ if (isSubmitting) return;
         </div>
       ))}
     </div>
+<div className="text-center mt-4">
+  <p className="text-black text-sm drop-shadow-[2px_2px_3px_rgba(0,0,0,0.75)] animate-shimmer bg-clip-text">
+  ⭐ These top players are in line to win September month-end prizes! ⭐
+</p>
+</div>
   </div>
 </div>
 <div className="text-center mt-4 space-y-2">
@@ -367,6 +372,9 @@ if (isSubmitting) return;
         value={formData.email}
         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
       />
+<p className="text-sm text-center text-gray-600 font-medium pt-2">
+  Fill in ALL fields above to be eligible for prizes 🎁.
+</p>
       <div className="flex justify-between gap-2 pt-2">
         <button
   type="submit"
