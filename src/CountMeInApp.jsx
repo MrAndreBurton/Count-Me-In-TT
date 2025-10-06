@@ -279,7 +279,7 @@ if (isSubmitting) return;
     </div>
 <div className="text-center mt-4">
   <p className="text-black text-sm drop-shadow-[2px_2px_3px_rgba(0,0,0,0.75)] animate-shimmer bg-clip-text">
-  ⭐ These top players are in line to win September month-end prizes! ⭐
+  ⭐ These top players are in line to win October month-end prizes! ⭐
 </p>
 </div>
   </div>
