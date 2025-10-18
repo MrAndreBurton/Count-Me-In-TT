@@ -185,14 +185,82 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
 
     const loadTopPlayers = async () => {
       try {
-        if (gridPresetId === '5x5' || gridPresetId === '5x12') {
-          const res = await fetch(urls.SmallTop);
-          const text = await res.text();
-          const parsed = parseCSV(text);
-          const sorted = parsed
-            .filter(e => e && e.Time && String(e.Time).trim() !== '')
-            .sort((a, b) => String(a.Time).localeCompare(String(b.Time)));
-          setTopPlayers({ Primary: sorted[0] || null, Secondary: null, NoSchool: null });
+       if (gridPresetId === '5x5' || gridPresetId === '5x12') {
+  const res = await fetch(urls.SmallTop);
+  const text = await res.text();
+  const parsed = parseCSV(text);
+
+  const cleanKey = (k) => String(k || '').replace(/\uFEFF/g, '').trim().toLowerCase();
+
+  const timeLike = (v) => /^\d{1,2}:\d{1,2}(?:\.\d{1,3})?$/.test(String(v || '').trim());
+
+  const toMillis = (t) => {
+    const s = String(t || '').trim();
+    const m = /^(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?$/.exec(s);
+    if (!m) return Number.POSITIVE_INFINITY;
+    const mm = +m[1], ss = +m[2], cs = +(m[3] || 0);
+    const msPart = m[3]?.length === 3 ? cs : cs * (m[3] ? 10 : 0);
+    return mm * 60000 + ss * 1000 + msPart;
+  };
+
+  const pickTimeDisplay = (row) => {
+    const entries = Object.entries(row).map(([k, v]) => [cleanKey(k), v]);
+    const byLower = Object.fromEntries(entries);
+    const keys = entries.map(([k]) => k);
+
+    const candidates = ['time', 'time (mm:ss)', 'best time', 'final time', 'your time', 'result'];
+    for (const c of candidates) {
+      if (keys.includes(c) && byLower[c]) {
+        const val = String(byLower[c]).trim();
+        if (timeLike(val)) return val;
+      }
+    }
+
+    const startsTime = keys.find(k => k.startsWith('time'));
+    if (startsTime) {
+      const val = String(byLower[startsTime]).trim();
+      if (timeLike(val)) return val;
+    }
+
+    const anyTimeCell = entries.find(([_, v]) => timeLike(v));
+    return anyTimeCell ? String(anyTimeCell[1]).trim() : '';
+  };
+
+  const pickName = (row) => {
+    const entries = Object.entries(row).map(([k, v]) => [cleanKey(k), v]);
+    const byLower = Object.fromEntries(entries);
+    const name =
+      byLower['name'] ??
+      byLower['student name'] ??
+      byLower['player'] ??
+      byLower['student'];
+    if (name && String(name).trim()) return String(name).trim();
+    for (const [, v] of entries) {
+      const s = String(v || '').trim();
+      if (!s) continue;
+      if (timeLike(s)) continue;
+      if (/\S+@\S+/.test(s)) continue;
+      return s;
+    }
+    return '';
+  };
+
+  const normalized = parsed.map(r => {
+    const name = pickName(r);
+    const timeDisplay = pickTimeDisplay(r);
+    const ms = toMillis(timeDisplay);
+    return { Name: name, Time: timeDisplay, ms };
+  });
+
+  console.log('[CMI][small] raw first row:', parsed[0] || {});
+  console.log('[CMI][small] normalized sample:', normalized.slice(0, 5));
+
+  const best = normalized
+    .filter(e => e.Name && isFinite(e.ms))
+    .sort((a, b) => a.ms - b.ms)[0] || null;
+
+  setTopPlayers({ Primary: best ? { Name: best.Name, Time: best.Time } : null, Secondary: null, NoSchool: null });
+
         } else {
           const pairs = await Promise.all(
             ['Primary','Secondary','NoSchool'].map(async (cat) => {
