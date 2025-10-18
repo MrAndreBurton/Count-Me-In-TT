@@ -1,129 +1,294 @@
 import React, { useEffect, useState } from "react";
 
 export default function Leaderboard() {
-  const [topPlayers, setTopPlayers] = useState({
-    Primary: [],
-    Secondary: [],
-    NoSchool: [],
-  });
+  const [podium, setPodium] = useState({ 1: [], 2: [], 3: [] });
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  useEffect(() => {
-    const sheetURLs = {
+  const SHEET_URLS = {
+    "5x5": {
+      SmallTop:
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXvvpwFIx6TuA-dB26pjW6K0w8oRhg0IDgMO-69ag19hMATBAzC2Wf-I6m4Q5fUjLgCFNnzuT_cQUn/pub?gid=0&single=true&output=csv",
+    },
+    "5x12": {
+      SmallTop:
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXvvpwFIx6TuA-dB26pjW6K0w8oRhg0IDgMO-69ag19hMATBAzC2Wf-I6m4Q5fUjLgCFNnzuT_cQUn/pub?gid=1665132778&single=true&output=csv",
+    },
+    "12x12": {
       Primary:
         "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIm6uIsWGD3h7D9T27ReAL9IrFhNcaYmNsez4xLp5N7InbXL9OjbTCHD93e4VKsF0uOPx20c3WJC-b/pub?gid=0&single=true&output=csv",
       Secondary:
         "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIm6uIsWGD3h7D9T27ReAL9IrFhNcaYmNsez4xLp5N7InbXL9OjbTCHD93e4VKsF0uOPx20c3WJC-b/pub?gid=1127334724&single=true&output=csv",
       NoSchool:
         "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIm6uIsWGD3h7D9T27ReAL9IrFhNcaYmNsez4xLp5N7InbXL9OjbTCHD93e4VKsF0uOPx20c3WJC-b/pub?gid=1462166071&single=true&output=csv",
-    };
+    },
+    "15x15": {
+      Primary:
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMNl9g61jMzOv_K8SH8ITlvGCOL8WNm3ED3vp6UoMoJArERRqthGkQNzN4bIBMs7t_uuYedtEHzXc0/pub?gid=0&single=true&output=csv",
+      Secondary:
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMNl9g61jMzOv_K8SH8ITlvGCOL8WNm3ED3vp6UoMoJArERRqthGkQNzN4bIBMs7t_uuYedtEHzXc0/pub?gid=1175275328&single=true&output=csv",
+      NoSchool:
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMNl9g61jMzOv_K8SH8ITlvGCOL8WNm3ED3vp6UoMoJArERRqthGkQNzN4bIBMs7t_uuYedtEHzXc0/pub?gid=800118807&single=true&output=csv",
+    },
+  };
 
-    const parseCSV = (text) => {
-      if (!text || typeof text !== "string" || text.trim() === "") return [];
-      const lines = text.trim().split("\n");
-      if (lines.length < 2) return [];
-      const [headersLine, ...rows] = lines;
-      const headers = headersLine
-        .split(",")
-        .map((h) => h.trim().replace(/^"|"$/g, ""));
+  const toMillis = (t) => {
+    const m = /^(\d+):(\d{2})\.(\d{2})$/.exec(String(t || ""));
+    if (!m) return Number.POSITIVE_INFINITY;
+    const [, MM, SS, cs] = m;
+    return (+MM) * 60000 + (+SS) * 1000 + (+cs) * 10;
+  };
 
-      const parsed = rows.map((line, index) => {
-        const pattern = /(".*?"|[^",]+)(?=\s*,|\s*$)/g;
-        const cols = [...line.matchAll(pattern)].map((m) =>
-          m[0].replace(/^"|"$/g, "").trim()
+  const parseCSV = (text) => {
+    if (!text || typeof text !== "string" || text.trim() === "") return [];
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const [headersLine, ...rows] = lines;
+
+    const headers = [...headersLine.matchAll(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)]
+      .map((m) => (m[0] || "").replace(/^"|"$/g, "").trim());
+
+    return rows
+      .map((line, index) => {
+        const cols = [...line.matchAll(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)].map((m) =>
+          (m[0] || "").replace(/^"|"$/g, "").trim()
         );
-
-        if (cols.length < 1 || !cols[0]) return null;
+        if (cols.length === 0 || !cols[0]) return null;
         while (cols.length < headers.length) cols.push("N/A");
-
-        const entry = Object.fromEntries(
-          headers.map((header, i) => [header, (cols[i] || "N/A").trim()])
+        const obj = Object.fromEntries(
+          headers.map((h, i) => [h, (cols[i] ?? "N/A").trim()])
         );
-        entry.__index = index + 1;
-        return entry;
-      });
+        obj.__row = index + 1;
+        return obj;
+      })
+      .filter(Boolean);
+  };
 
-      return parsed;
-    };
+const ordinal = (n) => {
+  const s = ["th","st","nd","rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
 
-    const loadTopPlayers = async () => {
-      const results = await Promise.all(
-        Object.entries(sheetURLs).map(async ([category, url]) => {
-          if (!url) return [category, []];
-          try {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const text = await res.text();
-            const entries = parseCSV(text).filter((entry) => {
-              return (
-                entry &&
-                typeof entry === "object" &&
-                entry["Name"]?.trim() !== "" &&
-                entry["Time"]?.trim() !== ""
-              );
-            });
+  const badge = (label, title) => (
+    <span
+      key={label}
+      title={title || label}
+      style={{
+        display: "inline-block",
+        padding: "2px 8px",
+        borderRadius: "999px",
+        background: "#000",
+        color: "#fff",
+        fontSize: 12,
+        fontWeight: 700,
+        marginRight: 6,
+      }}
+    >
+      {label}
+    </span>
+  );
 
-            const topThree = entries
-              .map((entry) => ({
-                Name: String(entry["Name"] ?? "N/A"),
-                Time: String(entry["Time"] ?? "--"),
-                School:
-                  category === "NoSchool"
-                    ? ""
-                    : String(entry["School"] ?? "N/A"),
+  const WinnerCard = ({ name, school, time, gridId, category }) => (
+    <div
+      style={{
+        background: "rgba(255,255,255,0.95)",
+        color: "#000",
+        padding: 12,
+        borderRadius: 10,
+        boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+        minWidth: 260,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <strong style={{ fontSize: 16, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%" }}>
+          {name || "—"}
+        </strong>
+        <span style={{ fontFamily: "monospace" }}>⏱ {time || "--:--.--"}</span>
+      </div>
+      <div style={{ marginTop: 6, minHeight: 18, color: "#333", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {school ? school : "—"}
+      </div>
+      <div style={{ marginTop: 8 }}>
+        {badge(gridId.replace("x", "×"), `Grid: ${gridId.replace("x", "×")}`)}
+        {category ? badge(category === "NoSchool" ? "No School" : category, `Category: ${category}`) : null}
+      </div>
+    </div>
+  );
+
+  useEffect(() => {
+    const loadAll = async () => {
+      try {
+        const fetchText = async (url) => {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.text();
+        };
+
+        const tasks = [];
+
+        for (const gid of ["5x5", "5x12"]) {
+          const url = SHEET_URLS[gid]?.SmallTop;
+          if (url) {
+            tasks.push(
+              fetchText(url).then((text) => ({
+                gridId: gid,
+                category: "Primary",
+                rows: parseCSV(text),
               }))
-              .sort((a, b) => a["Time"].localeCompare(b["Time"]))
-              .slice(0, 3);
-
-            return [category, topThree];
-          } catch (err) {
-            console.error(`❌ Error loading ${category}`, err);
-            return [category, []];
+            );
           }
-        })
-      );
-      setTopPlayers(Object.fromEntries(results));
-      setLastUpdated(new Date());
+        }
+
+        for (const gid of ["12x12", "15x15"]) {
+          for (const cat of ["Primary", "Secondary", "NoSchool"]) {
+            const url = SHEET_URLS[gid]?.[cat];
+            if (url) {
+              tasks.push(
+                fetchText(url).then((text) => ({
+                  gridId: gid,
+                  category: cat,
+                  rows: parseCSV(text),
+                }))
+              );
+            }
+          }
+        }
+
+        const datasets = await Promise.allSettled(tasks);
+
+        const buckets = new Map();
+        const pushRow = (key, obj) => {
+          if (!buckets.has(key)) buckets.set(key, []);
+          buckets.get(key).push(obj);
+        };
+
+        datasets.forEach((res) => {
+          if (res.status !== "fulfilled") return;
+          const { gridId, category, rows } = res.value;
+          const key = `${gridId}|${category}`;
+          rows.forEach((entry) => {
+            const Name = String(entry["Name"] ?? "").trim();
+            const Time = String(entry["Time"] ?? "").trim();
+            if (!Name || !Time) return;
+
+            pushRow(key, {
+              name: Name,
+              school: gridId === "12x12" || gridId === "15x15" ? String(entry["School"] ?? "").trim() : String(entry["School"] ?? "").trim(),
+              email: String(entry["Email"] ?? "").trim(),
+              category,
+              time: Time,
+              ms: toMillis(Time),
+              gridId,
+              timestamp: String(entry["Timestamp"] ?? "").trim(),
+              _row: entry.__row || 0,
+            });
+          });
+        });
+
+        const podiumAgg = { 1: [], 2: [], 3: [] };
+        buckets.forEach((arr) => {
+          arr
+            .sort((a, b) => {
+              const d = a.ms - b.ms;
+              if (d !== 0) return d;
+              return (a.timestamp || "").localeCompare(b.timestamp || "") || (a._row - b._row);
+            })
+            .slice(0, 3)
+            .forEach((row, i) => {
+              podiumAgg[i + 1].push(row);
+            });
+        });
+
+        setPodium(podiumAgg);
+        setLastUpdated(new Date());
+      } catch (e) {
+        console.error("Leaderboard load error:", e);
+        setPodium({ 1: [], 2: [], 3: [] });
+        setLastUpdated(new Date());
+      }
     };
 
-    loadTopPlayers();
+    loadAll();
   }, []);
 
+  const PodiumSection = ({ place, emoji }) => (
+    <section style={{ marginBottom: 40 }}>
+      <h2
+        style={{
+          fontSize: 28,
+          marginBottom: 16,
+          textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
+          color: "#000",
+          display: "inline-block",
+          borderBottom: "3px solid #000",
+          paddingBottom: 6,
+        }}
+      >
+        {emoji} {ordinal(place)} Place
+      </h2>
+      {podium[place]?.length ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          {podium[place].map((p, idx) => (
+            <WinnerCard
+              key={`${place}-${p.gridId}-${p.category}-${idx}`}
+              name={p.name}
+              school={p.school}
+              time={p.time}
+              gridId={p.gridId}
+              category={p.gridId === "5x5" || p.gridId === "5x12" ? null : p.category}
+            />
+          ))}
+        </div>
+      ) : (
+        <p style={{ color: "#333" }}>— not set yet —</p>
+      )}
+    </section>
+  );
+
   return (
-  <div
-style={{ fontFamily: "sans-serif",
-backgroundColor: "#fce500",
-backgroundImage: `url("/math-bg.svg")`,
-backgroundRepeat: "repeat",
-backgroundSize: "300px",
-backgroundAttachment: "fixed",
-padding: "30px 20px",
-minHeight: "100vh",
-textAlign: "center",
-color: "#000",
-position: "relative",
-zIndex: 0,
-overflow: "hidden",
-}}
->
-<a
-  href="/"
-  style={{
-    position: "absolute",
-    top: 20,
-    right: 20,
-    backgroundColor: "#000",
-    color: "#fff",
-    padding: "10px 16px",
-    borderRadius: "8px",
-    textDecoration: "none",
-    fontWeight: "bold",
-    boxShadow: "2px 2px 6px rgba(0,0,0,0.3)",
-    zIndex: 10,
-  }}
->
-  ⬅ Back to Game
-</a>
+    <div
+      style={{
+        fontFamily: "sans-serif",
+        backgroundColor: "#fce500",
+        backgroundImage: `url("/math-bg.svg")`,
+        backgroundRepeat: "repeat",
+        backgroundSize: "300px",
+        backgroundAttachment: "fixed",
+        padding: "30px 20px",
+        minHeight: "100vh",
+        textAlign: "center",
+        color: "#000",
+        position: "relative",
+        zIndex: 0,
+        overflow: "hidden",
+      }}
+    >
+      <a
+        href="/"
+        style={{
+          position: "absolute",
+          top: 20,
+          right: 20,
+          backgroundColor: "#000",
+          color: "#fff",
+          padding: "10px 16px",
+          borderRadius: "8px",
+          textDecoration: "none",
+          fontWeight: "bold",
+          boxShadow: "2px 2px 6px rgba(0,0,0,0.3)",
+          zIndex: 10,
+        }}
+      >
+        ⬅ Back to Game
+      </a>
+
       <div
         style={{
           position: "absolute",
@@ -135,18 +300,19 @@ overflow: "hidden",
           pointerEvents: "none",
         }}
       />
+
       <div style={{ position: "relative", zIndex: 2 }}>
         <header style={{ marginBottom: 40 }}>
           <div style={{ display: "flex", justifyContent: "center", gap: 20, flexWrap: "wrap" }}>
             <img src="/logo-asonline.svg" alt="A's Online" />
-<img src="/logo-countmeintt.svg" alt="Count Me In TT" />
+            <img src="/logo-countmeintt.svg" alt="Count Me In TT" />
           </div>
           <h1
             style={{
               fontSize: 48,
               marginTop: 20,
               textShadow: "2px 2px 4px rgba(0,0,0,0.4)",
-              borderBottom: "4px solid #000", // adjusted from gold to black for contrast
+              borderBottom: "4px solid #000",
               display: "inline-block",
               paddingBottom: 10,
               marginBottom: 10,
@@ -159,58 +325,9 @@ overflow: "hidden",
           </p>
         </header>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            gap: 40,
-          }}
-        >
-          {Object.entries(topPlayers).map(([category, players]) => (
-            <div
-              key={category}
-              style={{
-                background: "rgba(255, 255, 255, 0.95)",
-                color: "#000",
-                padding: 20,
-                borderRadius: 10,
-                width: 300,
-                boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-                transition: "transform 0.3s",
-              }}
-            >
-              <h2
-                style={{
-                  borderBottom: "2px solid #ccc",
-                  paddingBottom: 10,
-                  fontSize: 24,
-                }}
-              >
-                {category}
-              </h2>
-              {players.length > 0 ? (
-  <ol style={{ textAlign: "left", paddingLeft: 20 }}>
-    {players.map((p, idx) => {
-      const medalEmoji = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "";
-
-      return (
-        <li key={idx} style={{ marginBottom: 10 }}>
-          <strong>
-            {medalEmoji} {p.Name}
-          </strong>
-          {p.School && <span> – {p.School}</span>}
-          <br />⏱ {p.Time}
-        </li>
-      );
-    })}
-  </ol>
-) : (
-  <p>No entries yet</p>
-)}
-            </div>
-          ))}
-        </div>
+        <PodiumSection place={1} emoji="🥇" />
+        <PodiumSection place={2} emoji="🥈" />
+        <PodiumSection place={3} emoji="🥉" />
 
         <div style={{ marginTop: 80 }}>
           <h2
@@ -218,91 +335,96 @@ overflow: "hidden",
               marginBottom: 30,
               fontSize: 32,
               textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
-              color: "#000", // changed from yellow to black for contrast
+              color: "#000",
             }}
           >
             🚀 Thanks for Playing
           </h2>
+
           <div
-  style={{
-    display: "flex",
-    justifyContent: "center",
-    gap: "50px",
-    flexWrap: "wrap",
-    marginTop: "30px",
-  }}
->
-  <img
-    src="/sponsor1.svg"
-    alt="Sponsor 1"
-    style={{
-      height: "120px",
-      maxWidth: "250px",
-      objectFit: "contain",
-      padding: "10px",
-      borderRadius: "12px",
-      backdropFilter: "brightness(1.05)",
-      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
-    }}
-  />
-  <img
-    src="/sponsor2.svg"
-    alt="Sponsor 2"
-    style={{
-      height: "120px",
-      maxWidth: "250px",
-      objectFit: "contain",
-      padding: "10px",
-      borderRadius: "12px",
-      backdropFilter: "brightness(1.05)",
-      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
-    }}
-  />
-  <img
-    src="/sponsor3.svg"
-    alt="Sponsor 3"
-    style={{
-      height: "120px",
-      maxWidth: "250px",
-      objectFit: "contain",
-      padding: "10px",
-      borderRadius: "12px",
-      backdropFilter: "brightness(1.05)",
-      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
-    }}
-  />
-</div>
-<div style={{ textAlign: "center", marginTop: "40px", marginBottom: "20px" }}>
-  <a
-    href="/about-us-contact.pdf"
-    target="_blank"
-    rel="noopener noreferrer"
-    style={{
-      color: "#000",
-      fontWeight: "bold",
-      textDecoration: "underline",
-      fontSize: "16px",
-    }}
-  >
-    About Us/Contact
-  </a>
-</div>
-      <div style={{ width: "100%", marginTop: "60px", display: "flex", justifyContent: "center" }}>
-        <p
-          style={{
-            fontSize: "11px",
-            color: "black",
-            textAlign: "center",
-            fontStyle: "italic",
-          }}
-        >
-          © 2025 <span style={{ fontWeight: 600 }}>Count Me In TT</span>. Developed by{" "}
-          <span style={{ fontWeight: 600 }}>Andre Burton</span>. Powered by{" "}
-          <span style={{ fontWeight: 600 }}>A’s Online</span>. All rights reserved.
-        </p>
-</div>
-       </div>
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "50px",
+              flexWrap: "wrap",
+              marginTop: "30px",
+            }}
+          >
+            <img
+              src="/sponsor1.svg"
+              alt="Sponsor 1"
+              style={{
+                height: "120px",
+                maxWidth: "250px",
+                objectFit: "contain",
+                padding: "10px",
+                borderRadius: "12px",
+                backdropFilter: "brightness(1.05)",
+                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
+              }}
+            />
+            <img
+              src="/sponsor2.svg"
+              alt="Sponsor 2"
+              style={{
+                height: "120px",
+                maxWidth: "250px",
+                objectFit: "contain",
+                padding: "10px",
+                borderRadius: "12px",
+                backdropFilter: "brightness(1.05)",
+                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
+              }}
+            />
+            <img
+              src="/sponsor3.svg"
+              alt="Sponsor 3"
+              style={{
+                height: "120px",
+                maxWidth: "250px",
+                objectFit: "contain",
+                padding: "10px",
+                borderRadius: "12px",
+                backdropFilter: "brightness(1.05)",
+                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
+              }}
+            />
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: "40px", marginBottom: "20px" }}>
+            <a
+              href="/about-us-contact.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: "#000",
+                fontWeight: "bold",
+                textDecoration: "underline",
+                fontSize: "16px",
+              }}
+            >
+              About Us/Contact
+            </a>
+          </div>
+
+          <div style={{ width: "100%", marginTop: "60px", display: "flex", justifyContent: "center" }}>
+            <p
+              style={{
+                fontSize: "11px",
+                color: "black",
+                textAlign: "center",
+                fontStyle: "italic",
+              }}
+            >
+              © 2025 <span style={{ fontWeight: 600 }}>Count Me In TT</span>. Developed by{" "}
+              <span style={{ fontWeight: 600 }}>Andre Burton</span>. Powered by{" "}
+              <span style={{ fontWeight: 600 }}>A’s Online</span>. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
-</div>
   );
 }
+
+
