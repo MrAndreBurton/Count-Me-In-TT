@@ -304,68 +304,48 @@ const matchSchool = (value, filter) => {
         overflow: "hidden",
       }}
     >
-      {/* Left button appears on global view; right button always visible */}
-      {!schoolFilter && (
-        <Link
-          to="/prep4-stx"
-          style={{
-            position: "absolute",
-            top: 20,
-            left: 20,
-            backgroundColor: "#000",
-            color: "#fff",
-            padding: "10px 16px",
-            borderRadius: "8px",
-            textDecoration: "none",
-            fontWeight: "bold",
-            boxShadow: "2px 2px 6px rgba(0,0,0,0.3)",
-            zIndex: 10,
-          }}
-        >
-          🎯 Prep 4 — St Xavier’s
-        </Link>
-      )}
+     {/* Top nav buttons */}
+{!schoolFilter ? (
+  <Link to="/prep4-stx" className="lb-btn lb-left">
+    🎯 Prep 4 — St Xavier’s
+  </Link>
+) : (
+  <Link to="/leaderboard" className="lb-btn lb-left">
+    🌍 Global Leaderboard
+  </Link>
+)}
 
-      {schoolFilter && (
-        <Link
-          to="/leaderboard"
-          style={{
-            position: "absolute",
-            top: 20,
-            left: 20,
-            backgroundColor: "#000",
-            color: "#fff",
-            padding: "10px 16px",
-            borderRadius: "8px",
-            textDecoration: "none",
-            fontWeight: "bold",
-            boxShadow: "2px 2px 6px rgba(0,0,0,0.3)",
-            zIndex: 10,
-          }}
-        >
-          🌍 Global Leaderboard
-        </Link>
-      )}
+<Link to="/" className="lb-btn lb-right">
+  ⬅ Back to Game
+</Link>
+ <style>{`
+      .lb-btn {
+        position: absolute;
+        background-color: #000;
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 700;
+        box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+        z-index: 10;
+        line-height: 1;
+        display: inline-block;
+      }
+      .lb-left { top: 16px; left: 16px; }
+      .lb-right { top: 16px; right: 16px; }
 
-      <a
-        href="/"
-        style={{
-          position: "absolute",
-          top: 20,
-          right: 20,
-          backgroundColor: "#000",
-          color: "#fff",
-          padding: "10px 16px",
-          borderRadius: "8px",
-          textDecoration: "none",
-          fontWeight: "bold",
-          boxShadow: "2px 2px 6px rgba(0,0,0,0.3)",
-          zIndex: 10,
-        }}
-      >
-        ⬅ Back to Game
-      </a>
-
+      @media (max-width: 480px) {
+        .lb-btn {
+          font-size: 13px;
+          padding: 8px 10px;
+          border-radius: 10px;
+        }
+        /* stack them so they don't touch */
+        .lb-left { top: 12px; left: 12px; right: 12px; }
+        .lb-right { top: 56px; left: 12px; right: 12px; }
+      }
+    `}</style>
       <div
         style={{
           position: "absolute",
