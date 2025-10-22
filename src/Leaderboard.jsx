@@ -1,8 +1,32 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
-export default function Leaderboard() {
+export default function Leaderboard({
+  schoolFilter = null,
+  titleOverride = null,
+  onlyFromToday = false,
+}) {
   const [podium, setPodium] = useState({ 1: [], 2: [], 3: [] });
   const [lastUpdated, setLastUpdated] = useState(null);
+  const norm = (s) =>
+  String(s || "")
+    .toLowerCase()
+    .replace(/scool/g, "school")
+    .replace(/\bst\.?\b/g, "st")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const matchSchool = (value, filter) => {
+  const a = norm(value);
+  const b = norm(filter);
+  return a.includes(b) || b.includes(a);
+};
+  const START_OF_TODAY = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
 
   const SHEET_URLS = {
     "5x5": {
@@ -63,11 +87,11 @@ export default function Leaderboard() {
       .filter(Boolean);
   };
 
-const ordinal = (n) => {
-  const s = ["th","st","nd","rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-};
+  const ordinal = (n) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
 
   const badge = (label, title) => (
     <span
@@ -171,15 +195,25 @@ const ordinal = (n) => {
             const Time = String(entry["Time"] ?? "").trim();
             if (!Name || !Time) return;
 
+            const School = String(entry["School"] ?? "").trim();
+            const Timestamp = String(entry["Timestamp"] ?? "").trim();
+
+            // filters
+            if (schoolFilter && !matchSchool(School, schoolFilter)) return;
+            if (onlyFromToday) {
+              const ts = new Date(Timestamp);
+              if (isNaN(ts.getTime()) || ts < START_OF_TODAY) return;
+            }
+
             pushRow(key, {
               name: Name,
-              school: gridId === "12x12" || gridId === "15x15" ? String(entry["School"] ?? "").trim() : String(entry["School"] ?? "").trim(),
+              school: School,
               email: String(entry["Email"] ?? "").trim(),
               category,
               time: Time,
               ms: toMillis(Time),
               gridId,
-              timestamp: String(entry["Timestamp"] ?? "").trim(),
+              timestamp: Timestamp,
               _row: entry.__row || 0,
             });
           });
@@ -209,7 +243,7 @@ const ordinal = (n) => {
     };
 
     loadAll();
-  }, []);
+  }, [schoolFilter, onlyFromToday]);
 
   const PodiumSection = ({ place, emoji }) => (
     <section style={{ marginBottom: 40 }}>
@@ -270,6 +304,49 @@ const ordinal = (n) => {
         overflow: "hidden",
       }}
     >
+      {/* Left button appears on global view; right button always visible */}
+      {!schoolFilter && (
+        <Link
+          to="/prep4-stx"
+          style={{
+            position: "absolute",
+            top: 20,
+            left: 20,
+            backgroundColor: "#000",
+            color: "#fff",
+            padding: "10px 16px",
+            borderRadius: "8px",
+            textDecoration: "none",
+            fontWeight: "bold",
+            boxShadow: "2px 2px 6px rgba(0,0,0,0.3)",
+            zIndex: 10,
+          }}
+        >
+          🎯 Prep 4 — St Xavier’s
+        </Link>
+      )}
+
+      {schoolFilter && (
+        <Link
+          to="/leaderboard"
+          style={{
+            position: "absolute",
+            top: 20,
+            left: 20,
+            backgroundColor: "#000",
+            color: "#fff",
+            padding: "10px 16px",
+            borderRadius: "8px",
+            textDecoration: "none",
+            fontWeight: "bold",
+            boxShadow: "2px 2px 6px rgba(0,0,0,0.3)",
+            zIndex: 10,
+          }}
+        >
+          🌍 Global Leaderboard
+        </Link>
+      )}
+
       <a
         href="/"
         style={{
@@ -318,7 +395,7 @@ const ordinal = (n) => {
               marginBottom: 10,
             }}
           >
-            🏆 Leaderboard
+            {titleOverride || "🏆 Leaderboard"}
           </h1>
           <p style={{ color: "#333", fontSize: 18 }}>
             Updated: {lastUpdated ? lastUpdated.toLocaleString() : "Loading..."}
@@ -329,6 +406,7 @@ const ordinal = (n) => {
         <PodiumSection place={2} emoji="🥈" />
         <PodiumSection place={3} emoji="🥉" />
 
+        {/* --- Sponsors, footer, etc. unchanged --- */}
         <div style={{ marginTop: 80 }}>
           <h2
             style={{
@@ -350,75 +428,20 @@ const ordinal = (n) => {
               marginTop: "30px",
             }}
           >
-            <img
-              src="/sponsor1.svg"
-              alt="Sponsor 1"
-              style={{
-                height: "120px",
-                maxWidth: "250px",
-                objectFit: "contain",
-                padding: "10px",
-                borderRadius: "12px",
-                backdropFilter: "brightness(1.05)",
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
-              }}
-            />
-            <img
-              src="/sponsor2.svg"
-              alt="Sponsor 2"
-              style={{
-                height: "120px",
-                maxWidth: "250px",
-                objectFit: "contain",
-                padding: "10px",
-                borderRadius: "12px",
-                backdropFilter: "brightness(1.05)",
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
-              }}
-            />
-            <img
-              src="/sponsor3.svg"
-              alt="Sponsor 3"
-              style={{
-                height: "120px",
-                maxWidth: "250px",
-                objectFit: "contain",
-                padding: "10px",
-                borderRadius: "12px",
-                backdropFilter: "brightness(1.05)",
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
-              }}
-            />
+            <img src="/sponsor1.svg" alt="Sponsor 1" style={{ height: "120px", maxWidth: "250px", objectFit: "contain", padding: "10px", borderRadius: "12px", backdropFilter: "brightness(1.05)", boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)" }} />
+            <img src="/sponsor2.svg" alt="Sponsor 2" style={{ height: "120px", maxWidth: "250px", objectFit: "contain", padding: "10px", borderRadius: "12px", backdropFilter: "brightness(1.05)", boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)" }} />
+            <img src="/sponsor3.svg" alt="Sponsor 3" style={{ height: "120px", maxWidth: "250px", objectFit: "contain", padding: "10px", borderRadius: "12px", backdropFilter: "brightness(1.05)", boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)" }} />
           </div>
 
           <div style={{ textAlign: "center", marginTop: "40px", marginBottom: "20px" }}>
-            <a
-              href="/about-us-contact.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: "#000",
-                fontWeight: "bold",
-                textDecoration: "underline",
-                fontSize: "16px",
-              }}
-            >
+            <a href="/about-us-contact.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "#000", fontWeight: "bold", textDecoration: "underline", fontSize: "16px" }}>
               About Us/Contact
             </a>
           </div>
 
           <div style={{ width: "100%", marginTop: "60px", display: "flex", justifyContent: "center" }}>
-            <p
-              style={{
-                fontSize: "11px",
-                color: "black",
-                textAlign: "center",
-                fontStyle: "italic",
-              }}
-            >
-              © 2025 <span style={{ fontWeight: 600 }}>Count Me In TT</span>. Developed by{" "}
-              <span style={{ fontWeight: 600 }}>Andre Burton</span>. Powered by{" "}
-              <span style={{ fontWeight: 600 }}>A’s Online</span>. All rights reserved.
+            <p style={{ fontSize: "11px", color: "black", textAlign: "center", fontStyle: "italic" }}>
+              © 2025 <span style={{ fontWeight: 600 }}>Count Me In TT</span>. Developed by <span style={{ fontWeight: 600 }}>Andre Burton</span>. Powered by <span style={{ fontWeight: 600 }}>A’s Online</span>. All rights reserved.
             </p>
           </div>
         </div>

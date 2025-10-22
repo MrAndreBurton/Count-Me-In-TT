@@ -709,6 +709,16 @@ export default function CountMeInApp() {
         <Route path="/12x12grid" element={<CoreGame initialPreset="12x12" lockPreset />} />
         <Route path="/15x15grid" element={<CoreGame initialPreset="15x15" lockPreset />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+<Route
+  path="/prep4-stx"
+  element={
+    <Leaderboard
+      schoolFilter={"St Xavier's Private School"}
+      titleOverride="🏆 Prep 4 — St Xavier’s Private School"
+      onlyFromToday={true}
+    />
+  }
+/>
       </Routes>
     </Router>
   );
