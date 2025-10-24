@@ -5,6 +5,7 @@ import {
   Route,
   Link,
 } from 'react-router-dom';
+import SchoolsPicker from "./SchoolsPicker";
 import Leaderboard from './Leaderboard';
 
 const ENABLE_TOP_PLAYERS = true;
@@ -22,6 +23,26 @@ const CATEGORY_OPTIONS = {
 };
 const isSmallGrid = (gridId) => gridId === '5x5' || gridId === '5x12';
 const categoriesFor = (gridId) => isSmallGrid(gridId) ? CATEGORY_OPTIONS.small : CATEGORY_OPTIONS.large;
+
+const CLASS_OPTIONS_PRIMARY = [
+  'Prep 1','Prep 2','Prep 3','Prep 4','Prep 5',
+  'Std 1','Std 2','Std 3','Std 4','Std 5'
+];
+
+const CLASS_OPTIONS_SECONDARY = [
+  'Form 1 (Grade 6)',
+  'Form 2 (Grade 7)',
+  'Form 3 (Grade 8)',
+  'Form 4 (Grade 9)',
+  'Form 5 (Grade 10)',
+  'Lower Six (Grade 12)',
+  'Upper Six (Grade 13)'
+];
+
+const classOptionsFor = (gridId, category) => {
+  if (gridId === '5x5' || gridId === '5x12') return CLASS_OPTIONS_PRIMARY;
+  return category === 'Secondary' ? CLASS_OPTIONS_SECONDARY : CLASS_OPTIONS_PRIMARY;
+};
 
 const WEBHOOKS = {
   '5x5':  'https://script.google.com/macros/s/AKfycbxqc76ZwIAnrmZ8bwt7W2Leu8NtvSmbkurgzNkRN3lHhs0SeIeEdCnU58h63l0lWDMaAQ/exec',
@@ -101,7 +122,8 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
     name: '',
     school: '',
     email: '',
-    category: 'Primary'
+    category: 'Primary',
+    classLevel: ''
   });
   const [topPlayers, setTopPlayers] = useState({
     Primary: null,
@@ -124,7 +146,11 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
   const [showCustomSchool, setShowCustomSchool] = useState(false);
 
   const [schoolOptions, setSchoolOptions] = useState(['Select a School...', 'Other']);
-
+  
+  const CLASS_OPTIONS = [
+  'Prep 1','Prep 2','Prep 3','Prep 4','Prep 5',
+  'Std 1','Std 2','Std 3','Std 4','Std 5'
+];
   useEffect(() => {
   let isMounted = true;
   const loadSchools = async () => {
@@ -392,10 +418,9 @@ console.log('[CMI] Posting to', gridPresetId, '→', url);
 formDataEncoded.append("name", formData.name);
 formDataEncoded.append("email", (formData.email || '').trim() || "N/A");
 formDataEncoded.append("school", (formData.school || '').trim() || "N/A");
-if (!isSmallGrid(gridPresetId)) {
-  formDataEncoded.append("category", formData.category);
-}
+formDataEncoded.append("category", formData.category || 'Primary'); // fine for all grids
 formDataEncoded.append("time", displayTime);
+formDataEncoded.append("classLevel", (formData.classLevel || '').trim() || "N/A");
 
   try {
     await fetch(url, {
@@ -599,77 +624,148 @@ formDataEncoded.append("time", displayTime);
               required
             />
 
-            {isSmallGrid(gridPresetId) ? (
-              <>
-                <select
-                  className="w-full border px-3 py-2 rounded"
-                  value={showCustomSchool ? 'Other' : (formData.school || 'Select a School...')}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'Other') {
-                      setShowCustomSchool(true);
-                      setFormData({ ...formData, school: '' });
-                    } else if (val === 'Select a School...') {
-                      setShowCustomSchool(false);
-                      setFormData({ ...formData, school: '' });
-                    } else {
-                      setShowCustomSchool(false);
-                      setFormData({ ...formData, school: val });
-                    }
-                  }}
-                  required
-                >
-                  {schoolOptions.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-                {showCustomSchool && (
-                  <input
-                    type="text"
-                    placeholder="Enter School"
-                    className="w-full border px-3 py-2 rounded"
-                    value={formData.school}
-                    onChange={(e) => setFormData({ ...formData, school: e.target.value })}
-                    required
-                  />
-                )}
-                <input
-                  type="email"
-                  placeholder="Email (Optional)"
-                  className="w-full border px-3 py-2 rounded"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </>
-            ) : (
-              <>
-                <select
-                  className="w-full border px-3 py-2 rounded"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  required
-                >
-                  {categoriesFor(gridPresetId).map(opt => (
-                    <option key={opt} value={opt}>{opt === 'NoSchool' ? 'No School' : opt}</option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  placeholder="School (Optional)"
-                  className="w-full border px-3 py-2 rounded"
-                  value={formData.school}
-                  onChange={(e) => setFormData({ ...formData, school: e.target.value })}
-                />
-                <input
-                  type="email"
-                  placeholder="Email (Optional)"
-                  className="w-full border px-3 py-2 rounded"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </>
-            )}
+           {isSmallGrid(gridPresetId) ? (
+  <>
+    {/* SMALL GRIDS (5x5, 5x12) */}
+    <select
+      className="w-full border px-3 py-2 rounded"
+      value={showCustomSchool ? 'Other' : (formData.school || 'Select a School...')}
+      onChange={(e) => {
+        const val = e.target.value;
+        if (val === 'Other') {
+          setShowCustomSchool(true);
+          setFormData({ ...formData, school: '' });
+        } else if (val === 'Select a School...') {
+          setShowCustomSchool(false);
+          setFormData({ ...formData, school: '' });
+        } else {
+          setShowCustomSchool(false);
+          setFormData({ ...formData, school: val });
+        }
+      }}
+      required
+    >
+      {schoolOptions.map(opt => (
+        <option key={opt} value={opt}>{opt}</option>
+      ))}
+    </select>
 
+    {showCustomSchool && (
+      <input
+        type="text"
+        placeholder="Enter School"
+        className="w-full border px-3 py-2 rounded"
+        value={formData.school}
+        onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+        required
+      />
+    )}
+
+    <select
+      className="w-full border px-3 py-2 rounded"
+      value={formData.classLevel || ''}
+      onChange={(e) => setFormData({ ...formData, classLevel: e.target.value })}
+      required
+    >
+      <option value="">Select Class...</option>
+      {CLASS_OPTIONS.map(opt => (
+        <option key={opt} value={opt}>{opt}</option>
+      ))}
+    </select>
+
+    <input
+      type="email"
+      placeholder="Email (Optional)"
+      className="w-full border px-3 py-2 rounded"
+      value={formData.email}
+      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+    />
+  </>
+) : (
+  <>
+    {/* LARGE GRIDS (12x12, 15x15) */}
+    <select
+      className="w-full border px-3 py-2 rounded"
+      value={formData.category}
+      onChange={(e) =>
+        setFormData({ ...formData, category: e.target.value, classLevel: '' })
+      }
+      required
+    >
+      {categoriesFor(gridPresetId).map(opt => (
+        <option key={opt} value={opt}>
+          {opt === 'NoSchool' ? 'No School' : opt}
+        </option>
+      ))}
+    </select>
+
+    {formData.category === 'Primary' ? (
+      <>
+        <select
+          className="w-full border px-3 py-2 rounded"
+          value={showCustomSchool ? 'Other' : (formData.school || 'Select a School...')}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === 'Other') {
+              setShowCustomSchool(true);
+              setFormData({ ...formData, school: '' });
+            } else if (val === 'Select a School...') {
+              setShowCustomSchool(false);
+              setFormData({ ...formData, school: '' });
+            } else {
+              setShowCustomSchool(false);
+              setFormData({ ...formData, school: val });
+            }
+          }}
+          required
+        >
+          {schoolOptions.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+
+        {showCustomSchool && (
+          <input
+            type="text"
+            placeholder="Enter School"
+            className="w-full border px-3 py-2 rounded"
+            value={formData.school}
+            onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+            required
+          />
+        )}
+      </>
+    ) : (
+      <input
+        type="text"
+        placeholder="School (Optional)"
+        className="w-full border px-3 py-2 rounded"
+        value={formData.school}
+        onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+      />
+    )}
+
+    <select
+      className="w-full border px-3 py-2 rounded"
+      value={formData.classLevel || ''}
+      onChange={(e) => setFormData({ ...formData, classLevel: e.target.value })}
+      required={formData.category === 'Primary'}
+    >
+      <option value="">Select Class...</option>
+      {classOptionsFor(gridPresetId, formData.category).map(opt => (
+        <option key={opt} value={opt}>{opt}</option>
+      ))}
+    </select>
+
+    <input
+      type="email"
+      placeholder="Email (Optional)"
+      className="w-full border px-3 py-2 rounded"
+      value={formData.email}
+      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+    />
+  </>
+)}
             <p className="text-sm text-center text-gray-600 font-medium pt-2">Fill in ALL fields above to be eligible for prizes 🎁.</p>
             <div className="flex justify-between gap-2 pt-2">
               <button
@@ -709,17 +805,38 @@ export default function CountMeInApp() {
         <Route path="/12x12grid" element={<CoreGame initialPreset="12x12" lockPreset />} />
         <Route path="/15x15grid" element={<CoreGame initialPreset="15x15" lockPreset />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/schools" element={<SchoolsPicker />} />
 <Route
-  path="/prep4-stx"
-  element={
-    <Leaderboard
-      schoolFilter={"St Xavier's Private School"}
-      titleOverride="🏆 Prep 4 — St Xavier’s Private School"
-      onlyFromToday={true}
-    />
-  }
-/>
-      </Routes>
+    path="/stx/prep3"
+    element={
+      <Leaderboard
+        schoolFilter="St Xavier's Private School"
+        classFilter="Prep 3"
+        titleOverride="🏆 St Xavier’s — Prep 3"
+      />
+    }
+  />
+  <Route
+    path="/stx/prep4"
+    element={
+      <Leaderboard
+        schoolFilter="St Xavier's Private School"
+        classFilter="Prep 4"
+        titleOverride="🏆 St Xavier’s — Prep 4"
+      />
+    }
+  />
+  <Route
+    path="/stx/prep5"
+    element={
+      <Leaderboard
+        schoolFilter="St Xavier's Private School"
+        classFilter="Prep 5"
+        titleOverride="🏆 St Xavier’s — Prep 5"
+      />
+    }
+  />
+</Routes>
     </Router>
   );
 }

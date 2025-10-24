@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 export default function Leaderboard({
   schoolFilter = null,
+  classFilter = null,
   titleOverride = null,
   onlyFromToday = false,
 }) {
@@ -17,11 +18,19 @@ export default function Leaderboard({
     .replace(/\s+/g, " ")
     .trim();
 
-const matchSchool = (value, filter) => {
+const matchLoose = (value, filter) => {
+  if (!filter) return true;
   const a = norm(value);
   const b = norm(filter);
   return a.includes(b) || b.includes(a);
 };
+
+const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
+  if (!matchLoose(rowSchool, schoolFilter)) return false;
+  if (!matchLoose(rowClass, classFilter)) return false;
+  return true;
+};
+
   const START_OF_TODAY = (() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -179,7 +188,6 @@ const matchSchool = (value, filter) => {
         }
 
         const datasets = await Promise.allSettled(tasks);
-
         const buckets = new Map();
         const pushRow = (key, obj) => {
           if (!buckets.has(key)) buckets.set(key, []);
@@ -191,32 +199,32 @@ const matchSchool = (value, filter) => {
           const { gridId, category, rows } = res.value;
           const key = `${gridId}|${category}`;
           rows.forEach((entry) => {
-            const Name = String(entry["Name"] ?? "").trim();
-            const Time = String(entry["Time"] ?? "").trim();
-            if (!Name || !Time) return;
+  const Name = String(entry['Name'] ?? '').trim();
+  const Time = String(entry['Time'] ?? '').trim();
+  const School = String(entry['School'] ?? '').trim();
+  const ClassLevel = String(
+    entry['Class'] ??
+    entry['class'] ??
+    entry['Class Level'] ??
+    entry['classLevel'] ??
+    ''
+  ).trim();
 
-            const School = String(entry["School"] ?? "").trim();
-            const Timestamp = String(entry["Timestamp"] ?? "").trim();
+  if (!Name || !Time) return;
+  if (!rowPassesFilters(School, ClassLevel, schoolFilter, classFilter)) return;
 
-            // filters
-            if (schoolFilter && !matchSchool(School, schoolFilter)) return;
-            if (onlyFromToday) {
-              const ts = new Date(Timestamp);
-              if (isNaN(ts.getTime()) || ts < START_OF_TODAY) return;
-            }
-
-            pushRow(key, {
-              name: Name,
-              school: School,
-              email: String(entry["Email"] ?? "").trim(),
-              category,
-              time: Time,
-              ms: toMillis(Time),
-              gridId,
-              timestamp: Timestamp,
-              _row: entry.__row || 0,
-            });
-          });
+  pushRow(key, {
+    name: Name,
+    school: School,
+    classLevel: ClassLevel,
+    category,
+    time: Time,
+    ms: toMillis(Time),
+    gridId,
+    timestamp: String(entry['Timestamp'] ?? '').trim(),
+    _row: entry.__row || 0,
+  });
+});
         });
 
         const podiumAgg = { 1: [], 2: [], 3: [] };
@@ -243,7 +251,7 @@ const matchSchool = (value, filter) => {
     };
 
     loadAll();
-  }, [schoolFilter, onlyFromToday]);
+  }, [schoolFilter, classFilter, onlyFromToday]);
 
   const PodiumSection = ({ place, emoji }) => (
     <section style={{ marginBottom: 40 }}>
@@ -306,9 +314,9 @@ const matchSchool = (value, filter) => {
     >
      {/* Top nav buttons */}
 {!schoolFilter ? (
-  <Link to="/prep4-stx" className="lb-btn lb-left">
-    🎯 Prep 4 — St Xavier’s
-  </Link>
+  <Link to="/schools" className="lb-btn lb-left">
+  🏫 Schools
+</Link>
 ) : (
   <Link to="/leaderboard" className="lb-btn lb-left">
     🌍 Global Leaderboard
