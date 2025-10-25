@@ -1,6 +1,18 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
+const btnStyle = {
+  display: "inline-block",
+  background: "#000",
+  color: "#fff",
+  textDecoration: "none",
+  padding: "10px 14px",
+  borderRadius: 10,
+  fontWeight: 700,
+  boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+  textAlign: "center",
+};
+
 export default function SchoolsPicker() {
   const [openSchool, setOpenSchool] = useState(null);
 
@@ -21,12 +33,10 @@ export default function SchoolsPicker() {
         overflow: "hidden",
       }}
     >
-      {/* Top-right back button */}
       <Link to="/leaderboard" className="lb-btn lb-right">
         ⬅ Back to Leaderboard
       </Link>
 
-      {/* Optional: inject same CSS helper classes if not already global */}
       <style>{`
         .lb-btn {
           position: absolute;
@@ -50,7 +60,6 @@ export default function SchoolsPicker() {
         }
       `}</style>
 
-      {/* Brand header */}
       <div style={{ position: "relative", zIndex: 2 }}>
         <header style={{ marginBottom: 40 }}>
           <div style={{ display: "flex", justifyContent: "center", gap: 20, flexWrap: "wrap" }}>
@@ -68,12 +77,12 @@ export default function SchoolsPicker() {
               marginBottom: 10,
             }}
           >
-            🏫 Schools
+            🏫 School Leaderboards
           </h1>
         </header>
 
-        {/* School list – for now just St Xavier’s */}
-        <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "left" }}>
+          {/* St Xavier’s */}
           <div
             style={{
               background: "rgba(255,255,255,0.95)",
@@ -82,50 +91,38 @@ export default function SchoolsPicker() {
               padding: 16,
               marginBottom: 16,
               boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
-              textAlign: "left",
             }}
           >
-            <div
+            <button
               onClick={() => setOpenSchool(openSchool === "stx" ? null : "stx")}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                width: "100%",
+                background: "#000",
+                color: "#fff",
+                border: "none",
+                padding: "12px 16px",
+                borderRadius: 10,
+                fontWeight: 700,
                 cursor: "pointer",
+                textAlign: "left",
               }}
             >
-              <h2 style={{ margin: 0, fontSize: 20 }}>St Xavier’s Private School</h2>
-              <span style={{ fontSize: 20 }}>{openSchool === "stx" ? "▴" : "▾"}</span>
-            </div>
+              St Xavier’s Private School {openSchool === "stx" ? "▲" : "▼"}
+            </button>
 
             {openSchool === "stx" && (
               <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                <Link
-                  to="/stx/prep3"
-                  style={btnStyle}
-                >
-                  View Prep 3 Leaderboard
-                </Link>
-                <Link
-                  to="/stx/prep4"
-                  style={btnStyle}
-                >
-                  View Prep 4 Leaderboard
-                </Link>
-                <Link
-                  to="/stx/prep5"
-                  style={btnStyle}
-                >
-                  View Prep 5 Leaderboard
-                </Link>
+                <Link to="/stx/prep3" style={btnStyle}>View Prep 3 Leaderboard</Link>
+                <Link to="/stx/prep4" style={btnStyle}>View Prep 4 Leaderboard</Link>
+                <Link to="/stx/prep5" style={btnStyle}>View Prep 5 Leaderboard</Link>
+                <Link to="/stx/all"  style={btnStyle}>View Whole School Leaderboard</Link>
               </div>
             )}
           </div>
 
-          {/* Add more schools blocks the same way later */}
+          {/* Duplicate the block above for more schools later */}
         </div>
 
-        {/* Footer & sponsors to match brand */}
         <div style={{ marginTop: 80 }}>
           <h2
             style={{
@@ -133,6 +130,7 @@ export default function SchoolsPicker() {
               fontSize: 32,
               textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
               color: "#000",
+              textAlign: "center",
             }}
           >
             🚀 Thanks for Playing
@@ -223,16 +221,5 @@ export default function SchoolsPicker() {
     </div>
   );
 }
-
-const btnStyle = {
-  display: "inline-block",
-  background: "#000",
-  color: "#fff",
-  textDecoration: "none",
-  padding: "10px 14px",
-  borderRadius: 10,
-  fontWeight: 700,
-  boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
-};
 
 

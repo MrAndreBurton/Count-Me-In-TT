@@ -10,27 +10,28 @@ export default function Leaderboard({
   const [podium, setPodium] = useState({ 1: [], 2: [], 3: [] });
   const [others, setOthers] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
+
   const norm = (s) =>
-  String(s || "")
-    .toLowerCase()
-    .replace(/scool/g, "school")
-    .replace(/\bst\.?\b/g, "st")
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    String(s || "")
+      .toLowerCase()
+      .replace(/scool/g, "school")
+      .replace(/\bst\.?\b/g, "st")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
-const matchLoose = (value, filter) => {
-  if (!filter) return true;
-  const a = norm(value);
-  const b = norm(filter);
-  return a.includes(b) || b.includes(a);
-};
+  const matchLoose = (value, filter) => {
+    if (!filter) return true;
+    const a = norm(value);
+    const b = norm(filter);
+    return a.includes(b) || b.includes(a);
+  };
 
-const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
-  if (!matchLoose(rowSchool, schoolFilter)) return false;
-  if (!matchLoose(rowClass, classFilter)) return false;
-  return true;
-};
+  const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
+    if (!matchLoose(rowSchool, schoolFilter)) return false;
+    if (!matchLoose(rowClass, classFilter)) return false;
+    return true;
+  };
 
   const START_OF_TODAY = (() => {
     const d = new Date();
@@ -122,7 +123,8 @@ const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
     </span>
   );
 
-  const WinnerCard = ({ name, school, time, gridId, category }) => (
+  // Card now accepts `subtitle` instead of raw school and only renders it if given.
+  const WinnerCard = ({ name, subtitle, time, gridId, category }) => (
     <div
       style={{
         background: "rgba(255,255,255,0.95)",
@@ -139,9 +141,13 @@ const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
         </strong>
         <span style={{ fontFamily: "monospace" }}>⏱ {time || "--:--.--"}</span>
       </div>
-      <div style={{ marginTop: 6, minHeight: 18, color: "#333", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {school ? school : "—"}
-      </div>
+
+      {subtitle ? (
+        <div style={{ marginTop: 6, minHeight: 18, color: "#333", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {subtitle}
+        </div>
+      ) : null}
+
       <div style={{ marginTop: 8 }}>
         {badge(gridId.replace("x", "×"), `Grid: ${gridId.replace("x", "×")}`)}
         {category ? badge(category === "NoSchool" ? "No School" : category, `Category: ${category}`) : null}
@@ -150,245 +156,256 @@ const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
   );
 
   useEffect(() => {
-  const loadAll = async () => {
-    try {
-      const fetchText = async (url) => {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.text();
-      };
+    const loadAll = async () => {
+      try {
+        const fetchText = async (url) => {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.text();
+        };
 
-      const tasks = [];
+        const tasks = [];
 
-      for (const gid of ["5x5", "5x12"]) {
-        const url = SHEET_URLS[gid]?.SmallTop;
-        if (url) {
-          tasks.push(
-            fetchText(url).then((text) => ({
-              gridId: gid,
-              category: "Primary",
-              rows: parseCSV(text),
-            }))
-          );
-        }
-      }
-
-      for (const gid of ["12x12", "15x15"]) {
-        for (const cat of ["Primary", "Secondary", "NoSchool"]) {
-          const url = SHEET_URLS[gid]?.[cat];
+        for (const gid of ["5x5", "5x12"]) {
+          const url = SHEET_URLS[gid]?.SmallTop;
           if (url) {
             tasks.push(
               fetchText(url).then((text) => ({
                 gridId: gid,
-                category: cat,
+                category: "Primary",
                 rows: parseCSV(text),
               }))
             );
           }
         }
-      }
 
-      const datasets = await Promise.allSettled(tasks);
+        for (const gid of ["12x12", "15x15"]) {
+          for (const cat of ["Primary", "Secondary", "NoSchool"]) {
+            const url = SHEET_URLS[gid]?.[cat];
+            if (url) {
+              tasks.push(
+                fetchText(url).then((text) => ({
+                  gridId: gid,
+                  category: cat,
+                  rows: parseCSV(text),
+                }))
+              );
+            }
+          }
+        }
 
-      const buckets = new Map();
-      const pushRow = (key, obj) => {
-        if (!buckets.has(key)) buckets.set(key, []);
-        buckets.get(key).push(obj);
-      };
+        const datasets = await Promise.allSettled(tasks);
 
-      const norm = (s) =>
-        String(s || "")
-          .toLowerCase()
-          .replace(/scool/g, "school")
-          .replace(/\bst\.?\b/g, "st")
-          .replace(/[^\p{L}\p{N}]+/gu, " ")
-          .replace(/\s+/g, " ")
-          .trim();
+        const buckets = new Map();
+        const pushRow = (key, obj) => {
+          if (!buckets.has(key)) buckets.set(key, []);
+          buckets.get(key).push(obj);
+        };
 
-      const matchLoose = (value, filter) => {
-        if (!filter) return true;
-        const a = norm(value);
-        const b = norm(filter);
-        return a.includes(b) || b.includes(a);
-      };
+        const norm = (s) =>
+          String(s || "")
+            .toLowerCase()
+            .replace(/scool/g, "school")
+            .replace(/\bst\.?\b/g, "st")
+            .replace(/[^\p{L}\p{N}]+/gu, " ")
+            .replace(/\s+/g, " ")
+            .trim();
 
-      const rowPassesFilters = (rowSchool, rowClass) =>
-        matchLoose(rowSchool, schoolFilter) && matchLoose(rowClass, classFilter);
+        const matchLoose = (value, filter) => {
+          if (!filter) return true;
+          const a = norm(value);
+          const b = norm(filter);
+          return a.includes(b) || b.includes(a);
+        };
 
-      datasets.forEach((res) => {
-        if (res.status !== "fulfilled") return;
-        const { gridId, category, rows } = res.value;
-        const key = `${gridId}|${category}`;
+        const rowPassesFiltersLocal = (rowSchool, rowClass) =>
+          matchLoose(rowSchool, schoolFilter) && matchLoose(rowClass, classFilter);
 
-        rows.forEach((entry) => {
-          const Name = String(entry["Name"] ?? "").trim();
-          const Time = String(entry["Time"] ?? "").trim();
-          const School = String(entry["School"] ?? "").trim();
-          const ClassLevel = String(
-            entry["Class"] ??
-            entry["class"] ??
-            entry["Class Level"] ??
-            entry["classLevel"] ??
-            ""
-          ).trim();
+        datasets.forEach((res) => {
+          if (res.status !== "fulfilled") return;
+          const { gridId, category, rows } = res.value;
+          const key = `${gridId}|${category}`;
 
-          if (!Name || !Time) return;
-          if (!rowPassesFilters(School, ClassLevel)) return;
+          rows.forEach((entry) => {
+            const Name = String(entry["Name"] ?? "").trim();
+            const Time = String(entry["Time"] ?? "").trim();
+            const School = String(entry["School"] ?? "").trim();
+            const ClassLevel = String(
+              entry["Class"] ??
+              entry["class"] ??
+              entry["Class Level"] ??
+              entry["classLevel"] ??
+              ""
+            ).trim();
 
-          pushRow(key, {
-            name: Name,
-            school: School,
-            classLevel: ClassLevel,
-            category,
-            time: Time,
-            ms: toMillis(Time),
-            gridId,
-            timestamp: String(entry["Timestamp"] ?? "").trim(),
-            _row: entry.__row || 0,
+            if (!Name || !Time) return;
+            if (!rowPassesFiltersLocal(School, ClassLevel)) return;
+
+            pushRow(key, {
+              name: Name,
+              school: School,
+              classLevel: ClassLevel,
+              category,
+              time: Time,
+              ms: toMillis(Time),
+              gridId,
+              timestamp: String(entry["Timestamp"] ?? "").trim(),
+              _row: entry.__row || 0,
+            });
           });
         });
-      });
 
-      const podiumAgg = { 1: [], 2: [], 3: [] };
-      const othersAgg = [];
+        const podiumAgg = { 1: [], 2: [], 3: [] };
+        const othersAgg = [];
 
-      buckets.forEach((arr) => {
-        const sorted = arr
-          .sort((a, b) => {
-            const d = a.ms - b.ms;
-            if (d !== 0) return d;
-            return (a.timestamp || "").localeCompare(b.timestamp || "") || (a._row - b._row);
-          })
-          .slice(0, 10);
+        buckets.forEach((arr) => {
+          const sorted = arr
+            .sort((a, b) => {
+              const d = a.ms - b.ms;
+              if (d !== 0) return d;
+              return (a.timestamp || "").localeCompare(b.timestamp || "") || (a._row - b._row);
+            })
+            .slice(0, 10);
 
-        sorted.slice(0, 3).forEach((row, i) => {
-          podiumAgg[i + 1].push(row);
+          sorted.slice(0, 3).forEach((row, i) => {
+            podiumAgg[i + 1].push(row);
+          });
+
+          sorted.slice(3, 10).forEach((row, i) => {
+            othersAgg.push({ ...row, rank: i + 4 });
+          });
         });
 
-        sorted.slice(3, 10).forEach((row, i) => {
-          othersAgg.push({ ...row, rank: i + 4 });
-        });
-      });
+        setPodium(podiumAgg);
+        setOthers(othersAgg);
+        setLastUpdated(new Date());
+      } catch (e) {
+        console.error("Leaderboard load error:", e);
+        setPodium({ 1: [], 2: [], 3: [] });
+        setOthers([]);
+        setLastUpdated(new Date());
+      }
+    };
 
-      setPodium(podiumAgg);
-      setOthers(othersAgg);
-      setLastUpdated(new Date());
-    } catch (e) {
-      console.error("Leaderboard load error:", e);
-      setPodium({ 1: [], 2: [], 3: [] });
-      setOthers([]);
-      setLastUpdated(new Date());
-    }
+    loadAll();
+  }, [schoolFilter, classFilter, onlyFromToday]);
+
+  // ===== subtitle helpers (inserted here) =====
+  const isWholeSchool = !!schoolFilter && !classFilter; // e.g., /stx/all
+  const isClassPage = !!classFilter;                    // e.g., /stx/prep4
+
+  const makeSubtitle = (p) => {
+    if (isWholeSchool) return p.classLevel || "";
+    if (isClassPage) return "";
+    return p.school || "";
   };
+  // ============================================
 
-  loadAll();
-}, [schoolFilter, classFilter, onlyFromToday]);
-
-const PodiumSection = ({ place, emoji }) => (
-  <section style={{ marginBottom: 40 }}>
-    <h2
-      style={{
-        fontSize: 28,
-        marginBottom: 16,
-        textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
-        color: "#000",
-        display: "inline-block",
-        borderBottom: "3px solid #000",
-        paddingBottom: 6,
-      }}
-    >
-      {emoji} {ordinal(place)} Place
-    </h2>
-    {podium[place]?.length ? (
-      <div
+  const PodiumSection = ({ place, emoji }) => (
+    <section style={{ marginBottom: 40 }}>
+      <h2
         style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: 16,
-          flexWrap: "wrap",
+          fontSize: 28,
+          marginBottom: 16,
+          textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
+          color: "#000",
+          display: "inline-block",
+          borderBottom: "3px solid #000",
+          paddingBottom: 6,
         }}
       >
-        {podium[place].map((p, idx) => (
-          <WinnerCard
-            key={`${place}-${p.gridId}-${p.category}-${idx}`}
-            name={p.name}
-            school={p.school}
-            time={p.time}
-            gridId={p.gridId}
-            category={p.gridId === "5x5" || p.gridId === "5x12" ? null : p.category}
-          />
-        ))}
-      </div>
-    ) : (
-      <p style={{ color: "#333" }}>— not set yet —</p>
-    )}
-  </section>
-);
+        {emoji} {ordinal(place)} Place
+      </h2>
+      {podium[place]?.length ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          {podium[place].map((p, idx) => (
+            <WinnerCard
+              key={`${place}-${p.gridId}-${p.category}-${idx}`}
+              name={p.name}
+              subtitle={makeSubtitle(p)}
+              time={p.time}
+              gridId={p.gridId}
+              category={p.gridId === "5x5" || p.gridId === "5x12" ? null : p.category}
+            />
+          ))}
+        </div>
+      ) : (
+        <p style={{ color: "#333" }}>— not set yet —</p>
+      )}
+    </section>
+  );
 
-const OtherTimesByGrid = ({ items = [] }) => {
-  const byGrid = items.reduce((acc, r) => {
-    (acc[r.gridId] ||= []).push(r);
-    return acc;
-  }, {});
+  const OtherTimesByGrid = ({ items = [] }) => {
+    const byGrid = items.reduce((acc, r) => {
+      (acc[r.gridId] ||= []).push(r);
+      return acc;
+    }, {});
 
-  const gridLabel = (g) => g.replace("x", "×");
+    const gridLabel = (g) => g.replace("x", "×");
 
-  return (
-    <div style={{ marginTop: 32 }}>
-      {Object.entries(byGrid).map(([gridId, arr]) => (
-        <section key={gridId} style={{ marginBottom: 28 }}>
-          <h2
-            style={{
-              fontSize: 22,
-              marginBottom: 12,
-              textShadow: "1px 1px 3px rgba(0,0,0,0.2)",
-              color: "#000",
-              display: "inline-block",
-              borderBottom: "2px solid #000",
-              paddingBottom: 4,
-            }}
-          >
-            Other Times — {gridLabel(gridId)}
-          </h2>
-
-          {arr?.length ? (
-            <div
+    return (
+      <div style={{ marginTop: 32 }}>
+        {Object.entries(byGrid).map(([gridId, arr]) => (
+          <section key={gridId} style={{ marginBottom: 28 }}>
+            <h2
               style={{
-                background: "rgba(255,255,255,0.95)",
+                fontSize: 22,
+                marginBottom: 12,
+                textShadow: "1px 1px 3px rgba(0,0,0,0.2)",
                 color: "#000",
-                padding: 12,
-                borderRadius: 10,
-                boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
-                maxWidth: 720,
-                margin: "0 auto",
-                textAlign: "left",
+                display: "inline-block",
+                borderBottom: "2px solid #000",
+                paddingBottom: 4,
               }}
             >
-              <ol start={4} style={{ margin: 0, paddingLeft: 24 }}>
-                {arr
-                  .sort((a, b) => a.rank - b.rank)
-                  .map((p, idx) => (
-                    <li key={`${gridId}-${p.category}-${p.name}-${idx}`} style={{ margin: "6px 0" }}>
-                      <strong style={{ marginRight: 6 }}>{ordinal(p.rank)}</strong>
-                      <strong style={{ marginRight: 6 }}>{p.name}</strong>
-                      <span style={{ fontFamily: "monospace" }}>⏱ {p.time}</span>
-                      {(gridId === "12x12" || gridId === "15x15") && (
-                        <span style={{ opacity: 0.75 }}>
-                          {" "}· {p.category === "NoSchool" ? "No School" : p.category}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-              </ol>
-            </div>
-          ) : (
-            <p style={{ color: "#333" }}>— not set yet —</p>
-          )}
-        </section>
-      ))}
-    </div>
-  );
-};
+              Other Times — {gridLabel(gridId)}
+            </h2>
+
+            {arr?.length ? (
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.95)",
+                  color: "#000",
+                  padding: 12,
+                  borderRadius: 10,
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+                  maxWidth: 720,
+                  margin: "0 auto",
+                  textAlign: "left",
+                }}
+              >
+                <ol start={4} style={{ margin: 0, paddingLeft: 24 }}>
+                  {arr
+                    .sort((a, b) => a.rank - b.rank)
+                    .map((p, idx) => (
+                      <li key={`${gridId}-${p.category}-${p.name}-${idx}`} style={{ margin: "6px 0" }}>
+                        <strong style={{ marginRight: 6 }}>{ordinal(p.rank)}</strong>
+                        <strong style={{ marginRight: 6 }}>{p.name}</strong>
+                        <span style={{ fontFamily: "monospace" }}>⏱ {p.time}</span>
+                        {(gridId === "12x12" || gridId === "15x15") && (
+                          <span style={{ opacity: 0.75 }}>
+                            {" "}· {p.category === "NoSchool" ? "No School" : p.category}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                </ol>
+              </div>
+            ) : (
+              <p style={{ color: "#333" }}>— not set yet —</p>
+            )}
+          </section>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div
@@ -408,48 +425,48 @@ const OtherTimesByGrid = ({ items = [] }) => {
         overflow: "hidden",
       }}
     >
-     {/* Top nav buttons */}
-{!schoolFilter ? (
-  <Link to="/schools" className="lb-btn lb-left">
-  🏫 Schools
-</Link>
-) : (
-  <Link to="/leaderboard" className="lb-btn lb-left">
-    🌍 Global Leaderboard
-  </Link>
-)}
+      {/* Top nav buttons */}
+      {!schoolFilter ? (
+        <Link to="/schools" className="lb-btn lb-left">
+          🏫 Schools
+        </Link>
+      ) : (
+        <Link to="/leaderboard" className="lb-btn lb-left">
+          🌍 Global Leaderboard
+        </Link>
+      )}
 
-<Link to="/" className="lb-btn lb-right">
-  ⬅ Back to Game
-</Link>
- <style>{`
-      .lb-btn {
-        position: absolute;
-        background-color: #000;
-        color: #fff;
-        padding: 10px 14px;
-        border-radius: 12px;
-        text-decoration: none;
-        font-weight: 700;
-        box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
-        z-index: 10;
-        line-height: 1;
-        display: inline-block;
-      }
-      .lb-left { top: 16px; left: 16px; }
-      .lb-right { top: 16px; right: 16px; }
+      <Link to="/" className="lb-btn lb-right">
+        ⬅ Back to Game
+      </Link>
 
-      @media (max-width: 480px) {
+      <style>{`
         .lb-btn {
-          font-size: 13px;
-          padding: 8px 10px;
-          border-radius: 10px;
+          position: absolute;
+          background-color: #000;
+          color: #fff;
+          padding: 10px 14px;
+          border-radius: 12px;
+          text-decoration: none;
+          font-weight: 700;
+          box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+          z-index: 10;
+          line-height: 1;
+          display: inline-block;
         }
-        /* stack them so they don't touch */
-        .lb-left { top: 12px; left: 12px; right: 12px; }
-        .lb-right { top: 56px; left: 12px; right: 12px; }
-      }
-    `}</style>
+        .lb-left { top: 16px; left: 16px; }
+        .lb-right { top: 16px; right: 16px; }
+        @media (max-width: 480px) {
+          .lb-btn {
+            font-size: 13px;
+            padding: 8px 10px;
+            border-radius: 10px;
+          }
+          .lb-left { top: 12px; left: 12px; right: 12px; }
+          .lb-right { top: 56px; left: 12px; right: 12px; }
+        }
+      `}</style>
+
       <div
         style={{
           position: "absolute",
@@ -490,9 +507,8 @@ const OtherTimesByGrid = ({ items = [] }) => {
         <PodiumSection place={2} emoji="🥈" />
         <PodiumSection place={3} emoji="🥉" />
 
-{classFilter ? <OtherTimesByGrid items={others} /> : null}
+        {classFilter ? <OtherTimesByGrid items={others} /> : null}
 
-        {/* --- Sponsors, footer, etc. unchanged --- */}
         <div style={{ marginTop: 80 }}>
           <h2
             style={{
@@ -535,5 +551,6 @@ const OtherTimesByGrid = ({ items = [] }) => {
     </div>
   );
 }
+
 
 

@@ -807,6 +807,16 @@ export default function CountMeInApp() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/schools" element={<SchoolsPicker />} />
 <Route
+  path="/stx/all"
+  element={
+    <Leaderboard
+      schoolFilter="St Xavier's Private School"
+      classFilter={null}
+      titleOverride="🏫 St Xavier’s — Whole School"
+    />
+  }
+/>
+<Route
     path="/stx/prep3"
     element={
       <Leaderboard
