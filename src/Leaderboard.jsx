@@ -8,6 +8,7 @@ export default function Leaderboard({
   onlyFromToday = false,
 }) {
   const [podium, setPodium] = useState({ 1: [], 2: [], 3: [] });
+  const [others, setOthers] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
   const norm = (s) =>
   String(s || "")
@@ -149,150 +150,245 @@ const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
   );
 
   useEffect(() => {
-    const loadAll = async () => {
-      try {
-        const fetchText = async (url) => {
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.text();
-        };
+  const loadAll = async () => {
+    try {
+      const fetchText = async (url) => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.text();
+      };
 
-        const tasks = [];
+      const tasks = [];
 
-        for (const gid of ["5x5", "5x12"]) {
-          const url = SHEET_URLS[gid]?.SmallTop;
+      for (const gid of ["5x5", "5x12"]) {
+        const url = SHEET_URLS[gid]?.SmallTop;
+        if (url) {
+          tasks.push(
+            fetchText(url).then((text) => ({
+              gridId: gid,
+              category: "Primary",
+              rows: parseCSV(text),
+            }))
+          );
+        }
+      }
+
+      for (const gid of ["12x12", "15x15"]) {
+        for (const cat of ["Primary", "Secondary", "NoSchool"]) {
+          const url = SHEET_URLS[gid]?.[cat];
           if (url) {
             tasks.push(
               fetchText(url).then((text) => ({
                 gridId: gid,
-                category: "Primary",
+                category: cat,
                 rows: parseCSV(text),
               }))
             );
           }
         }
-
-        for (const gid of ["12x12", "15x15"]) {
-          for (const cat of ["Primary", "Secondary", "NoSchool"]) {
-            const url = SHEET_URLS[gid]?.[cat];
-            if (url) {
-              tasks.push(
-                fetchText(url).then((text) => ({
-                  gridId: gid,
-                  category: cat,
-                  rows: parseCSV(text),
-                }))
-              );
-            }
-          }
-        }
-
-        const datasets = await Promise.allSettled(tasks);
-        const buckets = new Map();
-        const pushRow = (key, obj) => {
-          if (!buckets.has(key)) buckets.set(key, []);
-          buckets.get(key).push(obj);
-        };
-
-        datasets.forEach((res) => {
-          if (res.status !== "fulfilled") return;
-          const { gridId, category, rows } = res.value;
-          const key = `${gridId}|${category}`;
-          rows.forEach((entry) => {
-  const Name = String(entry['Name'] ?? '').trim();
-  const Time = String(entry['Time'] ?? '').trim();
-  const School = String(entry['School'] ?? '').trim();
-  const ClassLevel = String(
-    entry['Class'] ??
-    entry['class'] ??
-    entry['Class Level'] ??
-    entry['classLevel'] ??
-    ''
-  ).trim();
-
-  if (!Name || !Time) return;
-  if (!rowPassesFilters(School, ClassLevel, schoolFilter, classFilter)) return;
-
-  pushRow(key, {
-    name: Name,
-    school: School,
-    classLevel: ClassLevel,
-    category,
-    time: Time,
-    ms: toMillis(Time),
-    gridId,
-    timestamp: String(entry['Timestamp'] ?? '').trim(),
-    _row: entry.__row || 0,
-  });
-});
-        });
-
-        const podiumAgg = { 1: [], 2: [], 3: [] };
-        buckets.forEach((arr) => {
-          arr
-            .sort((a, b) => {
-              const d = a.ms - b.ms;
-              if (d !== 0) return d;
-              return (a.timestamp || "").localeCompare(b.timestamp || "") || (a._row - b._row);
-            })
-            .slice(0, 3)
-            .forEach((row, i) => {
-              podiumAgg[i + 1].push(row);
-            });
-        });
-
-        setPodium(podiumAgg);
-        setLastUpdated(new Date());
-      } catch (e) {
-        console.error("Leaderboard load error:", e);
-        setPodium({ 1: [], 2: [], 3: [] });
-        setLastUpdated(new Date());
       }
-    };
 
-    loadAll();
-  }, [schoolFilter, classFilter, onlyFromToday]);
+      const datasets = await Promise.allSettled(tasks);
 
-  const PodiumSection = ({ place, emoji }) => (
-    <section style={{ marginBottom: 40 }}>
-      <h2
+      const buckets = new Map();
+      const pushRow = (key, obj) => {
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(obj);
+      };
+
+      const norm = (s) =>
+        String(s || "")
+          .toLowerCase()
+          .replace(/scool/g, "school")
+          .replace(/\bst\.?\b/g, "st")
+          .replace(/[^\p{L}\p{N}]+/gu, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+      const matchLoose = (value, filter) => {
+        if (!filter) return true;
+        const a = norm(value);
+        const b = norm(filter);
+        return a.includes(b) || b.includes(a);
+      };
+
+      const rowPassesFilters = (rowSchool, rowClass) =>
+        matchLoose(rowSchool, schoolFilter) && matchLoose(rowClass, classFilter);
+
+      datasets.forEach((res) => {
+        if (res.status !== "fulfilled") return;
+        const { gridId, category, rows } = res.value;
+        const key = `${gridId}|${category}`;
+
+        rows.forEach((entry) => {
+          const Name = String(entry["Name"] ?? "").trim();
+          const Time = String(entry["Time"] ?? "").trim();
+          const School = String(entry["School"] ?? "").trim();
+          const ClassLevel = String(
+            entry["Class"] ??
+            entry["class"] ??
+            entry["Class Level"] ??
+            entry["classLevel"] ??
+            ""
+          ).trim();
+
+          if (!Name || !Time) return;
+          if (!rowPassesFilters(School, ClassLevel)) return;
+
+          pushRow(key, {
+            name: Name,
+            school: School,
+            classLevel: ClassLevel,
+            category,
+            time: Time,
+            ms: toMillis(Time),
+            gridId,
+            timestamp: String(entry["Timestamp"] ?? "").trim(),
+            _row: entry.__row || 0,
+          });
+        });
+      });
+
+      const podiumAgg = { 1: [], 2: [], 3: [] };
+      const othersAgg = [];
+
+      buckets.forEach((arr) => {
+        const sorted = arr
+          .sort((a, b) => {
+            const d = a.ms - b.ms;
+            if (d !== 0) return d;
+            return (a.timestamp || "").localeCompare(b.timestamp || "") || (a._row - b._row);
+          })
+          .slice(0, 10);
+
+        sorted.slice(0, 3).forEach((row, i) => {
+          podiumAgg[i + 1].push(row);
+        });
+
+        sorted.slice(3, 10).forEach((row, i) => {
+          othersAgg.push({ ...row, rank: i + 4 });
+        });
+      });
+
+      setPodium(podiumAgg);
+      setOthers(othersAgg);
+      setLastUpdated(new Date());
+    } catch (e) {
+      console.error("Leaderboard load error:", e);
+      setPodium({ 1: [], 2: [], 3: [] });
+      setOthers([]);
+      setLastUpdated(new Date());
+    }
+  };
+
+  loadAll();
+}, [schoolFilter, classFilter, onlyFromToday]);
+
+const PodiumSection = ({ place, emoji }) => (
+  <section style={{ marginBottom: 40 }}>
+    <h2
+      style={{
+        fontSize: 28,
+        marginBottom: 16,
+        textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
+        color: "#000",
+        display: "inline-block",
+        borderBottom: "3px solid #000",
+        paddingBottom: 6,
+      }}
+    >
+      {emoji} {ordinal(place)} Place
+    </h2>
+    {podium[place]?.length ? (
+      <div
         style={{
-          fontSize: 28,
-          marginBottom: 16,
-          textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
-          color: "#000",
-          display: "inline-block",
-          borderBottom: "3px solid #000",
-          paddingBottom: 6,
+          display: "flex",
+          justifyContent: "center",
+          gap: 16,
+          flexWrap: "wrap",
         }}
       >
-        {emoji} {ordinal(place)} Place
-      </h2>
-      {podium[place]?.length ? (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 16,
-            flexWrap: "wrap",
-          }}
-        >
-          {podium[place].map((p, idx) => (
-            <WinnerCard
-              key={`${place}-${p.gridId}-${p.category}-${idx}`}
-              name={p.name}
-              school={p.school}
-              time={p.time}
-              gridId={p.gridId}
-              category={p.gridId === "5x5" || p.gridId === "5x12" ? null : p.category}
-            />
-          ))}
-        </div>
-      ) : (
-        <p style={{ color: "#333" }}>— not set yet —</p>
-      )}
-    </section>
+        {podium[place].map((p, idx) => (
+          <WinnerCard
+            key={`${place}-${p.gridId}-${p.category}-${idx}`}
+            name={p.name}
+            school={p.school}
+            time={p.time}
+            gridId={p.gridId}
+            category={p.gridId === "5x5" || p.gridId === "5x12" ? null : p.category}
+          />
+        ))}
+      </div>
+    ) : (
+      <p style={{ color: "#333" }}>— not set yet —</p>
+    )}
+  </section>
+);
+
+const OtherTimesByGrid = ({ items = [] }) => {
+  const byGrid = items.reduce((acc, r) => {
+    (acc[r.gridId] ||= []).push(r);
+    return acc;
+  }, {});
+
+  const gridLabel = (g) => g.replace("x", "×");
+
+  return (
+    <div style={{ marginTop: 32 }}>
+      {Object.entries(byGrid).map(([gridId, arr]) => (
+        <section key={gridId} style={{ marginBottom: 28 }}>
+          <h2
+            style={{
+              fontSize: 22,
+              marginBottom: 12,
+              textShadow: "1px 1px 3px rgba(0,0,0,0.2)",
+              color: "#000",
+              display: "inline-block",
+              borderBottom: "2px solid #000",
+              paddingBottom: 4,
+            }}
+          >
+            Other Times — {gridLabel(gridId)}
+          </h2>
+
+          {arr?.length ? (
+            <div
+              style={{
+                background: "rgba(255,255,255,0.95)",
+                color: "#000",
+                padding: 12,
+                borderRadius: 10,
+                boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+                maxWidth: 720,
+                margin: "0 auto",
+                textAlign: "left",
+              }}
+            >
+              <ol start={4} style={{ margin: 0, paddingLeft: 24 }}>
+                {arr
+                  .sort((a, b) => a.rank - b.rank)
+                  .map((p, idx) => (
+                    <li key={`${gridId}-${p.category}-${p.name}-${idx}`} style={{ margin: "6px 0" }}>
+                      <strong style={{ marginRight: 6 }}>{ordinal(p.rank)}</strong>
+                      <strong style={{ marginRight: 6 }}>{p.name}</strong>
+                      <span style={{ fontFamily: "monospace" }}>⏱ {p.time}</span>
+                      {(gridId === "12x12" || gridId === "15x15") && (
+                        <span style={{ opacity: 0.75 }}>
+                          {" "}· {p.category === "NoSchool" ? "No School" : p.category}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+              </ol>
+            </div>
+          ) : (
+            <p style={{ color: "#333" }}>— not set yet —</p>
+          )}
+        </section>
+      ))}
+    </div>
   );
+};
 
   return (
     <div
@@ -393,6 +489,8 @@ const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
         <PodiumSection place={1} emoji="🥇" />
         <PodiumSection place={2} emoji="🥈" />
         <PodiumSection place={3} emoji="🥉" />
+
+{classFilter ? <OtherTimesByGrid items={others} /> : null}
 
         {/* --- Sponsors, footer, etc. unchanged --- */}
         <div style={{ marginTop: 80 }}>
