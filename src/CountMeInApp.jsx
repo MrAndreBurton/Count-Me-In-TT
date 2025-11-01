@@ -543,7 +543,7 @@ formDataEncoded.append("classLevel", (formData.classLevel || '').trim() || "N/A"
               )}
 
               <div className="text-center mt-4">
-                <p className="text-black text-sm drop-shadow-[2px_2px_3px_rgba(0,0,0,0.75)] animate-shimmer bg-clip-text">⭐ Top players are in line to win October month-end prizes! ⭐</p>
+                <p className="text-black text-sm drop-shadow-[2px_2px_3px_rgba(0,0,0,0.75)] animate-shimmer bg-clip-text">⭐ Your best time is still ahead! ⭐</p>
               </div>
             </div>
           </div>
