@@ -8,6 +8,72 @@ import {
 import SchoolsPicker from "./SchoolsPicker";
 import Leaderboard from './Leaderboard';
 
+// -------------------- Anti-cheat module (inserted) --------------------
+function createAntiCheat(gridId) {
+  const perfNow = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+  let startedAt = Date.now();
+  let last = perfNow();
+  const deltas = [];
+  let trusted = 0;
+  let untrusted = 0;
+  let moves = 0;
+  let paste = false;
+  let vkPresses = 0;
+
+  const bump = (isEvtTrusted) => {
+    const now = perfNow();
+    deltas.push(Math.max(0, now - last));
+    last = now;
+    moves++;
+    if (isEvtTrusted) trusted++; else untrusted++;
+  };
+
+  const onKeyDown = (e) => {
+    const k = e.key || "";
+    if (/^\d$/.test(k) || k === "Backspace" || k === "Delete" || k === "Enter" || k === "Tab") {
+      bump(!!e.isTrusted);
+    }
+  };
+
+  const onInput = (nativeEvt) => {
+    // React passes nativeEvent; use it to see if the event is trusted
+    const isEvtTrusted =
+      nativeEvt && typeof nativeEvt.isTrusted === "boolean" ? nativeEvt.isTrusted : false;
+    bump(isEvtTrusted);
+  };
+
+  const onPaste = (e) => {
+    paste = true;
+    e.preventDefault(); // block paste outright in the grid
+  };
+
+  const onVirtualKey = () => {
+    bump(true); // on-screen keypad clicks are trusted user interactions
+    vkPresses++;
+  };
+
+  const finish = () => {
+    const durationMs = Date.now() - startedAt;
+    const n = deltas.length || 1;
+    const avg = deltas.reduce((a, b) => a + b, 0) / n;
+    const sd = Math.sqrt(deltas.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / n);
+    return {
+      gridId,
+      durationMs: String(Math.round(durationMs)),
+      moves: String(moves),
+      trusted: String(trusted),
+      untrusted: String(untrusted),
+      avgDeltaMs: String(Math.round(avg || 0)),
+      stdDeltaMs: String(Math.round(sd || 0)),
+      paste: paste ? "1" : "0",
+      vkPresses: String(vkPresses),
+    };
+  };
+
+  return { onKeyDown, onInput, onPaste, onVirtualKey, finish };
+}
+// ---------------------------------------------------------------------
+
 const ENABLE_TOP_PLAYERS = true;
 
 const GRID_PRESETS = [
@@ -148,31 +214,37 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
   const [schoolOptions, setSchoolOptions] = useState(['Select a School...', 'Other']);
   
   const CLASS_OPTIONS = [
-  'Prep 1','Prep 2','Prep 3','Prep 4','Prep 5',
-  'Std 1','Std 2','Std 3','Std 4','Std 5'
-];
+    'Prep 1','Prep 2','Prep 3','Prep 4','Prep 5',
+    'Std 1','Std 2','Std 3','Std 4','Std 5'
+  ];
+
+  // ---- Anti-cheat ref (inserted) ----
+  const antiRef = useRef(null);
+  useEffect(() => { antiRef.current = createAntiCheat(gridPresetId); }, [gridPresetId]);
+  // -----------------------------------
+
   useEffect(() => {
-  let isMounted = true;
-  const loadSchools = async () => {
-    try {
-      const res = await fetch('/primary-schools.json', { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+    let isMounted = true;
+    const loadSchools = async () => {
+      try {
+        const res = await fetch('/primary-schools.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
 
-      const base = Array.isArray(data?.schools) ? data.schools : [];
-      const cleaned = [...new Set(base.map(s => (s || '').trim()).filter(Boolean))];
-      const sorted = cleaned.sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+        const base = Array.isArray(data?.schools) ? data.schools : [];
+        const cleaned = [...new Set(base.map(s => (s || '').trim()).filter(Boolean))];
+        const sorted = cleaned.sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
 
-      if (isMounted) {
-        setSchoolOptions(['Select a School...', ...sorted, 'Other']);
+        if (isMounted) {
+          setSchoolOptions(['Select a School...', ...sorted, 'Other']);
+        }
+      } catch {
+        setSchoolOptions(['Select a School...', 'Other']);
       }
-    } catch {
-      setSchoolOptions(['Select a School...', 'Other']);
-    }
-  };
-  loadSchools();
-  return () => { isMounted = false; };
-}, []);
+    };
+    loadSchools();
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     setGrid(generateGrid(ROWS, COLS));
@@ -211,82 +283,77 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
 
     const loadTopPlayers = async () => {
       try {
-       if (gridPresetId === '5x5' || gridPresetId === '5x12') {
-  const res = await fetch(urls.SmallTop);
-  const text = await res.text();
-  const parsed = parseCSV(text);
+        if (gridPresetId === '5x5' || gridPresetId === '5x12') {
+          const res = await fetch(urls.SmallTop);
+          const text = await res.text();
+          const parsed = parseCSV(text);
 
-  const cleanKey = (k) => String(k || '').replace(/\uFEFF/g, '').trim().toLowerCase();
+          const cleanKey = (k) => String(k || '').replace(/\uFEFF/g, '').trim().toLowerCase();
+          const timeLike = (v) => /^\d{1,2}:\d{1,2}(?:\.\d{1,3})?$/.test(String(v || '').trim());
 
-  const timeLike = (v) => /^\d{1,2}:\d{1,2}(?:\.\d{1,3})?$/.test(String(v || '').trim());
+          const toMillis = (t) => {
+            const s = String(t || '').trim();
+            const m = /^(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?$/.exec(s);
+            if (!m) return Number.POSITIVE_INFINITY;
+            const mm = +m[1], ss = +m[2], cs = +(m[3] || 0);
+            const msPart = m[3]?.length === 3 ? cs : cs * (m[3] ? 10 : 0);
+            return mm * 60000 + ss * 1000 + msPart;
+          };
 
-  const toMillis = (t) => {
-    const s = String(t || '').trim();
-    const m = /^(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?$/.exec(s);
-    if (!m) return Number.POSITIVE_INFINITY;
-    const mm = +m[1], ss = +m[2], cs = +(m[3] || 0);
-    const msPart = m[3]?.length === 3 ? cs : cs * (m[3] ? 10 : 0);
-    return mm * 60000 + ss * 1000 + msPart;
-  };
+          const pickTimeDisplay = (row) => {
+            const entries = Object.entries(row).map(([k, v]) => [cleanKey(k), v]);
+            const byLower = Object.fromEntries(entries);
+            const keys = entries.map(([k]) => k);
 
-  const pickTimeDisplay = (row) => {
-    const entries = Object.entries(row).map(([k, v]) => [cleanKey(k), v]);
-    const byLower = Object.fromEntries(entries);
-    const keys = entries.map(([k]) => k);
+            const candidates = ['time', 'time (mm:ss)', 'best time', 'final time', 'your time', 'result'];
+            for (const c of candidates) {
+              if (keys.includes(c) && byLower[c]) {
+                const val = String(byLower[c]).trim();
+                if (timeLike(val)) return val;
+              }
+            }
 
-    const candidates = ['time', 'time (mm:ss)', 'best time', 'final time', 'your time', 'result'];
-    for (const c of candidates) {
-      if (keys.includes(c) && byLower[c]) {
-        const val = String(byLower[c]).trim();
-        if (timeLike(val)) return val;
-      }
-    }
+            const startsTime = keys.find(k => k.startsWith('time'));
+            if (startsTime) {
+              const val = String(byLower[startsTime]).trim();
+              if (timeLike(val)) return val;
+            }
 
-    const startsTime = keys.find(k => k.startsWith('time'));
-    if (startsTime) {
-      const val = String(byLower[startsTime]).trim();
-      if (timeLike(val)) return val;
-    }
+            const anyTimeCell = entries.find(([_, v]) => timeLike(v));
+            return anyTimeCell ? String(anyTimeCell[1]).trim() : '';
+          };
 
-    const anyTimeCell = entries.find(([_, v]) => timeLike(v));
-    return anyTimeCell ? String(anyTimeCell[1]).trim() : '';
-  };
+          const pickName = (row) => {
+            const entries = Object.entries(row).map(([k, v]) => [cleanKey(k), v]);
+            const byLower = Object.fromEntries(entries);
+            const name =
+              byLower['name'] ??
+              byLower['student name'] ??
+              byLower['player'] ??
+              byLower['student'];
+            if (name && String(name).trim()) return String(name).trim();
+            for (const [, v] of entries) {
+              const s = String(v || '').trim();
+              if (!s) continue;
+              if (timeLike(s)) continue;
+              if (/\S+@\S+/.test(s)) continue;
+              return s;
+            }
+            return '';
+          };
 
-  const pickName = (row) => {
-    const entries = Object.entries(row).map(([k, v]) => [cleanKey(k), v]);
-    const byLower = Object.fromEntries(entries);
-    const name =
-      byLower['name'] ??
-      byLower['student name'] ??
-      byLower['player'] ??
-      byLower['student'];
-    if (name && String(name).trim()) return String(name).trim();
-    for (const [, v] of entries) {
-      const s = String(v || '').trim();
-      if (!s) continue;
-      if (timeLike(s)) continue;
-      if (/\S+@\S+/.test(s)) continue;
-      return s;
-    }
-    return '';
-  };
+          const normalized = parsed.map(r => {
+            const name = pickName(r);
+            const timeDisplay = pickTimeDisplay(r);
+            const ms = toMillis(timeDisplay);
+            return { Name: name, Time: timeDisplay, ms };
+          });
 
-  const normalized = parsed.map(r => {
-    const name = pickName(r);
-    const timeDisplay = pickTimeDisplay(r);
-    const ms = toMillis(timeDisplay);
-    return { Name: name, Time: timeDisplay, ms };
-  });
+          const best = normalized
+            .filter(e => e.Name && isFinite(e.ms))
+            .sort((a, b) => a.ms - b.ms)[0] || null;
 
-  console.log('[CMI][small] raw first row:', parsed[0] || {});
-  console.log('[CMI][small] normalized sample:', normalized.slice(0, 5));
-
-  const best = normalized
-    .filter(e => e.Name && isFinite(e.ms))
-    .sort((a, b) => a.ms - b.ms)[0] || null;
-
-  setTopPlayers({ Primary: best ? { Name: best.Name, Time: best.Time } : null, Secondary: null, NoSchool: null });
-
+          setTopPlayers({ Primary: best ? { Name: best.Name, Time: best.Time } : null, Secondary: null, NoSchool: null });
         } else {
           const pairs = await Promise.all(
             ['Primary','Secondary','NoSchool'].map(async (cat) => {
@@ -337,18 +404,39 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
   }, [gridPresetId, ROWS, COLS]);
 
   const checkCompletion = (newGrid) => {
-    const allCorrect = newGrid.every(row => row.every(cell => cell.correct === true));
-    if (allCorrect && !completed) {
-      const stopTime = Date.now();
-      setEndTime(stopTime);
-      setCompleted(true);
-      clearInterval(timerRef.current);
-      if (startTime) setElapsed(stopTime - startTime);
-      setTimeout(() => setShowForm(true), 500);
-    }
-  };
+  const allCorrect = newGrid.every(row => row.every(cell => cell.correct === true));
+  if (!allCorrect || completed) return;
 
+  const ac = antiRef.current?.finish?.();
+  const minCells = ROWS * COLS;
+
+  const suspicious =
+    Number(ac?.untrusted || 0) > 0 ||
+    Number(ac?.moves || 0) < Math.max(5, Math.floor(minCells * 0.4)) ||
+    Number(ac?.durationMs || 0) < Math.max(ROWS * COLS * 8, 2500);
+
+  if (suspicious) {
+    alert('This run looks irregular and cannot be submitted. Please play again normally (no scripts, no paste).');
+    setGrid(generateGrid(ROWS, COLS));
+    if (timerRef.current) clearInterval(timerRef.current);
+    setStartTime(null);
+    setEndTime(null);
+    setElapsed(0);
+    timerStartedRef.current = false;
+    return;
+  }
+
+  const stopTime = Date.now();
+  setEndTime(stopTime);
+  setCompleted(true);
+  clearInterval(timerRef.current);
+  if (startTime) setElapsed(stopTime - startTime);
+  setTimeout(() => setShowForm(true), 500);
+};
   const handleKeyDown = (e, rowIdx, colIdx) => {
+    // ---- tap anti-cheat (inserted) ----
+    antiRef.current?.onKeyDown(e);
+    // -----------------------------------
     const lastRow = ROWS - 1;
     const lastCol = COLS - 1;
     if (e.key === 'Enter') {
@@ -404,23 +492,45 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
   setIsSubmitting(true);
 
   const url = WEBHOOKS[gridPresetId];
-if (!url) {
-  console.error('[CMI] Missing webhook URL for grid:', gridPresetId, WEBHOOKS);
-  alert('No webhook configured for this grid. Please try again.');
-  setIsSubmitting(false);
-  return;
-}
+  if (!url) {
+    console.error('[CMI] Missing webhook URL for grid:', gridPresetId, WEBHOOKS);
+    alert('No webhook configured for this grid. Please try again.');
+    setIsSubmitting(false);
+    return;
+  }
 
-console.log('[CMI] Posting to', gridPresetId, '→', url);
+  const ac = antiRef.current?.finish?.();
+  const minCells = ROWS * COLS;
+  const suspicious =
+    Number(ac?.untrusted || 0) > 0 ||
+    Number(ac?.moves || 0) < Math.max(5, Math.floor(minCells * 0.4)) ||
+    Number(ac?.durationMs || 0) < Math.max(ROWS * COLS * 8, 2500);
+
+  if (suspicious) {
+    alert('This run looks irregular and cannot be submitted. Please play again normally.');
+    setIsSubmitting(false);
+    return;
+  }
+
+  console.log('[CMI] Posting to', gridPresetId, '→', url);
+
   const categoryToSend = isSmallGrid(gridPresetId) ? 'Primary' : formData.category;
 
   const formDataEncoded = new URLSearchParams();
-formDataEncoded.append("name", formData.name);
-formDataEncoded.append("email", (formData.email || '').trim() || "N/A");
-formDataEncoded.append("school", (formData.school || '').trim() || "N/A");
-formDataEncoded.append("category", formData.category || 'Primary'); // fine for all grids
-formDataEncoded.append("time", displayTime);
-formDataEncoded.append("classLevel", (formData.classLevel || '').trim() || "N/A");
+  formDataEncoded.append("name", formData.name);
+  formDataEncoded.append("email", (formData.email || '').trim() || "N/A");
+  formDataEncoded.append("school", (formData.school || '').trim() || "N/A");
+  formDataEncoded.append("category", categoryToSend || 'Primary');
+  formDataEncoded.append("time", displayTime);
+  formDataEncoded.append("classLevel", (formData.classLevel || '').trim() || "N/A");
+  formDataEncoded.append("ac_moves",        String(ac?.moves ?? ""));
+  formDataEncoded.append("ac_trusted",      String(ac?.trusted ?? ""));
+  formDataEncoded.append("ac_untrusted",    String(ac?.untrusted ?? ""));
+  formDataEncoded.append("ac_avgDeltaMs",   String(ac?.avgDeltaMs ?? ""));
+  formDataEncoded.append("ac_stdDeltaMs",   String(ac?.stdDeltaMs ?? ""));
+  formDataEncoded.append("ac_paste",        String(ac?.paste ?? ""));
+  formDataEncoded.append("ac_vkPresses",    String(ac?.vkPresses ?? ""));
+  formDataEncoded.append("ac_durationMs",   String(ac?.durationMs ?? ""));
 
   try {
     await fetch(url, {
@@ -586,6 +696,8 @@ formDataEncoded.append("classLevel", (formData.classLevel || '').trim() || "N/A"
                           }
                         }}
                         onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)}
+                        onPaste={(e) => antiRef.current?.onPaste(e)}
+                        onInput={(e) => antiRef.current?.onInput(e.nativeEvent)}
                         ref={(el) => {
                           if (!inputRefs.current[rowIdx]) inputRefs.current[rowIdx] = [];
                           inputRefs.current[rowIdx][colIdx] = el;
@@ -624,148 +736,146 @@ formDataEncoded.append("classLevel", (formData.classLevel || '').trim() || "N/A"
               required
             />
 
-           {isSmallGrid(gridPresetId) ? (
-  <>
-    {/* SMALL GRIDS (5x5, 5x12) */}
-    <select
-      className="w-full border px-3 py-2 rounded"
-      value={showCustomSchool ? 'Other' : (formData.school || 'Select a School...')}
-      onChange={(e) => {
-        const val = e.target.value;
-        if (val === 'Other') {
-          setShowCustomSchool(true);
-          setFormData({ ...formData, school: '' });
-        } else if (val === 'Select a School...') {
-          setShowCustomSchool(false);
-          setFormData({ ...formData, school: '' });
-        } else {
-          setShowCustomSchool(false);
-          setFormData({ ...formData, school: val });
-        }
-      }}
-      required
-    >
-      {schoolOptions.map(opt => (
-        <option key={opt} value={opt}>{opt}</option>
-      ))}
-    </select>
+            {isSmallGrid(gridPresetId) ? (
+              <>
+                <select
+                  className="w-full border px-3 py-2 rounded"
+                  value={showCustomSchool ? 'Other' : (formData.school || 'Select a School...')}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'Other') {
+                      setShowCustomSchool(true);
+                      setFormData({ ...formData, school: '' });
+                    } else if (val === 'Select a School...') {
+                      setShowCustomSchool(false);
+                      setFormData({ ...formData, school: '' });
+                    } else {
+                      setShowCustomSchool(false);
+                      setFormData({ ...formData, school: val });
+                    }
+                  }}
+                  required
+                >
+                  {schoolOptions.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
 
-    {showCustomSchool && (
-      <input
-        type="text"
-        placeholder="Enter School"
-        className="w-full border px-3 py-2 rounded"
-        value={formData.school}
-        onChange={(e) => setFormData({ ...formData, school: e.target.value })}
-        required
-      />
-    )}
+                {showCustomSchool && (
+                  <input
+                    type="text"
+                    placeholder="Enter School"
+                    className="w-full border px-3 py-2 rounded"
+                    value={formData.school}
+                    onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                    required
+                  />
+                )}
 
-    <select
-      className="w-full border px-3 py-2 rounded"
-      value={formData.classLevel || ''}
-      onChange={(e) => setFormData({ ...formData, classLevel: e.target.value })}
-      required
-    >
-      <option value="">Select Class...</option>
-      {CLASS_OPTIONS.map(opt => (
-        <option key={opt} value={opt}>{opt}</option>
-      ))}
-    </select>
+                <select
+                  className="w-full border px-3 py-2 rounded"
+                  value={formData.classLevel || ''}
+                  onChange={(e) => setFormData({ ...formData, classLevel: e.target.value })}
+                  required
+                >
+                  <option value="">Select Class...</option>
+                  {CLASS_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
 
-    <input
-      type="email"
-      placeholder="Email (Optional)"
-      className="w-full border px-3 py-2 rounded"
-      value={formData.email}
-      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-    />
-  </>
-) : (
-  <>
-    {/* LARGE GRIDS (12x12, 15x15) */}
-    <select
-      className="w-full border px-3 py-2 rounded"
-      value={formData.category}
-      onChange={(e) =>
-        setFormData({ ...formData, category: e.target.value, classLevel: '' })
-      }
-      required
-    >
-      {categoriesFor(gridPresetId).map(opt => (
-        <option key={opt} value={opt}>
-          {opt === 'NoSchool' ? 'No School' : opt}
-        </option>
-      ))}
-    </select>
+                <input
+                  type="email"
+                  placeholder="Email (Optional)"
+                  className="w-full border px-3 py-2 rounded"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </>
+            ) : (
+              <>
+                <select
+                  className="w-full border px-3 py-2 rounded"
+                  value={formData.category}
+                  onChange={(e) =>
+                    setFormData({ ...formData, category: e.target.value, classLevel: '' })
+                  }
+                  required
+                >
+                  {categoriesFor(gridPresetId).map(opt => (
+                    <option key={opt} value={opt}>
+                      {opt === 'NoSchool' ? 'No School' : opt}
+                    </option>
+                  ))}
+                </select>
 
-    {formData.category === 'Primary' ? (
-      <>
-        <select
-          className="w-full border px-3 py-2 rounded"
-          value={showCustomSchool ? 'Other' : (formData.school || 'Select a School...')}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (val === 'Other') {
-              setShowCustomSchool(true);
-              setFormData({ ...formData, school: '' });
-            } else if (val === 'Select a School...') {
-              setShowCustomSchool(false);
-              setFormData({ ...formData, school: '' });
-            } else {
-              setShowCustomSchool(false);
-              setFormData({ ...formData, school: val });
-            }
-          }}
-          required
-        >
-          {schoolOptions.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
+                {formData.category === 'Primary' ? (
+                  <>
+                    <select
+                      className="w-full border px-3 py-2 rounded"
+                      value={showCustomSchool ? 'Other' : (formData.school || 'Select a School...')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Other') {
+                          setShowCustomSchool(true);
+                          setFormData({ ...formData, school: '' });
+                        } else if (val === 'Select a School...') {
+                          setShowCustomSchool(false);
+                          setFormData({ ...formData, school: '' });
+                        } else {
+                          setShowCustomSchool(false);
+                          setFormData({ ...formData, school: val });
+                        }
+                      }}
+                      required
+                    >
+                      {schoolOptions.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
 
-        {showCustomSchool && (
-          <input
-            type="text"
-            placeholder="Enter School"
-            className="w-full border px-3 py-2 rounded"
-            value={formData.school}
-            onChange={(e) => setFormData({ ...formData, school: e.target.value })}
-            required
-          />
-        )}
-      </>
-    ) : (
-      <input
-        type="text"
-        placeholder="School (Optional)"
-        className="w-full border px-3 py-2 rounded"
-        value={formData.school}
-        onChange={(e) => setFormData({ ...formData, school: e.target.value })}
-      />
-    )}
+                    {showCustomSchool && (
+                      <input
+                        type="text"
+                        placeholder="Enter School"
+                        className="w-full border px-3 py-2 rounded"
+                        value={formData.school}
+                        onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                        required
+                      />
+                    )}
+                  </>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="School (Optional)"
+                    className="w-full border px-3 py-2 rounded"
+                    value={formData.school}
+                    onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                  />
+                )}
 
-    <select
-      className="w-full border px-3 py-2 rounded"
-      value={formData.classLevel || ''}
-      onChange={(e) => setFormData({ ...formData, classLevel: e.target.value })}
-      required={formData.category === 'Primary'}
-    >
-      <option value="">Select Class...</option>
-      {classOptionsFor(gridPresetId, formData.category).map(opt => (
-        <option key={opt} value={opt}>{opt}</option>
-      ))}
-    </select>
+                <select
+                  className="w-full border px-3 py-2 rounded"
+                  value={formData.classLevel || ''}
+                  onChange={(e) => setFormData({ ...formData, classLevel: e.target.value })}
+                  required={formData.category === 'Primary'}
+                >
+                  <option value="">Select Class...</option>
+                  {classOptionsFor(gridPresetId, formData.category).map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
 
-    <input
-      type="email"
-      placeholder="Email (Optional)"
-      className="w-full border px-3 py-2 rounded"
-      value={formData.email}
-      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-    />
-  </>
-)}
+                <input
+                  type="email"
+                  placeholder="Email (Optional)"
+                  className="w-full border px-3 py-2 rounded"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </>
+            )}
             <p className="text-sm text-center text-gray-600 font-medium pt-2">Fill in ALL fields above to be eligible for prizes 🎁.</p>
             <div className="flex justify-between gap-2 pt-2">
               <button
@@ -806,49 +916,47 @@ export default function CountMeInApp() {
         <Route path="/15x15grid" element={<CoreGame initialPreset="15x15" lockPreset />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/schools" element={<SchoolsPicker />} />
-<Route
-  path="/stx/all"
-  element={
-    <Leaderboard
-      schoolFilter="St Xavier's Private School"
-      classFilter={null}
-      titleOverride="🏫 St Xavier’s — Whole School"
-    />
-  }
-/>
-<Route
-    path="/stx/prep3"
-    element={
-      <Leaderboard
-        schoolFilter="St Xavier's Private School"
-        classFilter="Prep 3"
-        titleOverride="🏆 St Xavier’s — Prep 3"
-      />
-    }
-  />
-  <Route
-    path="/stx/prep4"
-    element={
-      <Leaderboard
-        schoolFilter="St Xavier's Private School"
-        classFilter="Prep 4"
-        titleOverride="🏆 St Xavier’s — Prep 4"
-      />
-    }
-  />
-  <Route
-    path="/stx/prep5"
-    element={
-      <Leaderboard
-        schoolFilter="St Xavier's Private School"
-        classFilter="Prep 5"
-        titleOverride="🏆 St Xavier’s — Prep 5"
-      />
-    }
-  />
-</Routes>
+        <Route
+          path="/stx/all"
+          element={
+            <Leaderboard
+              schoolFilter="St Xavier's Private School"
+              classFilter={null}
+              titleOverride="🏫 St Xavier’s — Whole School"
+            />
+          }
+        />
+        <Route
+          path="/stx/prep3"
+          element={
+            <Leaderboard
+              schoolFilter="St Xavier's Private School"
+              classFilter="Prep 3"
+              titleOverride="🏆 St Xavier’s — Prep 3"
+            />
+          }
+        />
+        <Route
+          path="/stx/prep4"
+          element={
+            <Leaderboard
+              schoolFilter="St Xavier's Private School"
+              classFilter="Prep 4"
+              titleOverride="🏆 St Xavier’s — Prep 4"
+            />
+          }
+        />
+        <Route
+          path="/stx/prep5"
+          element={
+            <Leaderboard
+              schoolFilter="St Xavier's Private School"
+              classFilter="Prep 5"
+              titleOverride="🏆 St Xavier’s — Prep 5"
+            />
+          }
+        />
+      </Routes>
     </Router>
   );
 }
-
-
