@@ -27,11 +27,32 @@ export default function Leaderboard({
     return a.includes(b) || b.includes(a);
   };
 
-  const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
-    if (!matchLoose(rowSchool, schoolFilter)) return false;
-    if (!matchLoose(rowClass, classFilter)) return false;
-    return true;
-  };
+ const canonClass = (s) => {
+  const x = String(s || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\bstandard\b/g, "std")
+    .replace(/\bstd\.?\b/g, "std");
+  const m = x.match(/\b(prep|std)\s*(\d)\b/);
+  return m ? `p${m[2]}` : x;
+};
+
+const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
+  if (!matchLoose(rowSchool, schoolFilter)) return false;
+  if (classFilter && canonClass(rowClass) !== canonClass(classFilter)) return false;
+  return true;
+};
+
+const prettyClass = (s) => {
+  const x = String(s || "")
+    .toLowerCase()
+    .replace(/\bstandard\b/g, "std")
+    .replace(/\bstd\.?\b/g, "std");
+  const m = x.match(/\b(prep|std)\s*(\d)\b/);
+  return m ? `Prep ${m[2]}` : (s || "");
+};
 
   const START_OF_TODAY = (() => {
     const d = new Date();
@@ -218,9 +239,24 @@ export default function Leaderboard({
           return a.includes(b) || b.includes(a);
         };
 
-        const rowPassesFiltersLocal = (rowSchool, rowClass) =>
-          matchLoose(rowSchool, schoolFilter) && matchLoose(rowClass, classFilter);
+       const canonClass = (s) => {
+  const x = String(s || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\bstandard\b/g, "std")
+    .replace(/\bstd\.?\b/g, "std");
+  const m = x.match(/\b(prep|std)\s*(\d)\b/);
+  if (m) return `p${m[2]}`; // Prep 2 / Std 2 -> p2
+  return x;
+};
 
+const rowPassesFiltersLocal = (rowSchool, rowClass) => {
+  if (!matchLoose(rowSchool, schoolFilter)) return false;
+  if (classFilter && canonClass(rowClass) !== canonClass(classFilter)) return false;
+  return true;
+};
         datasets.forEach((res) => {
           if (res.status !== "fulfilled") return;
           const { gridId, category, rows } = res.value;
@@ -295,10 +331,10 @@ export default function Leaderboard({
   const isClassPage = !!classFilter;                    // e.g., /stx/prep4
 
   const makeSubtitle = (p) => {
-    if (isWholeSchool) return p.classLevel || "";
-    if (isClassPage) return "";
-    return p.school || "";
-  };
+  if (isWholeSchool) return prettyClass(p.classLevel) || "";
+  if (isClassPage) return "";
+  return p.school || "";
+};
   // ============================================
 
   const PodiumSection = ({ place, emoji }) => (

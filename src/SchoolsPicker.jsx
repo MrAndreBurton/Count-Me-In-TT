@@ -112,6 +112,7 @@ export default function SchoolsPicker() {
 
             {openSchool === "stx" && (
               <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                <Link to="/stx/prep2" style={btnStyle}>View Prep 2 Leaderboard</Link>
                 <Link to="/stx/prep3" style={btnStyle}>View Prep 3 Leaderboard</Link>
                 <Link to="/stx/prep4" style={btnStyle}>View Prep 4 Leaderboard</Link>
                 <Link to="/stx/prep5" style={btnStyle}>View Prep 5 Leaderboard</Link>

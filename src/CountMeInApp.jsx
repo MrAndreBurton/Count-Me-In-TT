@@ -927,6 +927,16 @@ export default function CountMeInApp() {
           }
         />
         <Route
+  path="/stx/prep2"
+  element={
+    <Leaderboard
+      schoolFilter="St Xavier's Private School"
+      classFilter="Prep 2"
+      titleOverride="🏆 St Xavier’s — Prep 2"
+    />
+  }
+/>
+        <Route
           path="/stx/prep3"
           element={
             <Leaderboard
