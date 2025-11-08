@@ -36,7 +36,6 @@ function createAntiCheat(gridId) {
   };
 
   const onInput = (nativeEvt) => {
-    // React passes nativeEvent; use it to see if the event is trusted
     const isEvtTrusted =
       nativeEvt && typeof nativeEvt.isTrusted === "boolean" ? nativeEvt.isTrusted : false;
     bump(isEvtTrusted);
@@ -44,11 +43,11 @@ function createAntiCheat(gridId) {
 
   const onPaste = (e) => {
     paste = true;
-    e.preventDefault(); // block paste outright in the grid
+    e.preventDefault();
   };
 
   const onVirtualKey = () => {
-    bump(true); // on-screen keypad clicks are trusted user interactions
+    bump(true);
     vkPresses++;
   };
 
@@ -155,7 +154,7 @@ const generateGrid = (rows, cols) => {
   for (let r = 1; r <= rows; r++) {
     const currentRow = [];
     for (let c = 1; c <= cols; c++) {
-      currentRow.push({ value: '', correct: null, answer: r * c });
+      currentRow.push({ value: '', correct: null, answer: r * c, fired: false });
     }
     grid.push(currentRow);
   }
@@ -170,6 +169,73 @@ const formatTime = (milliseconds) => {
     .toString()
     .padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
 };
+
+const toMillis = (t) => {
+  const s = String(t || '').trim();
+  const m = /^(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?$/.exec(s);
+  if (!m) return Number.POSITIVE_INFINITY;
+  const mm = +m[1], ss = +m[2], frac = m[3] ? +m[3] : 0;
+  const msPart = m[3]?.length === 3 ? frac : frac * (m[3] ? 10 : 0);
+  return mm * 60000 + ss * 1000 + msPart;
+};
+
+// -------------------- Confetti helpers --------------------
+const isPerfectSquare = (n) => Number.isInteger(Math.sqrt(n));
+
+function ScreenConfetti({ x, y, onDone = () => {} }) {
+  React.useEffect(() => {
+    if (x == null || y == null) return;
+
+    const host = document.createElement('div');
+    host.style.position = 'fixed';
+    host.style.inset = '0';
+    host.style.pointerEvents = 'none';
+    host.style.zIndex = '2147483647';
+    document.body.appendChild(host);
+
+    const colors = ['#0ea5e9','#22c55e','#f59e0b','#ef4444','#8b5cf6','#111827'];
+    const N = 20;
+
+    for (let i = 0; i < N; i++) {
+      const dot = document.createElement('i');
+      dot.style.position = 'absolute';
+      dot.style.left = '0px';
+      dot.style.top = '0px';
+      dot.style.width = '8px';
+      dot.style.height = '8px';
+      dot.style.borderRadius = '50%';
+      dot.style.background = colors[i % colors.length];
+      dot.style.willChange = 'transform, opacity';
+      host.appendChild(dot);
+
+      const angle = (Math.PI * 2 * i) / N;
+      const dist = 60 + Math.random() * 40;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist - 40;
+
+      dot.animate(
+        [
+          { transform: `translate(${x}px,${y}px)`, opacity: 1 },
+          { transform: `translate(${x + dx}px,${y + dy}px)`, opacity: 0 }
+        ],
+        { duration: 800, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' }
+      );
+    }
+
+    const t = setTimeout(() => {
+      host.remove();
+      onDone();
+    }, 820);
+
+    return () => {
+      clearTimeout(t);
+      host.remove();
+    };
+  }, [x, y, onDone]);
+
+  return null;
+}
+// ---------------------------------------------------------
 
 function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
   const [gridPresetId, setGridPresetId] = useState(initialPreset);
@@ -210,9 +276,8 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCustomSchool, setShowCustomSchool] = useState(false);
-
   const [schoolOptions, setSchoolOptions] = useState(['Select a School...', 'Other']);
-  
+
   const CLASS_OPTIONS = [
     'Prep 1','Prep 2','Prep 3','Prep 4','Prep 5',
     'Std 1','Std 2','Std 3','Std 4','Std 5'
@@ -222,6 +287,32 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
   const antiRef = useRef(null);
   useEffect(() => { antiRef.current = createAntiCheat(gridPresetId); }, [gridPresetId]);
   // -----------------------------------
+
+  // Confetti memory & styling with queue to guarantee one burst per square
+  const celebratedRef = useRef(new Set()); // cells that actually burst
+  const [celebratedMap, setCelebratedMap] = useState({}); // styling for celebrated cells
+  const [burst, setBurst] = useState(null); // {x, y, t}
+  const isBurstingRef = useRef(false);
+  const queuedRef = useRef(new Set()); // keys reserved to burst soon
+  const queueRef = useRef([]); // FIFO of {r,c} to process
+
+  const [rowSwept, setRowSwept] = useState(Array(ROWS).fill(false));
+const [colSwept, setColSwept] = useState(Array(COLS).fill(false));
+
+  const startBurst = (rIdx, cIdx) => {
+    const key = `${rIdx}-${cIdx}`;
+    // mark as celebrated at the moment we actually start the burst
+    celebratedRef.current.add(key);
+    setCelebratedMap(m => (m[key] ? m : { ...m, [key]: true }));
+    isBurstingRef.current = true;
+    triggerBurstAt(rIdx, cIdx);
+  };
+
+  // NEW: idempotent one-shot marker + trigger (per minimal patch)
+  
+
+  // Commit-moment celebration: only when cell is correct & square, and not yet celebrated
+  
 
   useEffect(() => {
     let isMounted = true;
@@ -254,7 +345,11 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
     setCompleted(false);
     setElapsed(0);
     timerStartedRef.current = false;
-  }, [ROWS, COLS]);
+
+    setCelebratedMap({});
+    setRowSwept(Array(ROWS).fill(false));
+    setColSwept(Array(COLS).fill(false));
+    }, [ROWS, COLS]);
 
   useEffect(() => {
     return () => {
@@ -290,15 +385,6 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
 
           const cleanKey = (k) => String(k || '').replace(/\uFEFF/g, '').trim().toLowerCase();
           const timeLike = (v) => /^\d{1,2}:\d{1,2}(?:\.\d{1,3})?$/.test(String(v || '').trim());
-
-          const toMillis = (t) => {
-            const s = String(t || '').trim();
-            const m = /^(\d{1,2}):(\d{1,2})(?:\.(\d{1,3}))?$/.exec(s);
-            if (!m) return Number.POSITIVE_INFINITY;
-            const mm = +m[1], ss = +m[2], cs = +(m[3] || 0);
-            const msPart = m[3]?.length === 3 ? cs : cs * (m[3] ? 10 : 0);
-            return mm * 60000 + ss * 1000 + msPart;
-          };
 
           const pickTimeDisplay = (row) => {
             const entries = Object.entries(row).map(([k, v]) => [cleanKey(k), v]);
@@ -356,23 +442,26 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
           setTopPlayers({ Primary: best ? { Name: best.Name, Time: best.Time } : null, Secondary: null, NoSchool: null });
         } else {
           const pairs = await Promise.all(
-            ['Primary','Secondary','NoSchool'].map(async (cat) => {
-              try {
-                const res = await fetch(urls[cat]);
-                const text = await res.text();
-                const parsed = parseCSV(text);
-                const sorted = parsed
-                  .filter(e => e && e.Time && String(e.Time).trim() !== '')
-                  .sort((a, b) => String(a.Time).localeCompare(String(b.Time)));
-                return [cat, sorted[0] || null];
-              } catch {
-                return [cat, null];
-              }
-            })
-          );
-          setTopPlayers(Object.fromEntries(pairs));
-        }
-      } catch {
+  ['Primary','Secondary','NoSchool'].map(async (cat) => {
+    try {
+      const res = await fetch(urls[cat]);
+      const text = await res.text();
+      const parsed = parseCSV(text);
+
+      const sorted = parsed
+        .map(r => ({ ...r, _ms: toMillis(r.Time) }))
+        .filter(r => isFinite(r._ms))
+        .sort((a, b) => a._ms - b._ms);
+
+      return [cat, sorted[0] ? { Name: sorted[0].Name, Time: sorted[0].Time } : null];
+    } catch {
+      return [cat, null];
+    }
+  })
+);
+setTopPlayers(Object.fromEntries(pairs));
+      }
+} catch (err) {
         setTopPlayers({ Primary: null, Secondary: null, NoSchool: null });
       }
     };
@@ -404,150 +493,162 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
   }, [gridPresetId, ROWS, COLS]);
 
   const checkCompletion = (newGrid) => {
-  const allCorrect = newGrid.every(row => row.every(cell => cell.correct === true));
-  if (!allCorrect || completed) return;
+    const allCorrect = newGrid.every(row => row.every(cell => cell.correct === true));
+    if (!allCorrect || completed) return;
 
-  const ac = antiRef.current?.finish?.();
-  const minCells = ROWS * COLS;
+    const ac = antiRef.current?.finish?.();
+    const minCells = ROWS * COLS;
 
-  const suspicious =
-    Number(ac?.untrusted || 0) > 0 ||
-    Number(ac?.moves || 0) < Math.max(5, Math.floor(minCells * 0.4)) ||
-    Number(ac?.durationMs || 0) < Math.max(ROWS * COLS * 8, 2500);
+    const suspicious =
+      Number(ac?.untrusted || 0) > 0 ||
+      Number(ac?.moves || 0) < Math.max(5, Math.floor(minCells * 0.4)) ||
+      Number(ac?.durationMs || 0) < Math.max(ROWS * COLS * 8, 2500);
 
-  if (suspicious) {
-    alert('This run looks irregular and cannot be submitted. Please play again normally (no scripts, no paste).');
-    setGrid(generateGrid(ROWS, COLS));
-    if (timerRef.current) clearInterval(timerRef.current);
-    setStartTime(null);
-    setEndTime(null);
-    setElapsed(0);
-    timerStartedRef.current = false;
+    if (suspicious) {
+      alert('This run looks irregular and cannot be submitted. Please play again normally (no scripts, no paste).');
+      setGrid(generateGrid(ROWS, COLS));
+      if (timerRef.current) clearInterval(timerRef.current);
+      setStartTime(null);
+      setEndTime(null);
+      setElapsed(0);
+      timerStartedRef.current = false;
+      return;
+    }
+
+    const stopTime = Date.now();
+    setEndTime(stopTime);
+    setCompleted(true);
+    clearInterval(timerRef.current);
+    if (startTime) setElapsed(stopTime - startTime);
+    setTimeout(() => setShowForm(true), 500);
+  };
+
+  const handleKeyDown = (e, rowIdx, colIdx) => {
+  // keep your antiRef + repeat guard + lastRow/lastCol lines...
+  antiRef.current?.onKeyDown(e);
+  const lastRow = ROWS - 1;
+  const lastCol = COLS - 1;
+  if (e.repeat) return;
+
+  if (e.key === 'Enter' || e.key === 'NumpadEnter') {
+    e.preventDefault();
+
+    // 1) Confirm current cell
+    const next = grid.map(r => r.map(c => ({ ...c })));
+    const cell = next[rowIdx][colIdx];
+
+    // (optional) sanitize & cap length
+    const raw = String(cell.value || '').replace(/\D+/g, '');
+    cell.value = raw.slice(0, 3);
+
+    const isCorrect = Number(cell.value) === cell.answer;
+    cell.correct = isCorrect;
+
+    // 2) Row/col sweep if this confirmation completes them
+    if (isCorrect) {
+      if (!rowSwept[rowIdx] && next[rowIdx].every(c => c.correct === true)) {
+        setRowSwept(rs => rs.map((v, i) => (i === rowIdx ? true : v)));
+      }
+      if (!colSwept[colIdx] && next.every(r => r[colIdx].correct === true)) {
+        setColSwept(cs => cs.map((v, i) => (i === colIdx ? true : v)));
+      }
+    }
+
+    // 3) Commit & completion check
+    setGrid(next);
+    checkCompletion(next);
+
+    // 4) Navigation: advance only on correct, else keep focus & select
+    if (isCorrect) {
+      if (colIdx < lastCol) inputRefs.current[rowIdx][colIdx + 1]?.focus();
+      else if (rowIdx < lastRow) inputRefs.current[rowIdx + 1][0]?.focus();
+    } else {
+      // keep them here to fix the answer quickly
+      inputRefs.current[rowIdx][colIdx]?.select();
+    }
     return;
   }
 
-  const stopTime = Date.now();
-  setEndTime(stopTime);
-  setCompleted(true);
-  clearInterval(timerRef.current);
-  if (startTime) setElapsed(stopTime - startTime);
-  setTimeout(() => setShowForm(true), 500);
+  // ...leave your Arrow/Backspace handling as-is below
+  if (e.key === 'ArrowRight' && colIdx < lastCol) { e.preventDefault(); inputRefs.current[rowIdx][colIdx + 1]?.focus(); }
+  else if (e.key === 'ArrowLeft' && colIdx > 0)   { e.preventDefault(); inputRefs.current[rowIdx][colIdx - 1]?.focus(); }
+  else if (e.key === 'ArrowDown' && rowIdx < lastRow) { e.preventDefault(); inputRefs.current[rowIdx + 1][colIdx]?.focus(); }
+  else if (e.key === 'ArrowUp' && rowIdx > 0)     { e.preventDefault(); inputRefs.current[rowIdx - 1][colIdx]?.focus(); }
+  else if (e.key === 'Backspace') {
+    e.preventDefault();
+    const next = grid.map(r => r.map(c => ({ ...c })));
+    next[rowIdx][colIdx].value = '';
+    next[rowIdx][colIdx].correct = null;
+    setGrid(next);
+    checkCompletion(next);
+  }
 };
-  const handleKeyDown = (e, rowIdx, colIdx) => {
-    // ---- tap anti-cheat (inserted) ----
-    antiRef.current?.onKeyDown(e);
-    // -----------------------------------
-    const lastRow = ROWS - 1;
-    const lastCol = COLS - 1;
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (colIdx < lastCol) {
-        inputRefs.current[rowIdx][colIdx + 1]?.focus();
-      } else if (rowIdx < lastRow) {
-        inputRefs.current[rowIdx + 1][0]?.focus();
-      }
-    } else if (e.key === 'ArrowRight' && colIdx < lastCol) {
-      e.preventDefault();
-      inputRefs.current[rowIdx][colIdx + 1]?.focus();
-    } else if (e.key === 'ArrowLeft' && colIdx > 0) {
-      e.preventDefault();
-      inputRefs.current[rowIdx][colIdx - 1]?.focus();
-    } else if (e.key === 'ArrowDown' && rowIdx < lastRow) {
-      e.preventDefault();
-      inputRefs.current[rowIdx + 1][colIdx]?.focus();
-    } else if (e.key === 'ArrowUp' && rowIdx > 0) {
-      e.preventDefault();
-      inputRefs.current[rowIdx - 1][colIdx]?.focus();
-    } else if (e.key === 'Backspace') {
-      const newGrid = grid.map(r => r.map(c => ({ ...c })));
-      newGrid[rowIdx][colIdx].value = '';
-      newGrid[rowIdx][colIdx].correct = null;
-      checkCompletion(newGrid);
-      setGrid(newGrid);
-    } else if (/^[0-9]$/.test(e.key)) {
-      e.preventDefault();
-      const newGrid = grid.map(r => r.map(c => ({ ...c })));
-      const currentValue = newGrid[rowIdx][colIdx].value;
-      const newValue = currentValue + e.key;
-      newGrid[rowIdx][colIdx].value = newValue;
-      newGrid[rowIdx][colIdx].correct = parseInt(newValue, 10) === newGrid[rowIdx][colIdx].answer;
-      if (!timerStartedRef.current && currentValue === '') {
-        const now = Date.now();
-        setStartTime(now);
-        timerRef.current = setInterval(() => {
-          setElapsed(Date.now() - now);
-        }, 10);
-        timerStartedRef.current = true;
-      }
-      checkCompletion(newGrid);
-      setGrid(newGrid);
-    }
-  };
+
 
   const displayTime = formatTime(elapsed);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (isSubmitting) return;
-  setIsSubmitting(true);
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-  const url = WEBHOOKS[gridPresetId];
-  if (!url) {
-    console.error('[CMI] Missing webhook URL for grid:', gridPresetId, WEBHOOKS);
-    alert('No webhook configured for this grid. Please try again.');
-    setIsSubmitting(false);
-    return;
-  }
+    const url = WEBHOOKS[gridPresetId];
+    if (!url) {
+      console.error('[CMI] Missing webhook URL for grid:', gridPresetId, WEBHOOKS);
+      alert('No webhook configured for this grid. Please try again.');
+      setIsSubmitting(false);
+      return;
+    }
 
-  const ac = antiRef.current?.finish?.();
-  const minCells = ROWS * COLS;
-  const suspicious =
-    Number(ac?.untrusted || 0) > 0 ||
-    Number(ac?.moves || 0) < Math.max(5, Math.floor(minCells * 0.4)) ||
-    Number(ac?.durationMs || 0) < Math.max(ROWS * COLS * 8, 2500);
+    const ac = antiRef.current?.finish?.();
+    const minCells = ROWS * COLS;
+    const suspicious =
+      Number(ac?.untrusted || 0) > 0 ||
+      Number(ac?.moves || 0) < Math.max(5, Math.floor(minCells * 0.4)) ||
+      Number(ac?.durationMs || 0) < Math.max(ROWS * COLS * 8, 2500);
 
-  if (suspicious) {
-    alert('This run looks irregular and cannot be submitted. Please play again normally.');
-    setIsSubmitting(false);
-    return;
-  }
+    if (suspicious) {
+      alert('This run looks irregular and cannot be submitted. Please play again normally.');
+      setIsSubmitting(false);
+      return;
+    }
 
-  console.log('[CMI] Posting to', gridPresetId, '→', url);
+    console.log('[CMI] Posting to', gridPresetId, '→', url);
 
-  const categoryToSend = isSmallGrid(gridPresetId) ? 'Primary' : formData.category;
+    const categoryToSend = isSmallGrid(gridPresetId) ? 'Primary' : formData.category;
 
-  const formDataEncoded = new URLSearchParams();
-  formDataEncoded.append("name", formData.name);
-  formDataEncoded.append("email", (formData.email || '').trim() || "N/A");
-  formDataEncoded.append("school", (formData.school || '').trim() || "N/A");
-  formDataEncoded.append("category", categoryToSend || 'Primary');
-  formDataEncoded.append("time", displayTime);
-  formDataEncoded.append("classLevel", (formData.classLevel || '').trim() || "N/A");
-  formDataEncoded.append("ac_moves",        String(ac?.moves ?? ""));
-  formDataEncoded.append("ac_trusted",      String(ac?.trusted ?? ""));
-  formDataEncoded.append("ac_untrusted",    String(ac?.untrusted ?? ""));
-  formDataEncoded.append("ac_avgDeltaMs",   String(ac?.avgDeltaMs ?? ""));
-  formDataEncoded.append("ac_stdDeltaMs",   String(ac?.stdDeltaMs ?? ""));
-  formDataEncoded.append("ac_paste",        String(ac?.paste ?? ""));
-  formDataEncoded.append("ac_vkPresses",    String(ac?.vkPresses ?? ""));
-  formDataEncoded.append("ac_durationMs",   String(ac?.durationMs ?? ""));
+    const formDataEncoded = new URLSearchParams();
+    formDataEncoded.append("name", formData.name);
+    formDataEncoded.append("email", (formData.email || '').trim() || "N/A");
+    formDataEncoded.append("school", (formData.school || '').trim() || "N/A");
+    formDataEncoded.append("category", categoryToSend || 'Primary');
+    formDataEncoded.append("time", displayTime);
+    formDataEncoded.append("classLevel", (formData.classLevel || '').trim() || "N/A");
+    formDataEncoded.append("ac_moves",        String(ac?.moves ?? ""));
+    formDataEncoded.append("ac_trusted",      String(ac?.trusted ?? ""));
+    formDataEncoded.append("ac_untrusted",    String(ac?.untrusted ?? ""));
+    formDataEncoded.append("ac_avgDeltaMs",   String(ac?.avgDeltaMs ?? ""));
+    formDataEncoded.append("ac_stdDeltaMs",   String(ac?.stdDeltaMs ?? ""));
+    formDataEncoded.append("ac_paste",        String(ac?.paste ?? ""));
+    formDataEncoded.append("ac_vkPresses",    String(ac?.vkPresses ?? ""));
+    formDataEncoded.append("ac_durationMs",   String(ac?.durationMs ?? ""));
 
-  try {
-    await fetch(url, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formDataEncoded.toString(),
-    });
+    try {
+      await fetch(url, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formDataEncoded.toString(),
+      });
 
-    alert("✅ Time submitted successfully!");
-    setShowForm(false);
-  } catch (_) {
-    alert("There was an error submitting your time.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      alert("✅ Time submitted successfully!");
+      setShowForm(false);
+    } catch (_) {
+      alert("There was an error submitting your time.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div
@@ -568,6 +669,37 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
         zIndex: 0,
       }}
     >
+      <style>{`
+        .cell-wrap { position: relative; }
+        .cell-wrap input { position: relative; z-index: 1; }
+        .screen-cf{position:fixed;inset:0;pointer-events:none;z-index:2147483647;}
+        .screen-cf i{position:absolute;width:8px;height:8px;border-radius:50%;}
+      `}</style>
+
+      <style>{`
+        /* Row/Column header sweep */
+        .row-header, .col-header { position: relative; overflow: hidden; }
+        @keyframes sweepX { 0% { transform: translateX(-110%); } 100% { transform: translateX(110%); } }
+        @keyframes sweepY { 0% { transform: translateY(-110%); } 100% { transform: translateY(110%); } }
+        .row-header.sweep-row::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent); transform: translateX(-110%); animation: sweepX 900ms ease-out 1; }
+        .col-header.sweep-col::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, transparent, rgba(255,255,255,.75), transparent); transform: translateY(-110%); animation: sweepY 900ms ease-out 1; }
+        /* Gentle pop animation for celebrated cells */
+        @keyframes pop { 0% { transform: scale(.96); } 70% { transform: scale(1.08); } 100% { transform: scale(1); } }
+        .pop-once { animation: pop 160ms cubic-bezier(.2,.8,.2,1) 1; will-change: transform; }
+      `}</style>
+
+      <style>{`
+        /* Row/Column header sweep */
+        .row-header, .col-header { position: relative; overflow: hidden; }
+        @keyframes sweepX { 0% { transform: translateX(-110%); } 100% { transform: translateX(110%); } }
+        @keyframes sweepY { 0% { transform: translateY(-110%); } 100% { transform: translateY(110%); } }
+        .row-header.sweep-row::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent); transform: translateX(-110%); animation: sweepX 900ms ease-out 1; }
+        .col-header.sweep-col::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, transparent, rgba(255,255,255,.75), transparent); transform: translateY(-110%); animation: sweepY 900ms ease-out 1; }
+        /* Gentle pop animation for celebrated cells */
+        @keyframes pop { 0% { transform: scale(.96); } 70% { transform: scale(1.08); } 100% { transform: scale(1); } }
+        .pop-once { animation: pop 160ms cubic-bezier(.2,.8,.2,1) 1; will-change: transform; }
+      `}</style>
+
       {showIntro ? (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-white text-black p-6 rounded shadow max-w-md text-center space-y-4">
@@ -663,48 +795,105 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
             <p className="text-2xl font-mono bg-yellow-300 text-black inline-block px-6 py-2 rounded shadow">⏱️ {displayTime}</p>
           </div>
 
-          <div className="overflow-x-auto w_full max-w-screen-xl mx-auto px-2">
+          
+
+  
+          <div className="overflow-x-auto w-full max-w-screen-xl mx-auto px-2">
             <div className="inline-block w-full">
               <div className="grid gap-1 w-full" style={{ gridTemplateColumns: `repeat(${COLS + 1}, minmax(0, 1fr))` }}>
                 <div className="h-10"></div>
                 {Array.from({ length: COLS }, (_, i) => (
-                  <div key={`col-header-${i}`} className="h-10 w-full text-center font-bold bg-yellow-300 text-black flex items-center justify-center text-xs sm:text-sm">{i + 1}</div>
+                  <div key={`col-header-${i}`} className={`h-10 w-full text-center font-bold bg-yellow-300 text-black flex items-center justify-center text-xs sm:text-sm col-header ${colSwept[i] ? 'sweep-col' : ''}`}>{i + 1}</div>
                 ))}
+
                 {grid.map((row, rowIdx) => (
                   <React.Fragment key={`row-${rowIdx}`}>
-                    <div className="h-10 w-full text-center font-bold bg-yellow-300 text-black flex items-center justify-center text-xs sm:text-sm">{rowIdx + 1}</div>
-                    {row.map((cell, colIdx) => (
-                      <input
-                        key={`cell-${rowIdx}-${colIdx}`}
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={cell.value}
-                        onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
-                        onChange={(e) => {
-                          const newGrid = grid.map(r => r.map(c => ({ ...c })));
-                          const newValue = e.target.value;
-                          newGrid[rowIdx][colIdx].value = newValue;
-                          newGrid[rowIdx][colIdx].correct = parseInt(newValue || '0', 10) === newGrid[rowIdx][colIdx].answer;
-                          setGrid(newGrid);
-                          checkCompletion(newGrid);
-                          if (!timerStartedRef.current && newValue !== '') {
-                            const now = Date.now();
-                            setStartTime(now);
-                            timerRef.current = setInterval(() => { setElapsed(Date.now() - now); }, 10);
-                            timerStartedRef.current = true;
-                          }
-                        }}
-                        onKeyDown={(e) => handleKeyDown(e, rowIdx, colIdx)}
-                        onPaste={(e) => antiRef.current?.onPaste(e)}
-                        onInput={(e) => antiRef.current?.onInput(e.nativeEvent)}
-                        ref={(el) => {
-                          if (!inputRefs.current[rowIdx]) inputRefs.current[rowIdx] = [];
-                          inputRefs.current[rowIdx][colIdx] = el;
-                        }}
-                        className={`h-10 w-full text-center border ${cell.correct === null ? 'border-gray-400' : cell.correct ? 'bg-green-200' : 'bg-red-200'}`}
-                      />
-                    ))}
+                    <div className={`h-10 w-full text-center font-bold bg-yellow-300 text-black flex items-center justify-center text-xs sm:text-sm row-header ${rowSwept[rowIdx] ? 'sweep-row' : ''}`}
+>
+  {rowIdx + 1}
+</div>
+                    {row.map((cell, colIdx) => {
+                      const cellKey = `${rowIdx}-${colIdx}`;
+                      const isSqPos = isPerfectSquare((rowIdx + 1) * (colIdx + 1));
+                      const fired = !!celebratedMap[cellKey];
+
+                      return (
+                        <div key={`wrap-${rowIdx}-${colIdx}`} className="cell-wrap">
+                          <input
+                            key={`cell-${rowIdx}-${colIdx}`}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={cell.value}
+                            onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
+                           onChange={(e) => {
+  const prevCorrect = !!grid[rowIdx][colIdx].correct;
+
+  // clone grid
+  const newGrid = grid.map(r => r.map(c => ({ ...c })));
+  const cellObj = newGrid[rowIdx][colIdx];
+
+  // 1) digits only, cap to 3
+  const newValue = e.target.value.replace(/\D+/g, '').slice(0, 3);
+
+  // 2) set value
+  cellObj.value = newValue;
+
+  // 3) correctness (non-empty + numeric match)
+  const nowCorrect = newValue !== '' && Number(newValue) === cellObj.answer;
+  cellObj.correct = nowCorrect;
+
+  // gentle pop + gold on first correct for perfect-square positions
+  const cellKey = `${rowIdx}-${colIdx}`;
+  const isSqPos = isPerfectSquare((rowIdx + 1) * (colIdx + 1));
+  if (!prevCorrect && nowCorrect && isSqPos && !celebratedMap[cellKey]) {
+    setCelebratedMap(m => ({ ...m, [cellKey]: true }));
+  }
+
+  // row/column sweep once when fully correct
+  if (nowCorrect) {
+    if (!rowSwept[rowIdx]) {
+      const rowAll = newGrid[rowIdx].every(c => c.correct === true);
+      if (rowAll) setRowSwept(rs => rs.map((v,i) => (i === rowIdx ? true : v)));
+    }
+    if (!colSwept[colIdx]) {
+      const colAll = newGrid.every(r => r[colIdx].correct === true);
+      if (colAll) setColSwept(cs => cs.map((v,i) => (i === colIdx ? true : v)));
+    }
+  }
+
+  setGrid(newGrid);
+  checkCompletion(newGrid);
+
+  if (!timerStartedRef.current && newValue !== '') {
+    const now = Date.now();
+    setStartTime(now);
+    timerRef.current = setInterval(() => setElapsed(Date.now() - now), 10);
+    timerStartedRef.current = true;
+  }
+}}
+                            onKeyDown={(e) => { antiRef.current?.onKeyDown(e); handleKeyDown(e, rowIdx, colIdx); }}
+                            onInput={(e) => antiRef.current?.onInput(e.nativeEvent)}
+
+                            onPaste={(e) => antiRef.current?.onPaste(e)}
+                            onDrop={(e) => e.preventDefault()}
+                            onDragOver={(e) => e.preventDefault()}
+
+                            ref={(el) => {
+                              if (!inputRefs.current[rowIdx]) inputRefs.current[rowIdx] = [];
+                              inputRefs.current[rowIdx][colIdx] = el;
+                            }}
+                            className={`h-10 w-full text-center border ${
+                              cell.correct === null
+                                ? 'border-gray-400'
+                                : cell.correct
+                                ? 'bg-green-200'
+                                : 'bg-red-200'
+                            } ${fired ? 'pop-once font-bold text-yellow-700 ring-2 ring-yellow-400' : ''}`}
+                          />
+                        </div>
+                      );
+                    })}
                   </React.Fragment>
                 ))}
               </div>
@@ -712,6 +901,9 @@ function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
           </div>
         </div>
       )}
+
+      {/* Screen overlay confetti (fires when burst is set) */}
+      
 
       <div style={{ textAlign: "center", marginTop: "40px", marginBottom: "20px" }}>
         <a href="/about-us-contact.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "#000", fontWeight: "bold", textDecoration: "underline", fontSize: "16px" }}>About Us/Contact</a>
@@ -927,15 +1119,15 @@ export default function CountMeInApp() {
           }
         />
         <Route
-  path="/stx/prep2"
-  element={
-    <Leaderboard
-      schoolFilter="St Xavier's Private School"
-      classFilter="Prep 2"
-      titleOverride="🏆 St Xavier’s — Prep 2"
-    />
-  }
-/>
+          path="/stx/prep2"
+          element={
+            <Leaderboard
+              schoolFilter="St Xavier's Private School"
+              classFilter="Prep 2"
+              titleOverride="🏆 St Xavier’s — Prep 2"
+            />
+          }
+        />
         <Route
           path="/stx/prep3"
           element={
@@ -970,3 +1162,5 @@ export default function CountMeInApp() {
     </Router>
   );
 }
+
+
