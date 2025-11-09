@@ -814,7 +814,7 @@ setTopPlayers(Object.fromEntries(pairs));
 </div>
                     {row.map((cell, colIdx) => {
                       const cellKey = `${rowIdx}-${colIdx}`;
-                      const isSqPos = isPerfectSquare((rowIdx + 1) * (colIdx + 1));
+                      const isSqPos = rowIdx === colIdx;
                       const fired = !!celebratedMap[cellKey];
 
                       return (
@@ -826,31 +826,29 @@ setTopPlayers(Object.fromEntries(pairs));
                             pattern="[0-9]*"
                             value={cell.value}
                             onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
-                           onChange={(e) => {
+                          onChange={(e) => {
+  // 1) clone grid
   const prevCorrect = !!grid[rowIdx][colIdx].correct;
-
-  // clone grid
   const newGrid = grid.map(r => r.map(c => ({ ...c })));
   const cellObj = newGrid[rowIdx][colIdx];
 
-  // 1) digits only, cap to 3
-  const newValue = e.target.value.replace(/\D+/g, '').slice(0, 3);
-
-  // 2) set value
+  // 2) sanitize: digits only, cap to 3
+  const raw = e.target.value.replace(/\D+/g, '');
+  const newValue = raw.slice(0, 3);
   cellObj.value = newValue;
 
-  // 3) correctness (non-empty + numeric match)
+  // 3) correctness
   const nowCorrect = newValue !== '' && Number(newValue) === cellObj.answer;
   cellObj.correct = nowCorrect;
 
-  // gentle pop + gold on first correct for perfect-square positions
+  // 4) celebrate ONLY on main diagonal (row == col)
   const cellKey = `${rowIdx}-${colIdx}`;
-  const isSqPos = isPerfectSquare((rowIdx + 1) * (colIdx + 1));
-  if (!prevCorrect && nowCorrect && isSqPos && !celebratedMap[cellKey]) {
+  const isMainDiag = rowIdx === colIdx;
+  if (!prevCorrect && nowCorrect && isMainDiag && !celebratedMap[cellKey]) {
     setCelebratedMap(m => ({ ...m, [cellKey]: true }));
   }
 
-  // row/column sweep once when fully correct
+  // 5) header sweeps when full row/col correct
   if (nowCorrect) {
     if (!rowSwept[rowIdx]) {
       const rowAll = newGrid[rowIdx].every(c => c.correct === true);
@@ -862,9 +860,11 @@ setTopPlayers(Object.fromEntries(pairs));
     }
   }
 
+  // 6) commit + completion check
   setGrid(newGrid);
   checkCompletion(newGrid);
 
+  // 7) start timer on first real input
   if (!timerStartedRef.current && newValue !== '') {
     const now = Date.now();
     setStartTime(now);
