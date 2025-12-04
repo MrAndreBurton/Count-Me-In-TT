@@ -309,51 +309,82 @@ export default function HallOfFame() {
       </header>
 
       {loading ? (
-        <p style={{ fontSize: 16 }}>Loading…</p>
-      ) : (
-        <div style={{ marginTop: 10, marginBottom: 60 }}>
-          {filtered.length === 0 ? (
-            <p>— No winners found for {MONTHS.find((m) => m.key === monthKey)?.label} —</p>
-          ) : (
-            <div style={{ width: "100%", display: "flex", justifyContent: "center", overflowX: "auto" }}>
-  <table
-    className="hof"
+  <p style={{ fontSize: 16 }}>Loading…</p>
+) : (
+  <div style={{ marginTop: 10, marginBottom: 60 }}>
+    {filtered.length === 0 ? (
+      <p>
+        — No winners found for {MONTHS.find((m) => m.key === monthKey)?.label} —
+      </p>
+    ) : (
+      <div
+        style={{
+          width: "100%",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          paddingLeft: 12,
+          paddingRight: 12,
+        }}
+      >
+        <table
+          className="hof"
+          style={{
+            width: "100%",
+            minWidth: 450,
+            maxWidth: "100%",
+            borderCollapse: "collapse",
+            fontSize: 14,
+            backgroundColor: "white",
+            margin: "0 auto",
+          }}
+        >
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Time</th>
+              <th>Grid</th>
+              <th>Category</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((w, i) => (
+              <tr key={`${w.monthKey}-${w.gridId}-${w.category}-${i}`}>
+                <td>
+                  <strong>{w.name}</strong>
+                </td>
+                <td style={{ fontFamily: "monospace" }}>⏱ {w.time}</td>
+                <td>{gridLabel(w.gridId)}</td>
+                <td>{catLabel(w.category)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+)}
+
+<div
+  style={{
+    width: "100%",
+    display: "flex",
+    justifyContent: "center",
+    marginBottom: 20,
+  }}
+>
+  <p
     style={{
-      width: "100%",
-      maxWidth: 600,
-      borderCollapse: "collapse",
-      fontSize: 14,
-      minWidth: 400,
+      fontSize: 11,
+      color: "black",
+      textAlign: "center",
+      fontStyle: "italic",
     }}
   >
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Time</th>
-                  <th>Grid</th>
-                  <th>Category</th>                                 
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((w, i) => (
-                  <tr key={`${w.monthKey}-${w.gridId}-${w.category}-${i}`}>
-                    <td><strong>{w.name}</strong></td>
-                    <td style={{ fontFamily: "monospace" }}>⏱ {w.time}</td>
-                    <td>{gridLabel(w.gridId)}</td>
-                    <td>{catLabel(w.category)}</td>                                     
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      <div style={{ width: "100%", display: "flex", justifyContent: "center", marginBottom: 20 }}>
-        <p style={{ fontSize: 11, color: "black", textAlign: "center", fontStyle: "italic" }}>
-          © 2025 <span style={{ fontWeight: 600 }}>Count Me In TT</span>. Developed by <span style={{ fontWeight: 600 }}>Andre Burton</span>. Powered by <span style={{ fontWeight: 600 }}>A’s Online</span>. All rights reserved.
-        </p>
-      </div>
-    </div>
-  );
+    © 2025 <span style={{ fontWeight: 600 }}>Count Me In TT</span>. Developed by{" "}
+    <span style={{ fontWeight: 600 }}>Andre Burton</span>. Powered by{" "}
+    <span style={{ fontWeight: 600 }}>A’s Online</span>. All rights reserved.
+  </p>
+</div>
+</div>
+);
 }
