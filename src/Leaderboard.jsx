@@ -462,19 +462,16 @@ const rowPassesFiltersLocal = (rowSchool, rowClass) => {
       }}
     >
       {/* Top nav buttons */}
-      {!schoolFilter ? (
-        <Link to="/schools" className="lb-btn lb-left">
-          🏫 Schools
-        </Link>
-      ) : (
-        <Link to="/leaderboard" className="lb-btn lb-left">
-          🌍 Global Leaderboard
-        </Link>
-      )}
+<div className="lb-nav">
+  {!schoolFilter ? (
+      <Link to="/schools" className="lb-btn lb-left">🏫 Schools</Link>
+  ) : (
+      <Link to="/leaderboard" className="lb-btn lb-left">🌍 Global Leaderboard</Link>
+  )}
 
-      <Link to="/" className="lb-btn lb-right">
-        ⬅ Back to Game
-      </Link>
+  <Link to="/" className="lb-btn lb-right">⬅ Back to Game</Link>
+</div>
+
 
       <style>{`
         .lb-btn {
@@ -521,6 +518,14 @@ const rowPassesFiltersLocal = (rowSchool, rowClass) => {
             <img src="/logo-asonline.svg" alt="A's Online" />
             <img src="/logo-countmeintt.svg" alt="Count Me In TT" />
           </div>
+<div className="mt-3 flex justify-center">
+    <Link to="/hall-of-fame" className="inline-block">
+      <button className="bg-yellow-500 text-black font-semibold px-3 py-1 rounded hover:bg-yellow-400 shadow">
+        Hall of Fame
+      </button>
+    </Link>
+  </div>
+
           <h1
             style={{
               fontSize: 48,

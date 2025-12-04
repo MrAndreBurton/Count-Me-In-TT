@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 import SchoolsPicker from "./SchoolsPicker";
 import Leaderboard from './Leaderboard';
+import HallOfFame from "./HallOfFame";
 
 // -------------------- Anti-cheat module (inserted) --------------------
 function createAntiCheat(gridId) {
@@ -1158,6 +1159,8 @@ export default function CountMeInApp() {
             />
           }
         />
+<Route path="/hall-of-fame" element={<HallOfFame />} />
+
       </Routes>
     </Router>
   );
