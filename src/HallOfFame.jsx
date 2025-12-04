@@ -315,7 +315,17 @@ export default function HallOfFame() {
           {filtered.length === 0 ? (
             <p>— No winners found for {MONTHS.find((m) => m.key === monthKey)?.label} —</p>
           ) : (
-            <table className="hof">
+            <div style={{ width: "100%", display: "flex", justifyContent: "center", overflowX: "auto" }}>
+  <table
+    className="hof"
+    style={{
+      width: "100%",
+      maxWidth: 600,
+      borderCollapse: "collapse",
+      fontSize: 14,
+      minWidth: 400,
+    }}
+  >
               <thead>
                 <tr>
                   <th>Name</th>
