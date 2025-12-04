@@ -318,21 +318,19 @@ export default function HallOfFame() {
             <table className="hof">
               <thead>
                 <tr>
-                  <th>Month</th>
-                  <th>Grid</th>
-                  <th>Category</th>
                   <th>Name</th>
                   <th>Time</th>
+                  <th>Grid</th>
+                  <th>Category</th>                                 
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((w, i) => (
                   <tr key={`${w.monthKey}-${w.gridId}-${w.category}-${i}`}>
-                    <td>{MONTHS.find((m) => m.key === w.monthKey)?.label || w.monthKey}</td>
-                    <td>{gridLabel(w.gridId)}</td>
-                    <td>{catLabel(w.category)}</td>
                     <td><strong>{w.name}</strong></td>
                     <td style={{ fontFamily: "monospace" }}>⏱ {w.time}</td>
+                    <td>{gridLabel(w.gridId)}</td>
+                    <td>{catLabel(w.category)}</td>                                     
                   </tr>
                 ))}
               </tbody>
