@@ -34,6 +34,7 @@ const MONTHS = [
   { key: "2025-09", label: "September 2025", from: new Date(2025, 8, 1), to: new Date(2025, 9, 1) },
   { key: "2025-10", label: "October 2025",   from: new Date(2025, 9, 1), to: new Date(2025,10, 1) },
   { key: "2025-11", label: "November 2025",  from: new Date(2025,10, 1), to: new Date(2025,11, 1) },
+  { key: "2025-12", label: "December 2025",  from: new Date(2025,11, 1), to: new Date(2025,12, 1) }, 
 ];
 
 const GRID_ORDER = ["5x5", "5x12", "12x12", "15x15"];
