@@ -910,7 +910,7 @@ setTopPlayers(Object.fromEntries(pairs));
         <a href="/about-us-contact.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "#000", fontWeight: "bold", textDecoration: "underline", fontSize: "16px" }}>About Us/Contact</a>
       </div>
       <div className="w-full mt-8 flex justify-center">
-        <p className="text-[11px] text-black text-center italic">© 2025 <span className="font-semibold">Count Me In TT</span>. Developed by <span className="font-semibold">Andre Burton</span>. Powered by <span className="font-semibold">A’s Online</span>. All rights reserved.</p>
+        <p className="text-[11px] text-black text-center italic">© 2025 - 2026 <span className="font-semibold">Count Me In TT</span>. Developed by <span className="font-semibold">Andre Burton</span>. Powered by <span className="font-semibold">A’s Online</span>. All rights reserved.</p>
       </div>
 
       {showForm && (
