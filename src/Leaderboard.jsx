@@ -6,6 +6,7 @@ export default function Leaderboard({
   classFilter = null,
   titleOverride = null,
   onlyFromToday = false,
+  classLabel = "Prep",
 }) {
   const [podium, setPodium] = useState({ 1: [], 2: [], 3: [] });
   const [others, setOthers] = useState([]);
@@ -45,13 +46,13 @@ const rowPassesFilters = (rowSchool, rowClass, schoolFilter, classFilter) => {
   return true;
 };
 
-const prettyClass = (s) => {
+const prettyClass = (s, label = "Prep") => {
   const x = String(s || "")
     .toLowerCase()
     .replace(/\bstandard\b/g, "std")
     .replace(/\bstd\.?\b/g, "std");
   const m = x.match(/\b(prep|std)\s*(\d)\b/);
-  return m ? `Prep ${m[2]}` : (s || "");
+  return m ? `${label} ${m[2]}` : (s || "");
 };
 
   const START_OF_TODAY = (() => {
@@ -331,7 +332,7 @@ const rowPassesFiltersLocal = (rowSchool, rowClass) => {
   const isClassPage = !!classFilter;                    // e.g., /stx/prep4
 
   const makeSubtitle = (p) => {
-  if (isWholeSchool) return prettyClass(p.classLevel) || "";
+  if (isWholeSchool) return prettyClass(p.classLevel, classLabel) || "";
   if (isClassPage) return "";
   return p.school || "";
 };
@@ -583,10 +584,8 @@ const rowPassesFiltersLocal = (rowSchool, rowClass) => {
           </div>
 
           <div style={{ width: "100%", marginTop: "60px", display: "flex", justifyContent: "center" }}>
-            <p style={{ fontSize: "11px", color: "black", textAlign: "center", fontStyle: "italic" }}>
-              © 2025 <span style={{ fontWeight: 600 }}>Count Me In TT</span>. Developed by <span style={{ fontWeight: 600 }}>Andre Burton</span>. Powered by <span style={{ fontWeight: 600 }}>A’s Online</span>. All rights reserved.
-            </p>
-          </div>
+             <p className="text-[11px] text-black text-center italic">© 2025 - 2026 <span className="font-semibold">Count Me In TT</span>. Developed by <span className="font-semibold">Andre Burton</span>. Powered by <span className="font-semibold">A’s Online</span>. All rights reserved.</p>
+      </div>
         </div>
       </div>
     </div>

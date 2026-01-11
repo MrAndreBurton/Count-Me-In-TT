@@ -1116,6 +1116,7 @@ export default function CountMeInApp() {
               schoolFilter="St Xavier's Private School"
               classFilter={null}
               titleOverride="🏫 St Xavier’s — Whole School"
+              classLabel="Prep"
             />
           }
         />
@@ -1159,6 +1160,57 @@ export default function CountMeInApp() {
             />
           }
         />
+<Route
+  path="/sjg/std2"
+  element={
+    <Leaderboard
+      schoolFilter="San Juan Girls' RC School"
+      classFilter="Std 2"
+      titleOverride="🏆 San Juan Girls’ RC — Std 2"
+    />
+  }
+/>
+<Route
+  path="/sjg/std3"
+  element={
+    <Leaderboard
+      schoolFilter="San Juan Girls' RC School"
+      classFilter="Std 3"
+      titleOverride="🏆 San Juan Girls’ RC — Std 3"
+    />
+  }
+/>
+<Route
+  path="/sjg/std4"
+  element={
+    <Leaderboard
+      schoolFilter="San Juan Girls' RC School"
+      classFilter="Std 4"
+      titleOverride="🏆 San Juan Girls’ RC — Std 4"
+    />
+  }
+/>
+<Route
+  path="/sjg/std5"
+  element={
+    <Leaderboard
+      schoolFilter="San Juan Girls' RC School"
+      classFilter="Std 5"
+      titleOverride="🏆 San Juan Girls’ RC — Std 5"
+    />
+  }
+/>
+<Route
+  path="/sjg/all"
+  element={
+    <Leaderboard
+      schoolFilter="San Juan Girls' RC School"
+      titleOverride="🏆 San Juan Girls’ RC — Whole School"
+      classLabel="Std"
+    />
+  }
+/>
+
 <Route path="/hall-of-fame" element={<HallOfFame />} />
 
       </Routes>
