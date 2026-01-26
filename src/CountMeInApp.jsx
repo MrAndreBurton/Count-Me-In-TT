@@ -1210,6 +1210,11 @@ export default function CountMeInApp() {
     />
   }
 />
+<Route path="/sjb/all"  element={<Leaderboard schoolFilter="San Juan Boys RC School" titleOverride="San Juan Boys’ RC — Leaderboard" />} />
+<Route path="/sjb/std2" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 2" titleOverride="SJBRC — Std 2 Leaderboard" />} />
+<Route path="/sjb/std3" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 3" titleOverride="SJBRC — Std 3 Leaderboard" />} />
+<Route path="/sjb/std4" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 4" titleOverride="SJBRC — Std 4 Leaderboard" />} />
+<Route path="/sjb/std5" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 5" titleOverride="SJBRC — Std 5 Leaderboard" />} />
 
 <Route path="/hall-of-fame" element={<HallOfFame />} />
 

@@ -160,6 +160,46 @@ export default function SchoolsPicker() {
     </div>
   )}
 </div>
+
+{/* San Juan Boys’ RC */}
+<div
+  style={{
+    background: "rgba(255,255,255,0.95)",
+    border: "1px solid #000",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+  }}
+>
+  <button
+    onClick={() => setOpenSchool(openSchool === "sjb" ? null : "sjb")}
+    style={{
+      width: "100%",
+      background: "#000",
+      color: "#fff",
+      border: "none",
+      padding: "12px 16px",
+      borderRadius: 10,
+      fontWeight: 700,
+      cursor: "pointer",
+      textAlign: "left",
+    }}
+  >
+    San Juan Boys’ RC School {openSchool === "sjb" ? "▲" : "▼"}
+  </button>
+
+  {openSchool === "sjb" && (
+    <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+      <Link to="/sjb/std2" style={btnStyle}>View Std 2 Leaderboard</Link>
+      <Link to="/sjb/std3" style={btnStyle}>View Std 3 Leaderboard</Link>
+      <Link to="/sjb/std4" style={btnStyle}>View Std 4 Leaderboard</Link>
+      <Link to="/sjb/std5" style={btnStyle}>View Std 5 Leaderboard</Link>
+      <Link to="/sjb/all"  style={btnStyle}>View Whole School Leaderboard</Link>
+    </div>
+  )}
+</div>
+
 </div>
         <div style={{ marginTop: 80 }}>
           <h2
