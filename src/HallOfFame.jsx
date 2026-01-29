@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
-/** 1) Sources: keep categories separate per grid */
+/** 1) Sources: keep categories separate per grid (unchanged) */
 const HOF_SOURCES = {
   "5x5": {
     Primary:
@@ -29,18 +29,31 @@ const HOF_SOURCES = {
   },
 };
 
-/** 2) Months to show */
-const MONTHS = [
-  { key: "2025-09", label: "September 2025", from: new Date(2025, 8, 1), to: new Date(2025, 9, 1) },
-  { key: "2025-10", label: "October 2025",   from: new Date(2025, 9, 1), to: new Date(2025,10, 1) },
-  { key: "2025-11", label: "November 2025",  from: new Date(2025,10, 1), to: new Date(2025,11, 1) },
-  { key: "2025-12", label: "December 2025",  from: new Date(2025,11, 1), to: new Date(2025,12, 1) }, 
-];
-
 const GRID_ORDER = ["5x5", "5x12", "12x12", "15x15"];
 const CATEGORY_ORDER = ["Primary", "Secondary", "NoSchool"];
 
-/** 3) CSV helpers */
+/** NEW: Month helpers (no more hard-coded list) */
+function monthKeyOf(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`; // e.g. 2026-01
+}
+function monthLabelOf(key) {
+  const [y, m] = key.split("-").map(Number);
+  const dt = new Date(y, m - 1, 1);
+  return dt.toLocaleString("en-US", { month: "long", year: "numeric" });
+}
+function prevMonthKey(key) {
+  const [y, m] = key.split("-").map(Number);
+  const dt = new Date(y, m - 1, 1);
+  dt.setMonth(dt.getMonth() - 1);
+  return monthKeyOf(dt);
+}
+function sortMonthKeysAsc(a, b) {
+  return a.localeCompare(b); // YYYY-MM sorts lexicographically
+}
+
+/** 3) CSV helpers (unchanged) */
 function parseCSV(text) {
   if (!text || typeof text !== "string" || text.trim() === "") return [];
   const lines = text.trim().split(/\r?\n/);
@@ -69,7 +82,6 @@ function pickName(row) {
   for (const k of options) {
     if (row[k] && String(row[k]).trim()) return String(row[k]).trim();
   }
-  // fallback: first non-empty non-email cell
   for (const v of Object.values(row)) {
     const s = String(v || "").trim();
     if (!s || /\S+@\S+/.test(s)) continue;
@@ -90,7 +102,6 @@ function pickTime(row) {
       if (/^\d{1,2}:\d{2}(\.\d{1,3})?$/.test(val)) return val;
     }
   }
-  // otherwise scan any time-like
   for (const k of keys) {
     const val = String(row[k] || "").trim();
     if (/^\d{1,2}:\d{2}(\.\d{1,3})?$/.test(val)) return val;
@@ -103,7 +114,6 @@ function toMillis(t) {
   const m = /^(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/.exec(s);
   if (!m) return Number.POSITIVE_INFINITY;
   const mm = +m[1], ss = +m[2], frac = +(m[3] || 0);
-  // accept .cc or .ccc (centiseconds or milliseconds-like); normalize to ms
   const ms = m[3] ? (m[3].length === 3 ? frac : frac * 10) : 0;
   return mm * 60000 + ss * 1000 + ms;
 }
@@ -113,7 +123,6 @@ function pickTimestamp(row) {
   for (const k of candidates) {
     if (row[k] && String(row[k]).trim()) return new Date(String(row[k]).trim());
   }
-  // try any ISO-like
   for (const v of Object.values(row)) {
     const s = String(v || "").trim();
     const d = new Date(s);
@@ -125,10 +134,11 @@ function pickTimestamp(row) {
 function gridLabel(g) { return g.replace("x", "×"); }
 function catLabel(c) { return c === "NoSchool" ? "No School" : c; }
 
-/** 4) Main component */
+/** 4) Main component (CHANGED) */
 export default function HallOfFame() {
-  const [monthKey, setMonthKey] = useState("2025-11"); // default to latest
-  const [rows, setRows] = useState([]);                // raw parsed rows with grid/category
+  const currentMonthKey = monthKeyOf(new Date());
+  const [monthKey, setMonthKey] = useState(currentMonthKey); // default = CURRENT month
+  const [rows, setRows] = useState([]);  // raw parsed rows with grid/category
   const [loading, setLoading] = useState(false);
 
   // load all CSVs once
@@ -187,12 +197,25 @@ export default function HallOfFame() {
     return () => { cancelled = true; };
   }, []);
 
+  /** NEW: dynamic month list from data (+always include current & previous) */
+  const months = useMemo(() => {
+    const set = new Set();
+    rows.forEach(r => {
+      if (r.ts && !isNaN(r.ts)) set.add(monthKeyOf(r.ts));
+    });
+    // ensure current and previous months exist in the dropdown
+    const cur = currentMonthKey;
+    const prev = prevMonthKey(cur);
+    set.add(cur);
+    set.add(prev);
+
+    return Array.from(set).sort(sortMonthKeysAsc);
+  }, [rows, currentMonthKey]);
+
   // compute winners per (month, gridId, category)
   const winners = useMemo(() => {
-    const byMonthGridCat = new Map(); // key = `${monthKey}|${gridId}|${category}`
+    const byMonthGridCat = new Map(); // key = `${mKey}|${gridId}|${category}`
 
-    // Only include the 3 months we care about
-    const monthIndex = Object.fromEntries(MONTHS.map((m) => [m.key, m]));
     const put = (k, row) => {
       const cur = byMonthGridCat.get(k);
       if (!cur) { byMonthGridCat.set(k, row); return; }
@@ -201,8 +224,7 @@ export default function HallOfFame() {
       if (d < 0) { byMonthGridCat.set(k, row); return; }
       if (d > 0) return;
       if ((row.ts?.getTime() || Infinity) < (cur.ts?.getTime() || Infinity)) {
-        byMonthGridCat.set(k, row);
-        return;
+        byMonthGridCat.set(k, row); return;
       }
       if ((row._row || Infinity) < (cur._row || Infinity)) {
         byMonthGridCat.set(k, row);
@@ -210,24 +232,21 @@ export default function HallOfFame() {
     };
 
     rows.forEach((r) => {
-      const m = MONTHS.find((M) => r.ts >= M.from && r.ts < M.to);
-      if (!m) return;
-      const key = `${m.key}|${r.gridId}|${r.category}`;
+      if (!r.ts) return;
+      const mKey = monthKeyOf(r.ts);
+      const key = `${mKey}|${r.gridId}|${r.category}`;
       put(key, r);
     });
 
-    // flatten
+    // flatten and sort (month asc → grid order → category order)
     const out = [];
     for (const [key, row] of byMonthGridCat.entries()) {
       const [mKey, gridId, category] = key.split("|");
       out.push({ monthKey: mKey, gridId, category, name: row.name, time: row.time, ms: row.ms });
     }
-
-    // sort by month (asc), then grid order, then category order
     return out.sort((a, b) => {
-      const am = MONTHS.findIndex((m) => m.key === a.monthKey);
-      const bm = MONTHS.findIndex((m) => m.key === b.monthKey);
-      if (am !== bm) return am - bm;
+      const am = a.monthKey.localeCompare(b.monthKey);
+      if (am !== 0) return am;
       const ag = GRID_ORDER.indexOf(a.gridId);
       const bg = GRID_ORDER.indexOf(b.gridId);
       if (ag !== bg) return ag - bg;
@@ -302,90 +321,89 @@ export default function HallOfFame() {
             onChange={(e) => setMonthKey(e.target.value)}
             style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #000" }}
           >
-            {MONTHS.map((m) => (
-              <option key={m.key} value={m.key}>{m.label}</option>
+            {months.map((k) => (
+              <option key={k} value={k}>
+                {monthLabelOf(k)}{k === currentMonthKey ? " (Current)" : ""}
+              </option>
             ))}
           </select>
         </div>
       </header>
 
       {loading ? (
-  <p style={{ fontSize: 16 }}>Loading…</p>
-) : (
-  <div style={{ marginTop: 10, marginBottom: 60 }}>
-    {filtered.length === 0 ? (
-      <p>
-        — No winners found for {MONTHS.find((m) => m.key === monthKey)?.label} —
-      </p>
-    ) : (
+        <p style={{ fontSize: 16 }}>Loading…</p>
+      ) : (
+        <div style={{ marginTop: 10, marginBottom: 60 }}>
+          {filtered.length === 0 ? (
+            <p>— No winners found for {monthLabelOf(monthKey)} —</p>
+          ) : (
+            <div
+              style={{
+                width: "100%",
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch",
+                paddingLeft: 12,
+                paddingRight: 12,
+              }}
+            >
+              <table
+                className="hof"
+                style={{
+                  width: "100%",
+                  minWidth: 450,
+                  maxWidth: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: 14,
+                  backgroundColor: "white",
+                  margin: "0 auto",
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Time</th>
+                    <th>Grid</th>
+                    <th>Category</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((w, i) => (
+                    <tr key={`${w.monthKey}-${w.gridId}-${w.category}-${i}`}>
+                      <td><strong>{w.name}</strong></td>
+                      <td style={{ fontFamily: "monospace" }}>⏱ {w.time}</td>
+                      <td>{gridLabel(w.gridId)}</td>
+                      <td>{catLabel(w.category)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       <div
         style={{
           width: "100%",
-          overflowX: "auto",
-          WebkitOverflowScrolling: "touch",
-          paddingLeft: 12,
-          paddingRight: 12,
+          display: "flex",
+          justifyContent: "center",
+          marginBottom: 20,
         }}
       >
-        <table
-          className="hof"
+        <p
           style={{
-            width: "100%",
-            minWidth: 450,
-            maxWidth: "100%",
-            borderCollapse: "collapse",
-            fontSize: 14,
-            backgroundColor: "white",
-            margin: "0 auto",
+            fontSize: 11,
+            color: "black",
+            textAlign: "center",
+            fontStyle: "italic",
           }}
         >
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Time</th>
-              <th>Grid</th>
-              <th>Category</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((w, i) => (
-              <tr key={`${w.monthKey}-${w.gridId}-${w.category}-${i}`}>
-                <td>
-                  <strong>{w.name}</strong>
-                </td>
-                <td style={{ fontFamily: "monospace" }}>⏱ {w.time}</td>
-                <td>{gridLabel(w.gridId)}</td>
-                <td>{catLabel(w.category)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          © {new Date().getFullYear()} <span style={{ fontWeight: 600 }}>Count Me In TT</span>. Developed by{" "}
+          <span style={{ fontWeight: 600 }}>Andre Burton</span>. Powered by{" "}
+          <span style={{ fontWeight: 600 }}>A’s Online</span>. All rights reserved.
+        </p>
       </div>
-    )}
-  </div>
-)}
-
-<div
-  style={{
-    width: "100%",
-    display: "flex",
-    justifyContent: "center",
-    marginBottom: 20,
-  }}
->
-  <p
-    style={{
-      fontSize: 11,
-      color: "black",
-      textAlign: "center",
-      fontStyle: "italic",
-    }}
-  >
-    © 2025 <span style={{ fontWeight: 600 }}>Count Me In TT</span>. Developed by{" "}
-    <span style={{ fontWeight: 600 }}>Andre Burton</span>. Powered by{" "}
-    <span style={{ fontWeight: 600 }}>A’s Online</span>. All rights reserved.
-  </p>
-</div>
-</div>
-);
+    </div>
+  );
 }
+
