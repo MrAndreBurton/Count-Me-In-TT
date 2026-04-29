@@ -7,7 +7,11 @@ export default function Leaderboard({
   titleOverride = null,
   onlyFromToday = false,
   classLabel = "Prep",
+  showExtras = true,
 }) {
+  const BOCAS_GO_LIVE = new Date("2026-05-02T08:00:00-04:00");
+  const bocasLive = new Date() >= BOCAS_GO_LIVE; 
+
   const [podium, setPodium] = useState({ 1: [], 2: [], 3: [] });
   const [others, setOthers] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -515,17 +519,45 @@ const rowPassesFiltersLocal = (rowSchool, rowClass) => {
 
       <div style={{ position: "relative", zIndex: 2 }}>
         <header style={{ marginBottom: 40 }}>
-          <div style={{ display: "flex", justifyContent: "center", gap: 20, flexWrap: "wrap" }}>
-            <img src="/logo-asonline.svg" alt="A's Online" />
-            <img src="/logo-countmeintt.svg" alt="Count Me In TT" />
-          </div>
-<div className="mt-3 flex justify-center">
+          <div style={{ display: "flex", justifyContent: "center", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+  <img
+    src="/logo-asonline.svg"
+    alt="A's Online"
+    style={{ maxHeight: 200, width: "auto" }}
+  />
+  <img
+    src="/logo-countmeintt.svg"
+    alt="Count Me In TT"
+    style={{ maxHeight: 200, width: "auto" }}
+  />
+</div>
+
+{showExtras && (
+  <div className="mt-3 flex justify-center gap-3">
     <Link to="/hall-of-fame" className="inline-block">
       <button className="bg-yellow-500 text-black font-semibold px-3 py-1 rounded hover:bg-yellow-400 shadow">
         Hall of Fame
       </button>
     </Link>
+
+    {bocasLive ? (
+      <Link to="/bocaslitfest2026" className="inline-block">
+        <button className="bg-black text-white font-semibold px-3 py-1 rounded hover:bg-gray-800 shadow">
+          BocasLitFest2026
+        </button>
+      </Link>
+    ) : (
+      <button
+        disabled
+        className="bg-gray-400 text-white font-semibold px-3 py-1 rounded shadow cursor-not-allowed opacity-70"
+        title="Available from Saturday May 2, 2026 at 8:00 AM"
+      >
+        BocasLitFest2026
+      </button>
+    )}
   </div>
+)}
+
 
           <h1
             style={{

@@ -8,6 +8,8 @@ import {
 import SchoolsPicker from "./SchoolsPicker";
 import Leaderboard from './Leaderboard';
 import HallOfFame from "./HallOfFame";
+import BocasChallenge from "./BocasChallenge";
+import BocasLitFestLeaderboard from "./BocasLitFestLeaderboard";
 
 // -------------------- Anti-cheat module (inserted) --------------------
 function createAntiCheat(gridId) {
@@ -1117,6 +1119,7 @@ export default function CountMeInApp() {
               classFilter={null}
               titleOverride="🏫 St Xavier’s — Whole School"
               classLabel="Prep"
+              showExtras={false}
             />
           }
         />
@@ -1127,6 +1130,7 @@ export default function CountMeInApp() {
               schoolFilter="St Xavier's Private School"
               classFilter="Prep 2"
               titleOverride="🏆 St Xavier’s — Prep 2"
+              showExtras={false}
             />
           }
         />
@@ -1137,6 +1141,7 @@ export default function CountMeInApp() {
               schoolFilter="St Xavier's Private School"
               classFilter="Prep 3"
               titleOverride="🏆 St Xavier’s — Prep 3"
+              showExtras={false}
             />
           }
         />
@@ -1147,6 +1152,7 @@ export default function CountMeInApp() {
               schoolFilter="St Xavier's Private School"
               classFilter="Prep 4"
               titleOverride="🏆 St Xavier’s — Prep 4"
+              showExtras={false}
             />
           }
         />
@@ -1157,6 +1163,7 @@ export default function CountMeInApp() {
               schoolFilter="St Xavier's Private School"
               classFilter="Prep 5"
               titleOverride="🏆 St Xavier’s — Prep 5"
+              showExtras={false}
             />
           }
         />
@@ -1167,6 +1174,7 @@ export default function CountMeInApp() {
       schoolFilter="San Juan Girls' RC School"
       classFilter="Std 2"
       titleOverride="🏆 San Juan Girls’ RC — Std 2"
+      showExtras={false}
     />
   }
 />
@@ -1177,6 +1185,7 @@ export default function CountMeInApp() {
       schoolFilter="San Juan Girls' RC School"
       classFilter="Std 3"
       titleOverride="🏆 San Juan Girls’ RC — Std 3"
+      showExtras={false}
     />
   }
 />
@@ -1187,6 +1196,7 @@ export default function CountMeInApp() {
       schoolFilter="San Juan Girls' RC School"
       classFilter="Std 4"
       titleOverride="🏆 San Juan Girls’ RC — Std 4"
+      showExtras={false}
     />
   }
 />
@@ -1197,6 +1207,7 @@ export default function CountMeInApp() {
       schoolFilter="San Juan Girls' RC School"
       classFilter="Std 5"
       titleOverride="🏆 San Juan Girls’ RC — Std 5"
+      showExtras={false}
     />
   }
 />
@@ -1207,16 +1218,21 @@ export default function CountMeInApp() {
       schoolFilter="San Juan Girls' RC School"
       titleOverride="🏆 San Juan Girls’ RC — Whole School"
       classLabel="Std"
+      showExtras={false}
     />
   }
 />
-<Route path="/sjb/all"  element={<Leaderboard schoolFilter="San Juan Boys RC School" titleOverride="San Juan Boys’ RC — Leaderboard" />} />
-<Route path="/sjb/std2" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 2" titleOverride="SJBRC — Std 2 Leaderboard" />} />
-<Route path="/sjb/std3" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 3" titleOverride="SJBRC — Std 3 Leaderboard" />} />
-<Route path="/sjb/std4" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 4" titleOverride="SJBRC — Std 4 Leaderboard" />} />
-<Route path="/sjb/std5" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 5" titleOverride="SJBRC — Std 5 Leaderboard" />} />
+<Route path="/sjb/all"  element={<Leaderboard schoolFilter="San Juan Boys RC School" titleOverride="San Juan Boys’ RC — Leaderboard" showExtras={false} />} />
+<Route path="/sjb/std2" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 2" titleOverride="SJBRC — Std 2 Leaderboard" showExtras={false} />} />
+<Route path="/sjb/std3" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 3" titleOverride="SJBRC — Std 3 Leaderboard" showExtras={false} />} />
+<Route path="/sjb/std4" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 4" titleOverride="SJBRC — Std 4 Leaderboard" showExtras={false} />} />
+<Route path="/sjb/std5" element={<Leaderboard schoolFilter="San Juan Boys RC School" classFilter="Std 5" titleOverride="SJBRC — Std 5 Leaderboard" showExtras={false} />} />
 
 <Route path="/hall-of-fame" element={<HallOfFame />} />
+
+<Route path="/bocas-2026" element={<BocasChallenge />} />
+
+<Route path="/bocaslitfest2026" element={<BocasLitFestLeaderboard />} />
 
       </Routes>
     </Router>

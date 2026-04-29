@@ -297,10 +297,18 @@ export default function HallOfFame() {
       `}</style>
 
       <header style={{ marginTop: 40, marginBottom: 24 }}>
-        <div style={{ display: "flex", justifyContent: "center", gap: 20, flexWrap: "wrap" }}>
-          <img src="/logo-asonline.svg" alt="A's Online" />
-          <img src="/logo-countmeintt.svg" alt="Count Me In TT" />
-        </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+  <img
+    src="/logo-asonline.svg"
+    alt="A's Online"
+    style={{ maxHeight: 200, width: "auto" }}
+  />
+  <img
+    src="/logo-countmeintt.svg"
+    alt="Count Me In TT"
+    style={{ maxHeight: 200, width: "auto" }}
+  />
+</div>
         <h1
           style={{
             fontSize: 42,
