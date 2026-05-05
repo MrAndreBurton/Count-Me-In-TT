@@ -321,6 +321,25 @@ export default function HallOfFame() {
         >
           🏅 Hall of Fame
         </h1>
+        
+       <div style={{ marginTop: 14, display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+  <Link to="/bocas-hall-of-fame">
+    <button
+      style={{
+        background: "#000",
+        color: "#fff",
+        fontWeight: 700,
+        padding: "10px 16px",
+        border: "none",
+        borderRadius: 10,
+        cursor: "pointer",
+        boxShadow: "2px 2px 6px rgba(0,0,0,0.25)",
+      }}
+    >
+      Bocas Hall of Fame
+    </button>
+  </Link>
+</div>
 
         <div style={{ marginTop: 12 }}>
           <label style={{ fontWeight: 700, marginRight: 8 }}>Month:</label>

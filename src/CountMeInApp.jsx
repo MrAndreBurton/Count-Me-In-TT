@@ -10,6 +10,7 @@ import Leaderboard from './Leaderboard';
 import HallOfFame from "./HallOfFame";
 import BocasChallenge from "./BocasChallenge";
 import BocasLitFestLeaderboard from "./BocasLitFestLeaderboard";
+import BocasHallOfFame from "./BocasHallOfFame";
 
 // -------------------- Anti-cheat module (inserted) --------------------
 function createAntiCheat(gridId) {
@@ -1233,6 +1234,9 @@ export default function CountMeInApp() {
 <Route path="/bocas-2026" element={<BocasChallenge />} />
 
 <Route path="/bocaslitfest2026" element={<BocasLitFestLeaderboard />} />
+
+<Route path="/bocas-hall-of-fame" element={<BocasHallOfFame />} />
+
 
       </Routes>
     </Router>
