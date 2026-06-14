@@ -6,9 +6,8 @@ const YOUTHOPIA_SHEET_URL =
 
 const EVENT_NAME = "Youthopia 2";
 
-export default function YouthopiaLeaderboard() {
-  const [podium, setPodium] = useState({ 1: null, 2: null, 3: null });
-  const [others, setOthers] = useState([]);
+export default function YouthopiaHallOfFame() {
+  const [winners, setWinners] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const norm = (s) =>
@@ -72,8 +71,7 @@ export default function YouthopiaLeaderboard() {
           !YOUTHOPIA_SHEET_URL ||
           YOUTHOPIA_SHEET_URL === "PASTE_YOUTHOPIA_PUBLISHED_CSV_URL_HERE"
         ) {
-          setPodium({ 1: null, 2: null, 3: null });
-          setOthers([]);
+          setWinners([]);
           setLastUpdated(new Date());
           return;
         }
@@ -110,21 +108,14 @@ export default function YouthopiaLeaderboard() {
 
         if (cancelled) return;
 
-        setPodium({
-          1: filtered[0] || null,
-          2: filtered[1] || null,
-          3: filtered[2] || null,
-        });
-
-        setOthers(filtered.slice(3));
+        setWinners(filtered);
         setLastUpdated(new Date());
       } catch (e) {
-        console.error("Youthopia leaderboard load error:", e);
+        console.error("Youthopia Hall of Fame load error:", e);
 
         if (cancelled) return;
 
-        setPodium({ 1: null, 2: null, 3: null });
-        setOthers([]);
+        setWinners([]);
         setLastUpdated(new Date());
       }
     };
@@ -136,36 +127,22 @@ export default function YouthopiaLeaderboard() {
     };
   }, []);
 
-  const WinnerCard = ({ place, player }) => (
-    <div
-      style={{
-        background: "rgba(255,255,255,0.95)",
-        color: "#000",
-        padding: 16,
-        borderRadius: 12,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
-        minWidth: 250,
-      }}
-    >
-      <h2 style={{ fontSize: 24, marginBottom: 10 }}>
-        {place === 1 ? "🥇 1st" : place === 2 ? "🥈 2nd" : "🥉 3rd"} Place
-      </h2>
+  const getPlaceLabel = (rank) => {
+    if (rank === 1) return "🥇 1st Place";
+    if (rank === 2) return "🥈 2nd Place";
+    if (rank === 3) return "🥉 3rd Place";
 
-      {player ? (
-        <>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{player.name}</div>
+    const suffix =
+      rank % 10 === 1 && rank % 100 !== 11
+        ? "st"
+        : rank % 10 === 2 && rank % 100 !== 12
+        ? "nd"
+        : rank % 10 === 3 && rank % 100 !== 13
+        ? "rd"
+        : "th";
 
-          <div style={{ marginTop: 8, fontFamily: "monospace", fontSize: 18 }}>
-            ⏱ {player.time}
-          </div>
-
-          <div style={{ marginTop: 8, fontSize: 14 }}>Grid: {player.grid}</div>
-        </>
-      ) : (
-        <div>— not set yet —</div>
-      )}
-    </div>
-  );
+    return `${rank}${suffix} Place`;
+  };
 
   return (
     <div
@@ -182,26 +159,8 @@ export default function YouthopiaLeaderboard() {
         color: "#000",
       }}
     >
-      <div style={{ position: "relative", marginBottom: 16 }}>
-        <Link
-          to="/leaderboard"
-          className="lb-btn"
-          style={{ position: "absolute", left: 16, top: 16 }}
-        >
-          ⬅ Main Leaderboard
-        </Link>
-
-        <Link
-          to="/youthopia-2"
-          className="lb-btn"
-          style={{ position: "absolute", right: 16, top: 16 }}
-        >
-          Back to Game
-        </Link>
-      </div>
-
       <style>{`
-        .lb-btn {
+        .hof-btn {
           background-color: #000;
           color: #fff;
           padding: 10px 14px;
@@ -213,13 +172,51 @@ export default function YouthopiaLeaderboard() {
           display: inline-block;
         }
 
+        .hof-card {
+          background: rgba(255,255,255,0.95);
+          color: #000;
+          border-radius: 16px;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.22);
+          padding: 18px;
+          text-align: center;
+        }
+
         @media (max-width: 640px) {
-          .lb-btn {
+          .hof-top-nav {
             position: static !important;
-            margin: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+          }
+
+          .hof-btn {
+            position: static !important;
+            margin: 4px;
           }
         }
       `}</style>
+
+      <div
+        className="hof-top-nav"
+        style={{ position: "relative", marginBottom: 16 }}
+      >
+        <Link
+          to="/youthopia-leaderboard"
+          className="hof-btn"
+          style={{ position: "absolute", left: 16, top: 16 }}
+        >
+          ⬅ Leaderboard
+        </Link>
+
+        <Link
+          to="/youthopia-2"
+          className="hof-btn"
+          style={{ position: "absolute", right: 16, top: 16 }}
+        >
+          Back to Game
+        </Link>
+      </div>
 
       <header style={{ marginTop: 50, marginBottom: 40 }}>
         <div
@@ -240,7 +237,7 @@ export default function YouthopiaLeaderboard() {
 
         <h1
           style={{
-            fontSize: 30,
+            fontSize: 34,
             marginTop: 20,
             textShadow: "2px 2px 4px rgba(0,0,0,0.35)",
             borderBottom: "4px solid #000",
@@ -248,101 +245,158 @@ export default function YouthopiaLeaderboard() {
             paddingBottom: 8,
           }}
         >
-          🏆 Youthopia 2 Leaderboard 🏆
+          🌟 Youthopia 2 Hall of Fame 🌟
         </h1>
 
-        <p style={{ fontSize: 18, fontWeight: "bold", marginTop: 10 }}>
-          Fastest players in the Youthopia 2 Challenge
+        <p
+          style={{
+            fontSize: 18,
+            fontWeight: "bold",
+            marginTop: 10,
+            maxWidth: 720,
+            marginLeft: "auto",
+            marginRight: "auto",
+            lineHeight: 1.5,
+          }}
+        >
+          Celebrating the fastest players from the Youthopia 2 Count Me In TT
+          Challenge.
         </p>
 
         <p style={{ color: "#333", fontSize: 16 }}>
           Updated: {lastUpdated ? lastUpdated.toLocaleString() : "Loading..."}
         </p>
-
-        <div style={{ marginTop: 18 }}>
-  <Link
-    to="/youthopia-hall-of-fame"
-    className="lb-btn"
-  >
-    🌟 View Hall of Fame
-  </Link>
-</div>
-
       </header>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: 16,
-          flexWrap: "wrap",
-          marginBottom: 40,
-        }}
-      >
-        <WinnerCard place={1} player={podium[1]} />
-        <WinnerCard place={2} player={podium[2]} />
-        <WinnerCard place={3} player={podium[3]} />
-      </div>
+      {winners.length > 0 ? (
+        <>
+          <section
+            style={{
+              maxWidth: 1000,
+              margin: "0 auto 40px",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 18,
+            }}
+          >
+            {winners.slice(0, 3).map((player, idx) => {
+              const rank = idx + 1;
 
-      <section style={{ maxWidth: 720, margin: "0 auto 60px", textAlign: "left" }}>
-        <h2
-          style={{
-            fontSize: 28,
-            marginBottom: 16,
-            textAlign: "center",
-            borderBottom: "3px solid #000",
-            display: "inline-block",
-            paddingBottom: 6,
-          }}
-        >
-          4th–10th Place
-        </h2>
+              return (
+                <div
+                  key={`${player.name}-${player.time}-${idx}`}
+                  className="hof-card"
+                  style={{
+                    border:
+                      rank === 1
+                        ? "4px solid #000"
+                        : "2px solid rgba(0,0,0,0.25)",
+                    transform: rank === 1 ? "scale(1.03)" : "scale(1)",
+                  }}
+                >
+                  <h2 style={{ fontSize: 26, marginBottom: 12 }}>
+                    {getPlaceLabel(rank)}
+                  </h2>
 
-        <div
-          style={{
-            background: "rgba(255,255,255,0.95)",
-            padding: 16,
-            borderRadius: 12,
-            boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
-          }}
-        >
-          {others.length ? (
-            <ol start={4} style={{ margin: 0, paddingLeft: 24 }}>
-              {others.map((p, idx) => {
-                const rank = idx + 4;
+                  <div
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 800,
+                      marginBottom: 10,
+                    }}
+                  >
+                    {player.name}
+                  </div>
 
-                const suffix =
-                  rank % 10 === 1 && rank % 100 !== 11
-                    ? "st"
-                    : rank % 10 === 2 && rank % 100 !== 12
-                    ? "nd"
-                    : rank % 10 === 3 && rank % 100 !== 13
-                    ? "rd"
-                    : "th";
+                  <div
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: 22,
+                      fontWeight: 700,
+                      marginBottom: 8,
+                    }}
+                  >
+                    ⏱ {player.time}
+                  </div>
+
+                  <div style={{ fontSize: 15 }}>Grid: {player.grid}</div>
+                </div>
+              );
+            })}
+          </section>
+
+          <section
+            style={{
+              maxWidth: 760,
+              margin: "0 auto 60px",
+              background: "rgba(255,255,255,0.95)",
+              padding: 18,
+              borderRadius: 14,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+              textAlign: "left",
+            }}
+          >
+            <h2
+              style={{
+                textAlign: "center",
+                fontSize: 28,
+                marginBottom: 16,
+                borderBottom: "3px solid #000",
+                display: "inline-block",
+                paddingBottom: 6,
+              }}
+            >
+              Top 10 Finishers
+            </h2>
+
+            <ol style={{ margin: 0, paddingLeft: 28 }}>
+              {winners.map((player, idx) => {
+                const rank = idx + 1;
 
                 return (
-                  <li key={`${p.name}-${idx}`} style={{ margin: "8px 0" }}>
+                  <li
+                    key={`${player.name}-${player.time}-${idx}`}
+                    style={{
+                      margin: "10px 0",
+                      fontSize: 17,
+                    }}
+                  >
                     <strong style={{ marginRight: 8 }}>
-                      {rank}
-                      {suffix}
+                      {getPlaceLabel(rank)}
                     </strong>
 
-                    <strong style={{ marginRight: 8 }}>{p.name}</strong>
+                    <strong style={{ marginRight: 8 }}>{player.name}</strong>
 
-                    <span style={{ marginRight: 8 }}>· {p.grid}</span>
+                    <span style={{ marginRight: 8 }}>· {player.grid}</span>
 
                     <span style={{ fontFamily: "monospace" }}>
-                      ⏱ {p.time}
+                      ⏱ {player.time}
                     </span>
                   </li>
                 );
               })}
             </ol>
-          ) : (
-            <p style={{ textAlign: "center", margin: 0 }}>— not set yet —</p>
-          )}
-        </div>
-      </section>
+          </section>
+        </>
+      ) : (
+        <section
+          style={{
+            maxWidth: 640,
+            margin: "0 auto 60px",
+            background: "rgba(255,255,255,0.95)",
+            padding: 24,
+            borderRadius: 14,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+          }}
+        >
+          <h2 style={{ fontSize: 26, marginBottom: 10 }}>No results yet</h2>
+
+          <p style={{ fontSize: 17, margin: 0 }}>
+            Once players submit their times, the Youthopia Hall of Fame will
+            appear here.
+          </p>
+        </section>
+      )}
 
       <div style={{ marginTop: 80 }}>
         <h2
@@ -353,7 +407,7 @@ export default function YouthopiaLeaderboard() {
             color: "#000",
           }}
         >
-          🚀 Thanks for Playing
+          🚀 Count Me In TT
         </h2>
 
         <p
@@ -365,11 +419,13 @@ export default function YouthopiaLeaderboard() {
             lineHeight: 1.5,
           }}
         >
-          Keep practising your speed and accuracy. Count Me In TT is about
-          building confidence one grid at a time.
+          Building speed, confidence, and accuracy through fun mathematics
+          challenges.
         </p>
 
-        <div style={{ textAlign: "center", marginTop: "40px", marginBottom: "20px" }}>
+        <div
+          style={{ textAlign: "center", marginTop: "40px", marginBottom: "20px" }}
+        >
           <a
             href="/about-us-contact.pdf"
             target="_blank"
@@ -412,5 +468,4 @@ export default function YouthopiaLeaderboard() {
     </div>
   );
 }
-
 

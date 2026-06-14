@@ -14,6 +14,7 @@ import BocasLitFestLeaderboard from "./BocasLitFestLeaderboard";
 import BocasHallOfFame from "./BocasHallOfFame";
 import YouthopiaChallenge from "./pages/YouthopiaChallenge";
 import YouthopiaLeaderboard from "./pages/YouthopiaLeaderboard";
+import YouthopiaHallOfFame from "./pages/YouthopiaHallOfFame";
 
 
 // -------------------- Anti-cheat module (inserted) --------------------
@@ -1246,6 +1247,8 @@ export default function CountMeInApp() {
 <Route path="/bocaslitfest2026" element={<BocasLitFestLeaderboard />} />
 
 <Route path="/bocas-hall-of-fame" element={<BocasHallOfFame />} />
+
+<Route path="/youthopia-hall-of-fame" element={<YouthopiaHallOfFame />} />
 
 
       </Routes>
