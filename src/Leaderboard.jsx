@@ -540,21 +540,11 @@ const rowPassesFiltersLocal = (rowSchool, rowClass) => {
       </button>
     </Link>
 
-    {bocasLive ? (
-      <Link to="/bocaslitfest2026" className="inline-block">
+      <Link to="/challenges" className="inline-block">
         <button className="bg-black text-white font-semibold px-3 py-1 rounded hover:bg-gray-800 shadow">
-          BocasLitFest2026
+          Challenges
         </button>
       </Link>
-    ) : (
-      <button
-        disabled
-        className="bg-gray-400 text-white font-semibold px-3 py-1 rounded shadow cursor-not-allowed opacity-70"
-        title="Available from Saturday May 2, 2026 at 8:00 AM"
-      >
-        BocasLitFest2026
-      </button>
-    )}
   </div>
 )}
 

@@ -8,9 +8,13 @@ import {
 import SchoolsPicker from "./SchoolsPicker";
 import Leaderboard from './Leaderboard';
 import HallOfFame from "./HallOfFame";
+import Challenges from "./Challenges";
 import BocasChallenge from "./BocasChallenge";
 import BocasLitFestLeaderboard from "./BocasLitFestLeaderboard";
 import BocasHallOfFame from "./BocasHallOfFame";
+import YouthopiaChallenge from "./pages/YouthopiaChallenge";
+import YouthopiaLeaderboard from "./pages/YouthopiaLeaderboard";
+
 
 // -------------------- Anti-cheat module (inserted) --------------------
 function createAntiCheat(gridId) {
@@ -1231,7 +1235,13 @@ export default function CountMeInApp() {
 
 <Route path="/hall-of-fame" element={<HallOfFame />} />
 
+<Route path="/challenges" element={<Challenges />} />
+
 <Route path="/bocas-2026" element={<BocasChallenge />} />
+
+<Route path="/youthopia-2" element={<YouthopiaChallenge />} />
+
+<Route path="/youthopia-leaderboard" element={<YouthopiaLeaderboard />} />
 
 <Route path="/bocaslitfest2026" element={<BocasLitFestLeaderboard />} />
 
