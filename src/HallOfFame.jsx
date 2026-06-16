@@ -141,6 +141,21 @@ export default function HallOfFame() {
   const [rows, setRows] = useState([]);  // raw parsed rows with grid/category
   const [loading, setLoading] = useState(false);
 
+ useEffect(() => {
+    document.title = "Hall of Fame | CountMeInTT";
+
+    let meta = document.querySelector('meta[name="description"]');
+
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+
+    meta.content =
+      "View the CountMeInTT Hall of Fame, monthly math challenge winners, fastest times, grid champions, and archived leaderboard achievements.";
+  }, []);
+
   // load all CSVs once
   useEffect(() => {
     let cancelled = false;
