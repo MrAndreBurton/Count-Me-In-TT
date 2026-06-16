@@ -247,6 +247,21 @@ function ScreenConfetti({ x, y, onDone = () => {} }) {
 // ---------------------------------------------------------
 
 function CoreGame({ initialPreset = '12x12', lockPreset = false }) {
+   useEffect(() => {
+    document.title = "CountMeInTT | Building Math Confidence Through Competition";
+
+    let meta = document.querySelector('meta[name="description"]');
+
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+
+    meta.content =
+      "CountMeInTT helps students build multiplication fluency, speed, and confidence through fun, competitive math challenges, leaderboards, and community events across Trinidad and Tobago.";
+  }, []);
+
   const [gridPresetId, setGridPresetId] = useState(initialPreset);
   const preset = GRID_PRESETS.find(p => p.id === gridPresetId) || GRID_PRESETS[2];
   const ROWS = preset.rows;

@@ -65,6 +65,21 @@ export default function YouthopiaChallenge() {
     email: "",
   });
 
+  useEffect(() => {
+    document.title = "Youthopia 2 Challenge | CountMeInTT";
+
+    let meta = document.querySelector('meta[name="description"]');
+
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+
+    meta.content =
+      "Play the CountMeInTT Youthopia 2 5x5 math challenge, submit your time, and compete on the Youthopia event leaderboard.";
+  }, []);
+
   const submissionsClosed = useMemo(() => new Date() > EVENT_END, []);
   const timerRef = useRef(null);
   const timerStartedRef = useRef(false);

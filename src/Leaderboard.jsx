@@ -16,6 +16,26 @@ export default function Leaderboard({
   const [others, setOthers] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
 
+  useEffect(() => {
+    const pageTitle = titleOverride
+      ? `${String(titleOverride).replace(/[🏆🥇🥈🥉🌍🏫]/g, "").trim()} | CountMeInTT`
+      : "Leaderboard | CountMeInTT";
+
+    document.title = pageTitle;
+
+    let meta = document.querySelector('meta[name="description"]');
+
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+
+    meta.content = schoolFilter
+      ? "View CountMeInTT school leaderboard results, student rankings, and math challenge times for participating schools in Trinidad and Tobago."
+      : "View the CountMeInTT leaderboard, top student times, math challenge rankings, and multiplication competition results across Trinidad and Tobago.";
+  }, [titleOverride, schoolFilter]);
+
   const norm = (s) =>
     String(s || "")
       .toLowerCase()

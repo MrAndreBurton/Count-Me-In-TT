@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 
 const btnStyle = {
@@ -23,7 +23,23 @@ const cardStyle = {
 };
 
 export default function Challenges() {
+  useEffect(() => {
+    document.title = "Challenges | CountMeInTT";
+
+    let meta = document.querySelector('meta[name="description"]');
+
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+
+    meta.content =
+      "Explore CountMeInTT challenges, event leaderboards, hall of fame archives, and community math competitions across Trinidad and Tobago.";
+  }, []);
+
   return (
+
     <div
       style={{
         fontFamily: "sans-serif",

@@ -56,6 +56,21 @@ export default function BocasChallenge() {
     email: "",
   });
 
+useEffect(() => {
+    document.title = "Bocas Lit Fest 2026 Challenge | CountMeInTT";
+
+    let meta = document.querySelector('meta[name="description"]');
+
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+
+    meta.content =
+      "Play the CountMeInTT Bocas Lit Fest 2026 5x5 math challenge, submit your time, and compete on the event leaderboard.";
+  }, []);
+
   const submissionsClosed = useMemo(() => new Date() > EVENT_END, []);
   const timerRef = useRef(null);
   const timerStartedRef = useRef(false);
