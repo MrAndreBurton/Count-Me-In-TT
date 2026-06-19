@@ -190,19 +190,7 @@ export default function StylesRules() {
           listed below.
         </p>
 
-        <p
-          style={{
-            fontSize: 13,
-            color: "#555",
-            marginTop: 8,
-            fontStyle: "italic",
-          }}
-        >
-          Add the flyer image to:{" "}
-          <span style={{ fontFamily: "monospace" }}>
-            public/styles-challenge-flyer.png
-          </span>
-        </p>
+        
       </section>
 
       <section className="rules-card">
