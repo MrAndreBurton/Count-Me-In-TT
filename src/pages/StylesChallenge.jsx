@@ -449,6 +449,13 @@ export default function StylesChallenge() {
                 Barber Salon.
               </p>
 
+<Link
+  to="/styles-rules"
+  className="text-xs font-bold text-blue-700 underline block mb-3"
+>
+  View Rules & Prize Eligibility
+</Link>
+
               <button
                 onClick={() => setShowIntro(false)}
                 className="mt-2 bg-blue-600 text-white px-4 py-2 rounded block mx-auto"
@@ -781,12 +788,47 @@ export default function StylesChallenge() {
         </p>
       </div>
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 px-4 overflow-y-auto">
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white text-black p-6 rounded shadow max-w-lg w-full space-y-4 my-8"
-          >
+     {showForm && (
+  <div
+    className="fixed inset-0 bg-black bg-opacity-70 z-50 px-4"
+    style={{
+      overflowY: "auto",
+      WebkitOverflowScrolling: "touch",
+      paddingTop: 24,
+      paddingBottom: 24,
+    }}
+  >
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white text-black p-6 rounded shadow max-w-lg w-full space-y-4"
+      style={{
+        margin: "0 auto",
+        maxHeight: "calc(100vh - 48px)",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        position: "relative",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setShowForm(false)}
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 12,
+          background: "#000",
+          color: "#fff",
+          border: "none",
+          borderRadius: "50%",
+          width: 32,
+          height: 32,
+          fontWeight: 700,
+          cursor: "pointer",
+        }}
+      >
+        ×
+      </button>
+
             <h2 className="text-xl font-bold text-center">
               🎉 Challenge Complete!
             </h2>

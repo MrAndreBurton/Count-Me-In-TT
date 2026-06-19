@@ -333,6 +333,13 @@ export default function StylesLeaderboard() {
           confirmed after review and contacted by CountMeInTT / A’s Online.
         </p>
 
+<Link
+  to="/styles-rules"
+  className="text-xs font-bold text-blue-700 underline block mb-3"
+>
+  View Rules & Prize Eligibility
+</Link>
+
         <p style={{ color: "#333", fontSize: 16, marginTop: 12 }}>
           Updated: {lastUpdated ? lastUpdated.toLocaleString() : "Loading..."}
         </p>

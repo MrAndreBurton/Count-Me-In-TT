@@ -18,6 +18,7 @@ import YouthopiaHallOfFame from "./pages/YouthopiaHallOfFame";
 import StylesChallenge from "./pages/StylesChallenge";
 import StylesLeaderboard from "./pages/StylesLeaderboard";
 import StylesHallOfFame from "./pages/StylesHallOfFame";
+import StylesRules from "./pages/StylesRules";
 
 
 
@@ -1274,6 +1275,8 @@ export default function CountMeInApp() {
 <Route path="/styles-leaderboard" element={<StylesLeaderboard />} />
 
 <Route path="/styles-hall-of-fame" element={<StylesHallOfFame />} />
+
+<Route path="/styles-rules" element={<StylesRules />} />
 
       </Routes>
     </Router>

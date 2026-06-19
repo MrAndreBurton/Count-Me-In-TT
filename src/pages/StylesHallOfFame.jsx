@@ -562,6 +562,13 @@ export default function StylesHallOfFame() {
           mathematics.
         </p>
 
+<Link
+  to="/styles-rules"
+  className="text-xs font-bold text-blue-700 underline block mb-3"
+>
+  View Rules & Prize Eligibility
+</Link>
+
         <div
           style={{
             textAlign: "center",
