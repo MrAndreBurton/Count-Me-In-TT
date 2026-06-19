@@ -15,6 +15,10 @@ import BocasHallOfFame from "./BocasHallOfFame";
 import YouthopiaChallenge from "./pages/YouthopiaChallenge";
 import YouthopiaLeaderboard from "./pages/YouthopiaLeaderboard";
 import YouthopiaHallOfFame from "./pages/YouthopiaHallOfFame";
+import StylesChallenge from "./pages/StylesChallenge";
+import StylesLeaderboard from "./pages/StylesLeaderboard";
+import StylesHallOfFame from "./pages/StylesHallOfFame";
+
 
 
 // -------------------- Anti-cheat module (inserted) --------------------
@@ -1265,6 +1269,11 @@ export default function CountMeInApp() {
 
 <Route path="/youthopia-hall-of-fame" element={<YouthopiaHallOfFame />} />
 
+<Route path="/styles-challenge" element={<StylesChallenge />} />
+
+<Route path="/styles-leaderboard" element={<StylesLeaderboard />} />
+
+<Route path="/styles-hall-of-fame" element={<StylesHallOfFame />} />
 
       </Routes>
     </Router>
