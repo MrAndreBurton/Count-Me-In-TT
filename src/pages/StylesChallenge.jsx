@@ -97,7 +97,6 @@ export default function StylesChallenge() {
   const timerRef = useRef(null);
   const timerStartedRef = useRef(false);
   const successTimeoutRef = useRef(null);
-
   const inputRefs = useRef([]);
 
   const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
@@ -115,6 +114,14 @@ export default function StylesChallenge() {
       .replace(/[^\p{L}\p{N}]+/gu, " ")
       .replace(/\s+/g, " ")
       .trim();
+
+  const getPlaceLabel = (i) => {
+    if (i === 0) return "1st";
+    if (i === 1) return "2nd";
+    if (i === 2) return "3rd";
+    if (i === 3) return "4th";
+    return "5th";
+  };
 
   const parseCSV = (text) => {
     if (!text || typeof text !== "string" || text.trim() === "") return [];
@@ -449,12 +456,12 @@ export default function StylesChallenge() {
                 Barber Salon.
               </p>
 
-<Link
-  to="/styles-rules"
-  className="text-xs font-bold text-blue-700 underline block mb-3"
->
-  View Rules & Prize Eligibility
-</Link>
+              <Link
+                to="/styles-rules"
+                className="text-xs font-bold text-blue-700 underline block mb-3"
+              >
+                View Rules & Prize Eligibility
+              </Link>
 
               <button
                 onClick={() => setShowIntro(false)}
@@ -554,95 +561,12 @@ export default function StylesChallenge() {
               </h2>
 
               <p className="text-sm font-semibold text-black">
-                Scan. Play in-store. Beat under 20 seconds. Submit your time. Win.
+                Scan. Play in-store. Beat under 20 seconds. Win.
               </p>
 
               <p className="text-xs text-gray-700 mt-2">
-                Prize-eligible entries must be completed in-store at Styles Barber
-                Salon. Winners are confirmed after review.
+                Must play and submit your time in store. $50 elegible winners will be contacted and verified.
               </p>
-            </div>
-          </div>
-
-          <div className="max-w-screen-md mx-auto">
-            <div className="bg-white rounded-lg shadow p-4 border border-yellow-300">
-              <h2 className="text-center font-bold text-xl mb-1 text-blue-600">
-                $50 Prize Tracker
-              </h2>
-
-              <p className="text-sm text-black font-semibold mb-3">
-                First 5 students each month to beat under 20 seconds. Winners are
-                confirmed after review.
-              </p>
-
-              <p className="text-xs text-gray-600 mb-4">
-                Updated: {lastUpdated ? lastUpdated.toLocaleString() : "Loading..."}
-              </p>
-
-              {prizeTracker.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-sm text-center">
-                  {Array.from({ length: 5 }, (_, i) => {
-                    const p = prizeTracker[i];
-
-                    return (
-                      <div
-                        key={i}
-                        className="bg-blue-100 px-3 py-3 rounded shadow"
-                      >
-                        <strong className="text-black block mb-1">
-                          {i + 1}
-                        </strong>
-
-                        {p ? (
-                          <>
-                            <span className="text-black font-bold block">
-                              {p.publicDisplayName}
-                            </span>
-
-                            <span className="font-mono text-black block">
-                              ⏱ {p.time}
-                            </span>
-
-                            <span className="text-black block">
-                              {formatDate(p.timestamp)}
-                            </span>
-
-                            <span
-                              className={`inline-block mt-2 px-2 py-1 rounded text-[11px] font-bold ${
-                                norm(p.prizeTrackerStatus) ===
-                                norm("Confirmed Winner")
-                                  ? "status-confirmed"
-                                  : "status-pending"
-                              }`}
-                            >
-                              {p.prizeTrackerStatus}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-black block">Available</span>
-                            <span className="font-mono text-black block">
-                              --:--.--
-                            </span>
-                            <span className="text-black block">—</span>
-                            <span className="inline-block mt-2 px-2 py-1 rounded text-[11px] font-bold status-pending">
-                              Open Spot
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="bg-blue-100 px-4 py-4 rounded shadow text-center">
-                  <p className="font-bold">No prize spots filled yet.</p>
-                  <p className="text-sm mt-1">
-                    Be one of the first 5 students this month to beat under 20
-                    seconds.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
 
@@ -717,6 +641,103 @@ export default function StylesChallenge() {
               </div>
             </div>
           </div>
+
+          <div className="max-w-screen-md mx-auto">
+            <div className="bg-white rounded-lg shadow p-4 border border-yellow-300">
+              <h2 className="text-center font-bold text-xl mb-1 text-blue-600">
+                $50 Prize Tracker
+              </h2>
+
+              <p className="text-sm text-black font-semibold mb-2">
+                First 5 students each month to beat under 20 seconds.
+              </p>
+
+              <p className="text-xs text-gray-600 mb-3">
+                Updated: {lastUpdated ? lastUpdated.toLocaleString() : "Loading..."}
+              </p>
+
+              {prizeTracker.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 text-sm text-center">
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const p = prizeTracker[i];
+
+                    return (
+                      <div
+                        key={i}
+                        className="bg-blue-100 px-3 py-2 rounded shadow"
+                        style={{ minHeight: "auto" }}
+                      >
+                        <strong className="text-black block mb-1 text-sm">
+                          {getPlaceLabel(i)}
+                        </strong>
+
+                        {p ? (
+                          <>
+                            <span className="text-black font-bold block text-sm leading-tight">
+                              {p.publicDisplayName}
+                            </span>
+
+                            <span className="font-mono text-black block text-sm leading-tight">
+                              ⏱ {p.time}
+                            </span>
+
+                            <span className="text-black block text-xs leading-tight">
+                              {formatDate(p.timestamp)}
+                            </span>
+
+                            <span
+                              className={`inline-block mt-1 px-2 py-1 rounded text-[10px] font-bold ${
+                                norm(p.prizeTrackerStatus) ===
+                                norm("Confirmed Winner")
+                                  ? "status-confirmed"
+                                  : "status-pending"
+                              }`}
+                            >
+                              {p.prizeTrackerStatus}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-black block text-sm leading-tight">
+                              Available
+                            </span>
+
+                            <span className="font-mono text-black block text-sm leading-tight">
+                              --:--.--
+                            </span>
+
+                            <span className="text-black block text-xs leading-tight">
+                              —
+                            </span>
+
+                            <span className="inline-block mt-1 px-2 py-1 rounded text-[10px] font-bold status-pending">
+                              Open Spot
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="bg-blue-100 px-4 py-3 rounded shadow text-center">
+                  <p className="font-bold">No prize spots filled yet.</p>
+                  <p className="text-sm mt-1">
+                    Be one of the first 5 this month to beat under 20 seconds.
+                  </p>
+                </div>
+              )}
+
+              <div style={{ marginTop: 12 }}>
+                <Link
+                  to="/styles-rules"
+                  className="text-xs font-bold text-blue-700 underline"
+                >
+                  View Rules & Prize Eligibility
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -738,9 +759,9 @@ export default function StylesChallenge() {
           </p>
 
           <p style={{ color: "#555", lineHeight: 1.5 }}>
-            Prize eligibility is confirmed after review. If you qualify, CountMeInTT /
-            A&apos;s Online will contact the parent/guardian using the details
-            submitted.
+            Prize eligibility is confirmed after review. If you qualify,
+            CountMeInTT / A&apos;s Online will contact the parent/guardian using
+            the details submitted.
           </p>
 
           <div style={{ marginTop: 16 }}>
@@ -788,46 +809,46 @@ export default function StylesChallenge() {
         </p>
       </div>
 
-     {showForm && (
-  <div
-    className="fixed inset-0 bg-black bg-opacity-70 z-50 px-4"
-    style={{
-      overflowY: "auto",
-      WebkitOverflowScrolling: "touch",
-      paddingTop: 24,
-      paddingBottom: 24,
-    }}
-  >
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white text-black p-6 rounded shadow max-w-lg w-full space-y-4"
-      style={{
-        margin: "0 auto",
-        maxHeight: "calc(100vh - 48px)",
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
-        position: "relative",
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => setShowForm(false)}
-        style={{
-          position: "absolute",
-          top: 10,
-          right: 12,
-          background: "#000",
-          color: "#fff",
-          border: "none",
-          borderRadius: "50%",
-          width: 32,
-          height: 32,
-          fontWeight: 700,
-          cursor: "pointer",
-        }}
-      >
-        ×
-      </button>
+      {showForm && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-70 z-50 px-4"
+          style={{
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            paddingTop: 24,
+            paddingBottom: 24,
+          }}
+        >
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white text-black p-6 rounded shadow max-w-lg w-full space-y-4"
+            style={{
+              margin: "0 auto",
+              maxHeight: "calc(100vh - 48px)",
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+              position: "relative",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 12,
+                background: "#000",
+                color: "#fff",
+                border: "none",
+                borderRadius: "50%",
+                width: 32,
+                height: 32,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              ×
+            </button>
 
             <h2 className="text-xl font-bold text-center">
               🎉 Challenge Complete!
