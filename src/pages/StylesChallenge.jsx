@@ -515,8 +515,8 @@ export default function StylesChallenge() {
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
               <img
-                src="/as-online-logo.svg"
-                alt="A's Online"
+                src="/logo-countmeintt.svg"
+                alt="Count Me In TT"
                 className="h-12 w-auto drop-shadow-md ring-1 ring-black/20 rounded"
               />
 
@@ -535,23 +535,6 @@ export default function StylesChallenge() {
             >
               Reset Game
             </button>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: 10,
-              marginBottom: 10,
-            }}
-          >
-            <div className="styles-logo-wrap">
-              <img
-                src="/logo-countmeintt.svg"
-                alt="Count Me In TT"
-                style={{ maxHeight: 180, width: "auto" }}
-              />
-            </div>
           </div>
 
           <div className="max-w-screen-md mx-auto">
