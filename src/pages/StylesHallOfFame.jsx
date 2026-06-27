@@ -295,11 +295,12 @@ export default function StylesHallOfFame() {
           />
 
           {/* Add Styles logo later when ready */}
-          {/* <img
+          >
+            <img
             src="/logo-styles-barber-salon.svg"
             alt="Styles Barber Salon"
             style={{ maxHeight: 180, width: "auto" }}
-          /> */}
+          />
         </div>
 
         <h1
