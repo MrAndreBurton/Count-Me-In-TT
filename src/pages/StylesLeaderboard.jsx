@@ -294,9 +294,7 @@ export default function StylesLeaderboard() {
             alt="Count Me In TT"
             style={{ maxHeight: 180, width: "auto" }}
           />
-
-          {/* Add sponsor/logo later when ready */}
-          >
+         
             <img
             src="/logo-styles-barber-salon.svg"
             alt="Styles Barber Salon"

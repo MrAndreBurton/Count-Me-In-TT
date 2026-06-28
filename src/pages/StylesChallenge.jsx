@@ -312,7 +312,7 @@ export default function StylesChallenge() {
     if (isSubmitting) return;
 
     if (!formData.permissionConfirmed) {
-      alert("Please confirm parent/guardian permission before submitting.");
+      alert("I confirm that a parent/guardian has given permission for CountMeInTT / A’s Online Tutoring Services to contact us by phone or email if this student wins or qualifies for challenge updates.");
       return;
     }
 
@@ -931,7 +931,7 @@ export default function StylesChallenge() {
 
             <input
               type="email"
-              placeholder="Email (Optional)"
+              placeholder="Parent/Guardian Email (Optional)"
               className="w-full border px-3 py-2 rounded"
               value={formData.email}
               onChange={(e) =>

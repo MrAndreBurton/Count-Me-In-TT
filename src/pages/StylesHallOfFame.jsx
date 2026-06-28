@@ -287,15 +287,13 @@ export default function StylesHallOfFame() {
             flexWrap: "wrap",
             alignItems: "center",
           }}
-        >
+>
           <img
             src="/logo-countmeintt.svg"
             alt="Count Me In TT"
             style={{ maxHeight: 180, width: "auto" }}
           />
 
-          {/* Add Styles logo later when ready */}
-          >
             <img
             src="/logo-styles-barber-salon.svg"
             alt="Styles Barber Salon"
