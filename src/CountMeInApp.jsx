@@ -19,6 +19,12 @@ import StylesChallenge from "./pages/StylesChallenge";
 import StylesLeaderboard from "./pages/StylesLeaderboard";
 import StylesHallOfFame from "./pages/StylesHallOfFame";
 import StylesRules from "./pages/StylesRules";
+import MathLanguagePlay from "./pages/MathLanguagePlay";
+import MathLanguageDictionary from "./pages/MathLanguageDictionary";
+import MathLanguageHome from "./pages/MathLanguageHome";
+import ScrollToTop from "./components/ScrollToTop";
+
+
 
 
 
@@ -1129,6 +1135,8 @@ const Game15x15 = () => <CoreGame initialPreset="15x15" lockPreset />;
 export default function CountMeInApp() {
   return (
     <Router>
+     <ScrollToTop />
+
       <Routes>
         <Route path="/" element={<CoreGame initialPreset="12x12" />} />
         <Route path="/5x5grid" element={<CoreGame initialPreset="5x5" lockPreset />} />
@@ -1277,6 +1285,13 @@ export default function CountMeInApp() {
 <Route path="/styles-hall-of-fame" element={<StylesHallOfFame />} />
 
 <Route path="/styles-rules" element={<StylesRules />} />
+
+<Route path="/math-language/play" element={<MathLanguagePlay />} />
+
+<Route path="/math-language/dictionary" element={<MathLanguageDictionary />} />
+
+<Route path="/math-language" element={<MathLanguageHome />} />
+
 
       </Routes>
     </Router>
