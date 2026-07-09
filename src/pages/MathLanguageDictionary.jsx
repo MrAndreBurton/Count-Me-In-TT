@@ -161,7 +161,8 @@ export default function MathLanguageDictionary() {
           </button>
 
           {isOpen && (
-            <div className="border-t border-gray-100 p-5">
+            <div className="border-t border-yellow-200 bg-yellow-50/60 p-5">
+              <div className="rounded-2xl border border-yellow-100 bg-white p-5">
               {term.simpleMeaning && (
                 <div className="mb-4">
                   <p className="mb-1 text-sm font-bold text-gray-500">
@@ -216,6 +217,7 @@ export default function MathLanguageDictionary() {
                 Practise This Word
               </a>
             </div>
+           </div>
           )}
         </article>
       );
