@@ -120,14 +120,18 @@ export default function MathLanguageDictionary() {
 
       return (
         <article
-          key={term.id}
-          className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
-        >
+  key={term.id}
+  className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-gray-900 shadow-sm"
+>
+
           <button
-            type="button"
-            onClick={() => setOpenTermId(isOpen ? null : term.id)}
-            className="flex w-full items-center justify-between gap-2 p-3 text-left hover:bg-yellow-50"
-          >
+  type="button"
+  onClick={() => setOpenTermId(isOpen ? null : term.id)}
+  className="flex w-full items-center justify-between gap-4 bg-white p-5 text-left text-gray-900 transition hover:bg-yellow-50 focus:bg-white focus:outline-none active:bg-yellow-50"
+  style={{
+    WebkitTapHighlightColor: "transparent",
+  }}
+>
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-xl font-black text-gray-900">
