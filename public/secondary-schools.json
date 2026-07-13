@@ -1,0 +1,1061 @@
+{
+  "schools": [
+    "Advanced Skill Training Centre (ASTC)",
+    "Aranguez North Secondary",
+    "Arete Institute of Science",
+    "Arima Central Secondary",
+    "Arima North Secondary",
+    "Arima Regional Life Centre",
+    "ASJA Boys' College Charlieville",
+    "ASJA Boys' College, San Fernando",
+    "ASJA Girls' College Charlieville",
+    "ASJA Girls' College, Barrackpore",
+    "ASJA Girls' College, San Fernando",
+    "ASJA Girls', Tunapuna",
+    "Barataria Hi Tech",
+    "Barataria North Secondary",
+    "Barataria South Secondary",
+    "Barrackpore East Secondary",
+    "Barrackpore West Secondary",
+    "Bates Memorial High School of SDA",
+    "Beetham Life Centre",
+    "Belmont (St. Francis) Boys' Secondary",
+    "Belmont Secondary",
+    "Biche Secondary",
+    "Bishop Anstey High (East)",
+    "Bishop Anstey High School",
+    "Bishop Centenary College",
+    "Blanchisseuse Secondary",
+    "Bon Air Secondary",
+    "Brazil Secondary",
+    "British Academy of POS",
+    "Carapichaima East Secondary",
+    "Carapichaima West Secondary",
+    "Caribbean Union College Secondary School",
+    "Cedros Secondary",
+    "Chaguanas North Secondary",
+    "Chaguanas South Secondary",
+    "Chinmaya Vidyalaya High School",
+    "Christ College Vocational Trade Centre",
+    "Class Enterprise",
+    "Corpus Christi College",
+    "Coryal Secondary",
+    "Couva East Secondary",
+    "Couva West Secondary",
+    "Cowen Hamilton Secondary",
+    "CTS College",
+    "Cunupia Secondary",
+    "Darul Uloom T&T Ltd",
+    "Debe Secondary School",
+    "Diego Martin Central Secondary",
+    "Diego Martin Finishing School",
+    "Diego Martin North Secondary",
+    "Diego Martin Regional Life Centre",
+    "East Mucurapo Secondary School",
+    "El Dorado East Secondary",
+    "El Dorado West Secondary",
+    "El Socorro Regional Life Centre",
+    "Elders' Classes",
+    "Fatima College",
+    "Five Rivers Secondary",
+    "Forres Park Regional Life Centre",
+    "Fr. Gerry Pantin Life Centre (Point Fortin)",
+    "Freeport Junior Life Centre",
+    "Fyzabad Anglican",
+    "Fyzabad Secondary",
+    "Gasparillo Secondary School",
+    "Guaico Secondary",
+    "Guayaguayare Secondary",
+    "Hillview College",
+    "Holy Cross College",
+    "Holy Faith Convent Couva",
+    "Holy Faith Convent, Penal",
+    "Holy Name Convent",
+    "Holy Name Convent, Point Fortin",
+    "Iere High School",
+    "Johnson's Finishing School",
+    "La Romain Hi Tech",
+    "La Romaine Junior Life Secondary School",
+    "La Romaine Regional Life Centre",
+    "La Romaine Secondary School",
+    "Lakshmi Girls' Hindu",
+    "Malabar Secondary",
+    "Malick Secondary",
+    "Manzanilla Secondary",
+    "Marabella North Secondary School",
+    "Marabella South Secondary",
+    "Matelot Community School",
+    "Matrua Secondary",
+    "Mayaro Junior Life Centre",
+    "Mayaro Secondary",
+    "Miracle Ministries Pentecostal High School",
+    "Modern Business School, San Fernando",
+    "Moruga Secondary",
+    "Morvant/Laventille Secondary",
+    "Mt. Hope Secondary",
+    "Mucurapo West Secondary",
+    "Naparima College",
+    "Naparima Girls High School",
+    "New Butler Associate College",
+    "Northeastern College",
+    "Open Bible High School",
+    "Palo Seco Secondary School",
+    "Parvati Girl's Hindu College",
+    "Penal Secondary",
+    "Pleasantville Secondary School",
+    "Point Fortin East Secondary",
+    "Point Fortin West Secondary",
+    "Presentation College Chaguanas",
+    "Presentation College San Fernando",
+    "Preysal Secondary",
+    "Princes Town East Secondary",
+    "Princes Town West Secondary",
+    "Providence Girls' Catholic School",
+    "Queen's Royal College",
+    "Reno’s Educational Institute",
+    "Rio Claro East Secondary",
+    "Rio Claro West Secondary",
+    "Russell Latapy Secondary",
+    "San Fernando Central Secondary School",
+    "San Fernando East Secondary School",
+    "San Fernando West Secondary School",
+    "San Juan North Secondary",
+    "San Juan South Secondary",
+    "Sangre Grande Educational Institute",
+    "Sangre Grande Secondary",
+    "Saraswati Girls' Hindu College",
+    "Servol Hospitality Programme",
+    "Servol Junior Life Centre (Arima)",
+    "Servol Junior Life Centre (Barataria)",
+    "Servol Junior Life Centre (Laventille)",
+    "Servol Junior Life Centre (San Juan)",
+    "Servol Junior Life Centre (Sangre Grande)",
+    "Servol Junior Life Centre (St Ann's)",
+    "Shiva Boys Hindu College",
+    "Siparia East Secondary",
+    "Siparia West Secondary",
+    "Sixth Form P.O.S (Polytechnic Sixth Form)",
+    "South East Port-of-Spain",
+    "Southern Academy of SDA",
+    "St Francois Girls' College",
+    "St Joseph's Convent P.O.S",
+    "St Joseph's Convent San Fernando",
+    "St Stephen's College",
+    "St. Andrew's Regional LC (Sangre Grande)",
+    "St. Anthony's College",
+    "St. Augustine Girl's High",
+    "St. Augustine Secondary",
+    "St. Benedict's College",
+    "St. Charles High School",
+    "St. George's College",
+    "St. James Secondary",
+    "St. Joseph Secondary School",
+    "St. Joseph's College",
+    "St. Joseph's Convent",
+    "St. Kevin College",
+    "St. Mary's College",
+    "Ste. Madeleine Secondary School",
+    "Success/ Laventille Secondary",
+    "Swaha Hindu College",
+    "Tabaquite Secondary",
+    "Tableland Secondary",
+    "The International School of POS",
+    "Toco Secondary",
+    "Tranquility Secondary",
+    "Trinity College",
+    "Trinity College (East)",
+    "Tunapuna Secondary",
+    "Union Claxton Bay Secondary School",
+    "Upper Level Educational Institute",
+    "UWI Sixth Form San Fernando",
+    "Valencia Secondary",
+    "Vessigny Secondary",
+    "Vishnu Boys' Hindu College",
+    "Waterloo Secondary",
+    "Williamsville Secondary",
+    "Woodbrook Secondary"
+  ],
+  "schoolRecords": [
+    {
+      "name": "Advanced Skill Training Centre (ASTC)",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "Aranguez North Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "Arete Institute of Science",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "Arima Central Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Arima North Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Arima Regional Life Centre",
+      "district": "St George",
+      "management": "private"
+    },
+    {
+      "name": "ASJA Boys' College Charlieville",
+      "district": "Caroni",
+      "management": "government_assisted"
+    },
+    {
+      "name": "ASJA Boys' College, San Fernando",
+      "district": "Victoria",
+      "management": "government_assisted"
+    },
+    {
+      "name": "ASJA Girls' College Charlieville",
+      "district": "Caroni",
+      "management": "government_assisted"
+    },
+    {
+      "name": "ASJA Girls' College, Barrackpore",
+      "district": "South Eastern",
+      "management": "government_assisted"
+    },
+    {
+      "name": "ASJA Girls' College, San Fernando",
+      "district": "Victoria",
+      "management": "government_assisted"
+    },
+    {
+      "name": "ASJA Girls', Tunapuna",
+      "district": "St George",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Barataria Hi Tech",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Barataria North Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "Barataria South Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "Barrackpore East Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Barrackpore West Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Bates Memorial High School of SDA",
+      "district": "North Eastern",
+      "management": "private"
+    },
+    {
+      "name": "Beetham Life Centre",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Belmont (St. Francis) Boys' Secondary",
+      "district": "Port of Spain",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Belmont Secondary",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "Biche Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Bishop Anstey High (East)",
+      "district": "St George",
+      "management": "private"
+    },
+    {
+      "name": "Bishop Anstey High School",
+      "district": "Port of Spain",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Bishop Centenary College",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Blanchisseuse Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "Bon Air Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "Brazil Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "British Academy of POS",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Carapichaima East Secondary",
+      "district": "Caroni",
+      "management": "government"
+    },
+    {
+      "name": "Carapichaima West Secondary",
+      "district": "Caroni",
+      "management": "government"
+    },
+    {
+      "name": "Caribbean Union College Secondary School",
+      "district": "St George",
+      "management": "private"
+    },
+    {
+      "name": "Cedros Secondary",
+      "district": "St Patrick",
+      "management": "government"
+    },
+    {
+      "name": "Chaguanas North Secondary",
+      "district": "Caroni",
+      "management": "government"
+    },
+    {
+      "name": "Chaguanas South Secondary",
+      "district": "Caroni",
+      "management": "government"
+    },
+    {
+      "name": "Chinmaya Vidyalaya High School",
+      "district": "Caroni",
+      "management": "private"
+    },
+    {
+      "name": "Christ College Vocational Trade Centre",
+      "district": "South Eastern",
+      "management": "private"
+    },
+    {
+      "name": "Class Enterprise",
+      "district": "South Eastern",
+      "management": "private"
+    },
+    {
+      "name": "Corpus Christi College",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Coryal Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Couva East Secondary",
+      "district": "Caroni",
+      "management": "government"
+    },
+    {
+      "name": "Couva West Secondary",
+      "district": "Caroni",
+      "management": "government"
+    },
+    {
+      "name": "Cowen Hamilton Secondary",
+      "district": "South Eastern",
+      "management": "government_assisted"
+    },
+    {
+      "name": "CTS College",
+      "district": "Caroni",
+      "management": "private"
+    },
+    {
+      "name": "Cunupia Secondary",
+      "district": "Caroni",
+      "management": "government"
+    },
+    {
+      "name": "Darul Uloom T&T Ltd",
+      "district": "Caroni",
+      "management": "private"
+    },
+    {
+      "name": "Debe Secondary School",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "Diego Martin Central Secondary",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "Diego Martin Finishing School",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Diego Martin North Secondary",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "Diego Martin Regional Life Centre",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "East Mucurapo Secondary School",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "El Dorado East Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "El Dorado West Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "El Socorro Regional Life Centre",
+      "district": "St George",
+      "management": "private"
+    },
+    {
+      "name": "Elders' Classes",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Fatima College",
+      "district": "Port of Spain",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Five Rivers Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "Forres Park Regional Life Centre",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "Fr. Gerry Pantin Life Centre (Point Fortin)",
+      "district": "St Patrick",
+      "management": "private"
+    },
+    {
+      "name": "Freeport Junior Life Centre",
+      "district": "Caroni",
+      "management": "private"
+    },
+    {
+      "name": "Fyzabad Anglican",
+      "district": "St Patrick",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Fyzabad Secondary",
+      "district": "St Patrick",
+      "management": "government"
+    },
+    {
+      "name": "Gasparillo Secondary School",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "Guaico Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Guayaguayare Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Hillview College",
+      "district": "St George",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Holy Cross College",
+      "district": "North Eastern",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Holy Faith Convent Couva",
+      "district": "Caroni",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Holy Faith Convent, Penal",
+      "district": "St Patrick",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Holy Name Convent",
+      "district": "Port of Spain",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Holy Name Convent, Point Fortin",
+      "district": "St Patrick",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Iere High School",
+      "district": "St Patrick",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Johnson's Finishing School",
+      "district": "North Eastern",
+      "management": "private"
+    },
+    {
+      "name": "La Romain Hi Tech",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "La Romaine Junior Life Secondary School",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "La Romaine Regional Life Centre",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "La Romaine Secondary School",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "Lakshmi Girls' Hindu",
+      "district": "St George",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Malabar Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Malick Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "Manzanilla Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Marabella North Secondary School",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "Marabella South Secondary",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "Matelot Community School",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Matrua Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Mayaro Junior Life Centre",
+      "district": "South Eastern",
+      "management": "private"
+    },
+    {
+      "name": "Mayaro Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Miracle Ministries Pentecostal High School",
+      "district": "Caroni",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Modern Business School, San Fernando",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "Moruga Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Morvant/Laventille Secondary",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "Mt. Hope Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "Mucurapo West Secondary",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "Naparima College",
+      "district": "Victoria",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Naparima Girls High School",
+      "district": "Victoria",
+      "management": "government_assisted"
+    },
+    {
+      "name": "New Butler Associate College",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Northeastern College",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Open Bible High School",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "Palo Seco Secondary School",
+      "district": "St Patrick",
+      "management": "government"
+    },
+    {
+      "name": "Parvati Girl's Hindu College",
+      "district": "Victoria",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Penal Secondary",
+      "district": "St Patrick",
+      "management": "government"
+    },
+    {
+      "name": "Pleasantville Secondary School",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "Point Fortin East Secondary",
+      "district": "St Patrick",
+      "management": "government"
+    },
+    {
+      "name": "Point Fortin West Secondary",
+      "district": "St Patrick",
+      "management": "government"
+    },
+    {
+      "name": "Presentation College Chaguanas",
+      "district": "Caroni",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Presentation College San Fernando",
+      "district": "Victoria",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Preysal Secondary",
+      "district": "Caroni",
+      "management": "government"
+    },
+    {
+      "name": "Princes Town East Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Princes Town West Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Providence Girls' Catholic School",
+      "district": "Port of Spain",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Queen's Royal College",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "Reno’s Educational Institute",
+      "district": "Caroni",
+      "management": "private"
+    },
+    {
+      "name": "Rio Claro East Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Rio Claro West Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Russell Latapy Secondary",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "San Fernando Central Secondary School",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "San Fernando East Secondary School",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "San Fernando West Secondary School",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "San Juan North Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "San Juan South Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "Sangre Grande Educational Institute",
+      "district": "North Eastern",
+      "management": "private"
+    },
+    {
+      "name": "Sangre Grande Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Saraswati Girls' Hindu College",
+      "district": "Caroni",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Servol Hospitality Programme",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Servol Junior Life Centre (Arima)",
+      "district": "St George",
+      "management": "private"
+    },
+    {
+      "name": "Servol Junior Life Centre (Barataria)",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Servol Junior Life Centre (Laventille)",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Servol Junior Life Centre (San Juan)",
+      "district": "St George",
+      "management": "private"
+    },
+    {
+      "name": "Servol Junior Life Centre (Sangre Grande)",
+      "district": "North Eastern",
+      "management": "private"
+    },
+    {
+      "name": "Servol Junior Life Centre (St Ann's)",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Shiva Boys Hindu College",
+      "district": "St Patrick",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Siparia East Secondary",
+      "district": "St Patrick",
+      "management": "government"
+    },
+    {
+      "name": "Siparia West Secondary",
+      "district": "St Patrick",
+      "management": "government"
+    },
+    {
+      "name": "Sixth Form P.O.S (Polytechnic Sixth Form)",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "South East Port-of-Spain",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "Southern Academy of SDA",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "St Francois Girls' College",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "St Joseph's Convent P.O.S",
+      "district": "Port of Spain",
+      "management": "government_assisted"
+    },
+    {
+      "name": "St Joseph's Convent San Fernando",
+      "district": "Victoria",
+      "management": "government_assisted"
+    },
+    {
+      "name": "St Stephen's College",
+      "district": "South Eastern",
+      "management": "government_assisted"
+    },
+    {
+      "name": "St. Andrew's Regional LC (Sangre Grande)",
+      "district": "North Eastern",
+      "management": "private"
+    },
+    {
+      "name": "St. Anthony's College",
+      "district": "Port of Spain",
+      "management": "government_assisted"
+    },
+    {
+      "name": "St. Augustine Girl's High",
+      "district": "St George",
+      "management": "government_assisted"
+    },
+    {
+      "name": "St. Augustine Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "St. Benedict's College",
+      "district": "Victoria",
+      "management": "government_assisted"
+    },
+    {
+      "name": "St. Charles High School",
+      "district": "St George",
+      "management": "private"
+    },
+    {
+      "name": "St. George's College",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "St. James Secondary",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "St. Joseph Secondary School",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "St. Joseph's College",
+      "district": "St George",
+      "management": "private"
+    },
+    {
+      "name": "St. Joseph's Convent",
+      "district": "St George",
+      "management": "government_assisted"
+    },
+    {
+      "name": "St. Kevin College",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "St. Mary's College",
+      "district": "Port of Spain",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Ste. Madeleine Secondary School",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "Success/ Laventille Secondary",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "Swaha Hindu College",
+      "district": "North Eastern",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Tabaquite Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Tableland Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "The International School of POS",
+      "district": "Port of Spain",
+      "management": "private"
+    },
+    {
+      "name": "Toco Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Tranquility Secondary",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "Trinity College",
+      "district": "Port of Spain",
+      "management": "government"
+    },
+    {
+      "name": "Trinity College (East)",
+      "district": "St George",
+      "management": "private"
+    },
+    {
+      "name": "Tunapuna Secondary",
+      "district": "St George",
+      "management": "government"
+    },
+    {
+      "name": "Union Claxton Bay Secondary School",
+      "district": "Victoria",
+      "management": "government"
+    },
+    {
+      "name": "Upper Level Educational Institute",
+      "district": "Caroni",
+      "management": "private"
+    },
+    {
+      "name": "UWI Sixth Form San Fernando",
+      "district": "Victoria",
+      "management": "private"
+    },
+    {
+      "name": "Valencia Secondary",
+      "district": "North Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Vessigny Secondary",
+      "district": "St Patrick",
+      "management": "government"
+    },
+    {
+      "name": "Vishnu Boys' Hindu College",
+      "district": "Caroni",
+      "management": "government_assisted"
+    },
+    {
+      "name": "Waterloo Secondary",
+      "district": "Caroni",
+      "management": "government"
+    },
+    {
+      "name": "Williamsville Secondary",
+      "district": "South Eastern",
+      "management": "government"
+    },
+    {
+      "name": "Woodbrook Secondary",
+      "district": "Port of Spain",
+      "management": "government"
+    }
+  ],
+  "metadata": {
+    "country": "Trinidad and Tobago",
+    "island": "Trinidad",
+    "schoolLevel": "secondary",
+    "source": "Ministry of Education Secondary Schools Contact Information workbook",
+    "sourceDate": "2022-04",
+    "generatedFor": "CountMeInTT",
+    "count": 174,
+    "note": "Includes government, government-assisted and private secondary institutions listed in the Ministry workbook. Review periodically because school names and operating status can change."
+  }
+}
+
