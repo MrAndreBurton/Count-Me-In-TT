@@ -120,7 +120,12 @@ function formatRelativeDate(value) {
   }).format(date);
 }
 
-function createProfileSummary(link, studentRow, resultRows = []) {
+function createProfileSummary(
+  link,
+  studentRow,
+  resultRows = [],
+  badgeRows = []
+) {
   const verifiedResults = resultRows
     .filter(
       (result) => result.verification_status === "verified"
@@ -150,6 +155,28 @@ function createProfileSummary(link, studentRow, resultRows = []) {
   const mathLanguageRounds = verifiedResults.filter(
     (result) => result.game_type === "math_language"
   ).length;
+
+  const sortedBadges = [...badgeRows].sort(
+    (a, b) =>
+      new Date(b.earned_at).getTime() -
+      new Date(a.earned_at).getTime()
+  );
+
+  const latestBadgeRow = sortedBadges[0] || null;
+  const latestBadgeDefinition =
+    latestBadgeRow?.badge_definitions || null;
+
+  const latestBadge = latestBadgeDefinition
+    ? {
+        id: latestBadgeRow.id,
+        badgeId: latestBadgeRow.badge_id,
+        badgeKey: latestBadgeDefinition.badge_key,
+        icon: latestBadgeDefinition.icon || "🏅",
+        name: latestBadgeDefinition.name,
+        description: latestBadgeDefinition.description,
+        earnedAt: latestBadgeRow.earned_at,
+      }
+    : null;
 
   const recentActivity = verifiedResults
     .slice(0, 3)
@@ -216,11 +243,12 @@ function createProfileSummary(link, studentRow, resultRows = []) {
 
       gamesPlayed: verifiedResults.length,
       mathLanguageCompleted: mathLanguageRounds,
-      badgesEarned: 0,
+      badgesEarned: sortedBadges.length,
     },
 
     recentActivity,
     latestResult: verifiedResults[0] || null,
+    latestBadge,
   };
 }
 
@@ -352,7 +380,7 @@ function LoadingDashboard() {
           </h1>
 
           <p className="mt-3 text-gray-600">
-            We are retrieving your profiles and saved results.
+            We are retrieving your profiles, saved results and badges.
           </p>
         </div>
       </main>
@@ -497,11 +525,13 @@ export default function Dashboard() {
 
         let studentRows = [];
         let resultRows = [];
+        let badgeRows = [];
 
         if (studentIds.length > 0) {
           const [
             { data: studentsData, error: studentsError },
             { data: resultsData, error: resultsError },
+            { data: badgesData, error: badgesError },
           ] = await Promise.all([
             supabase
               .from("student_profiles")
@@ -554,6 +584,34 @@ export default function Dashboard() {
               .order("played_at", {
                 ascending: false,
               }),
+
+            supabase
+              .from("student_badges")
+              .select(
+                `
+                  id,
+                  student_id,
+                  account_id,
+                  badge_id,
+                  game_result_id,
+                  earned_at,
+                  metadata,
+                  badge_definitions (
+                    id,
+                    badge_key,
+                    name,
+                    description,
+                    icon,
+                    category,
+                    sort_order
+                  )
+                `
+              )
+              .eq("account_id", user.id)
+              .in("student_id", studentIds)
+              .order("earned_at", {
+                ascending: false,
+              }),
           ]);
 
           if (studentsError) {
@@ -564,8 +622,13 @@ export default function Dashboard() {
             throw resultsError;
           }
 
+          if (badgesError) {
+            throw badgesError;
+          }
+
           studentRows = studentsData || [];
           resultRows = resultsData || [];
+          badgeRows = badgesData || [];
         }
 
         const summaries = links
@@ -586,10 +649,17 @@ export default function Dashboard() {
                 String(studentRow.id)
             );
 
+            const matchingBadges = badgeRows.filter(
+              (badge) =>
+                String(badge.student_id) ===
+                String(studentRow.id)
+            );
+
             return createProfileSummary(
               link,
               studentRow,
-              matchingResults
+              matchingResults,
+              matchingBadges
             );
           })
           .filter(Boolean);
@@ -1018,7 +1088,7 @@ export default function Dashboard() {
                     value={
                       activeProfile.progress.badgesEarned
                     }
-                    detail="Badge system coming later"
+                    detail="Achievements earned"
                     accent="purple"
                   />
                 </div>
@@ -1099,26 +1169,89 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <div className="rounded-2xl bg-blue-600 p-6 text-white shadow-lg">
-                  <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
-                    Membership
-                  </p>
+                <div className="grid gap-6">
+                  <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+                          Latest Badge
+                        </p>
 
-                  <h2 className="mt-2 text-2xl font-black">
-                    Free Account
-                  </h2>
+                        <h2 className="mt-2 text-2xl font-black">
+                          Recent achievement.
+                        </h2>
+                      </div>
 
-                  <p className="mt-3 text-blue-100">
-                    Save a personal best and retain the latest 10
-                    results.
-                  </p>
+                      <Link
+                        to={`/students/${activeProfile.id}/badges`}
+                        className="shrink-0 font-black text-blue-600 hover:underline"
+                      >
+                        View all →
+                      </Link>
+                    </div>
 
-                  <Link
-                    to="/membership"
-                    className="mt-6 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
-                  >
-                    Explore Membership
-                  </Link>
+                    {activeProfile.latestBadge ? (
+                      <div className="mt-6 flex items-start gap-4">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-yellow-100 text-2xl">
+                          {activeProfile.latestBadge.icon}
+                        </div>
+
+                        <div>
+                          <h3 className="text-xl font-black text-gray-950">
+                            {activeProfile.latestBadge.name}
+                          </h3>
+
+                          <p className="mt-2 text-sm leading-6 text-gray-600">
+                            {activeProfile.latestBadge.description}
+                          </p>
+
+                          <p className="mt-3 text-sm font-bold text-gray-500">
+                            Earned{" "}
+                            {formatRelativeDate(
+                              activeProfile.latestBadge.earnedAt
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-100 text-2xl">
+                          🏅
+                        </div>
+
+                        <h3 className="mt-4 text-xl font-black">
+                          No badges earned yet.
+                        </h3>
+
+                        <p className="mt-2 text-sm leading-6 text-gray-600">
+                          Complete a verified multiplication game
+                          to begin earning achievements.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl bg-blue-600 p-6 text-white shadow-lg">
+                    <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
+                      Membership
+                    </p>
+
+                    <h2 className="mt-2 text-2xl font-black">
+                      Free Account
+                    </h2>
+
+                    <p className="mt-3 text-blue-100">
+                      Save a personal best and retain the latest 10
+                      results.
+                    </p>
+
+                    <Link
+                      to="/membership"
+                      className="mt-6 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
+                    >
+                      Explore Membership
+                    </Link>
+                  </div>
                 </div>
               </div>
             </section>

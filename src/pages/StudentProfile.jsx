@@ -181,8 +181,8 @@ function LoadingProfile() {
           </h1>
 
           <p className="mt-3 text-gray-600">
-            We are retrieving the student’s profile, progress and
-            academic history.
+            We are retrieving the student’s profile, progress,
+            badges and academic history.
           </p>
         </div>
       </main>
@@ -280,6 +280,7 @@ export default function StudentProfile() {
           { data: studentData, error: studentError },
           { data: resultRows, error: resultsError },
           { data: historyRows, error: historyError },
+          { data: badgeRows, error: badgesError },
         ] = await Promise.all([
           supabase
             .from("student_profiles")
@@ -355,6 +356,34 @@ export default function StudentProfile() {
             .order("academic_year", {
               ascending: false,
             }),
+
+          supabase
+            .from("student_badges")
+            .select(
+              `
+                id,
+                student_id,
+                account_id,
+                badge_id,
+                game_result_id,
+                earned_at,
+                metadata,
+                badge_definitions (
+                  id,
+                  badge_key,
+                  name,
+                  description,
+                  icon,
+                  category,
+                  sort_order
+                )
+              `
+            )
+            .eq("student_id", studentId)
+            .eq("account_id", user.id)
+            .order("earned_at", {
+              ascending: false,
+            }),
         ]);
 
         if (studentError) {
@@ -374,6 +403,31 @@ export default function StudentProfile() {
         if (historyError) {
           throw historyError;
         }
+
+        if (badgesError) {
+          throw badgesError;
+        }
+
+        const formattedBadges = (badgeRows || [])
+          .map((row) => {
+            const definition = row.badge_definitions;
+
+            if (!definition) {
+              return null;
+            }
+
+            return {
+              id: row.id,
+              badgeId: row.badge_id,
+              badgeKey: definition.badge_key,
+              icon: definition.icon || "🏅",
+              name: definition.name,
+              description: definition.description,
+              earnedAt: row.earned_at,
+              metadata: row.metadata || {},
+            };
+          })
+          .filter(Boolean);
 
         if (!active) return;
 
@@ -411,6 +465,9 @@ export default function StudentProfile() {
             status: "Active",
             expiryDate: null,
           },
+
+          badges: formattedBadges,
+          badgesEarned: formattedBadges.length,
         });
 
         setResults(resultRows || []);
@@ -596,8 +653,8 @@ export default function StudentProfile() {
 
               <StatCard
                 label="Badges"
-                value="0"
-                detail="Badge system coming later"
+                value={student.badgesEarned}
+                detail="Achievements earned"
                 tone="purple"
               />
             </div>
@@ -803,20 +860,54 @@ export default function StudentProfile() {
                 </Link>
               </div>
 
-              <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-100 text-2xl">
-                  🏅
+              {student.badges.length > 0 ? (
+                <div className="mt-6 grid gap-4">
+                  {student.badges
+                    .slice(0, 3)
+                    .map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="flex items-start gap-4 rounded-xl border border-gray-200 p-4"
+                      >
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-yellow-100 text-xl">
+                          {badge.icon}
+                        </div>
+
+                        <div>
+                          <h3 className="font-black text-gray-950">
+                            {badge.name}
+                          </h3>
+
+                          <p className="mt-1 text-sm leading-6 text-gray-600">
+                            {badge.description}
+                          </p>
+
+                          <p className="mt-2 text-xs font-bold text-gray-500">
+                            Earned{" "}
+                            {formatRelativeDate(
+                              badge.earnedAt
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                 </div>
+              ) : (
+                <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-100 text-xl">
+                    🏅
+                  </div>
 
-                <h3 className="mt-5 text-xl font-black">
-                  No badges earned yet.
-                </h3>
+                  <h3 className="mt-4 font-black text-gray-950">
+                    No badges earned yet.
+                  </h3>
 
-                <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-600">
-                  Badges will appear as the student reaches
-                  CountMeInTT milestones.
-                </p>
-              </div>
+                  <p className="mt-2 text-sm leading-6 text-gray-600">
+                    Complete a verified multiplication game to begin
+                    earning achievements.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -912,4 +1003,5 @@ export default function StudentProfile() {
     </div>
   );
 }
+
 

@@ -1,438 +1,489 @@
-import React, { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  Link,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
+import { supabase } from "../lib/supabase";
 
-const sampleStudents = {
-  joshua: {
-    id: "joshua",
-    displayName: "Joshua B.",
-    initials: "JB",
-    school: "St Xavier's Private School",
-    level: "Standard 4",
-    membership: "Annual Membership",
-    earnedCount: 7,
-    totalCount: 12,
-    badges: [
-      {
-        id: "first-game",
-        name: "First Game",
-        description: "Completed a first CountMeInTT game.",
-        category: "Milestones",
-        icon: "★",
-        earned: true,
-        earnedDate: "June 18, 2026",
-        progress: 1,
-        target: 1,
-      },
-      {
-        id: "perfect-grid",
-        name: "Perfect Grid",
-        description:
-          "Completed a multiplication grid without an incorrect answer.",
-        category: "Accuracy",
-        icon: "✓",
-        earned: true,
-        earnedDate: "July 5, 2026",
-        progress: 1,
-        target: 1,
-      },
-      {
-        id: "quick-starter",
-        name: "Quick Starter",
-        description: "Completed the 5 × 5 grid in under 30 seconds.",
-        category: "Speed",
-        icon: "⚡",
-        earned: true,
-        earnedDate: "July 8, 2026",
-        progress: 1,
-        target: 1,
-      },
-      {
-        id: "under-20",
-        name: "Under 20",
-        description: "Completed the 5 × 5 grid in under 20 seconds.",
-        category: "Speed",
-        icon: "⏱",
-        earned: true,
-        earnedDate: "July 13, 2026",
-        progress: 1,
-        target: 1,
-      },
-      {
-        id: "word-explorer",
-        name: "Word Explorer",
-        description: "Completed a first Math Language round.",
-        category: "Math Language",
-        icon: "📚",
-        earned: true,
-        earnedDate: "July 4, 2026",
-        progress: 1,
-        target: 1,
-      },
-      {
-        id: "ten-games",
-        name: "Ten Games Played",
-        description: "Completed 10 CountMeInTT games.",
-        category: "Consistency",
-        icon: "10",
-        earned: true,
-        earnedDate: "June 28, 2026",
-        progress: 10,
-        target: 10,
-      },
-      {
-        id: "community-player",
-        name: "Community Player",
-        description: "Participated in a CountMeInTT community challenge.",
-        category: "Community",
-        icon: "🏆",
-        earned: true,
-        earnedDate: "July 5, 2026",
-        progress: 1,
-        target: 1,
-      },
-      {
-        id: "fifty-games",
-        name: "Fifty Games Played",
-        description: "Complete 50 CountMeInTT games.",
-        category: "Consistency",
-        icon: "50",
-        earned: false,
-        earnedDate: null,
-        progress: 42,
-        target: 50,
-      },
-      {
-        id: "perfect-five",
-        name: "Accuracy Builder",
-        description: "Complete 5 perfect multiplication grids.",
-        category: "Accuracy",
-        icon: "◎",
-        earned: false,
-        earnedDate: null,
-        progress: 3,
-        target: 5,
-      },
-      {
-        id: "word-master",
-        name: "Word Master",
-        description: "Explore all 50 free Math Language terms.",
-        category: "Math Language",
-        icon: "ABC",
-        earned: false,
-        earnedDate: null,
-        progress: 32,
-        target: 50,
-      },
-      {
-        id: "hundred-games",
-        name: "Century Player",
-        description: "Complete 100 CountMeInTT games.",
-        category: "Milestones",
-        icon: "100",
-        earned: false,
-        earnedDate: null,
-        progress: 42,
-        target: 100,
-      },
-      {
-        id: "school-champion",
-        name: "School Champion",
-        description: "Finish first in an eligible school challenge.",
-        category: "Community",
-        icon: "🏫",
-        earned: false,
-        earnedDate: null,
-        progress: 0,
-        target: 1,
-      },
-    ],
-  },
+function getInitials(firstName = "", lastName = "") {
+  const firstInitial = firstName
+    .trim()
+    .charAt(0);
 
-  maya: {
-    id: "maya",
-    displayName: "Maya B.",
-    initials: "MB",
-    school: "San Juan Girls' RC School",
-    level: "Standard 2",
-    membership: "Free Account",
-    earnedCount: 3,
-    totalCount: 12,
-    badges: [
-      {
-        id: "first-game",
-        name: "First Game",
-        description: "Completed a first CountMeInTT game.",
-        category: "Milestones",
-        icon: "★",
-        earned: true,
-        earnedDate: "July 8, 2026",
-        progress: 1,
-        target: 1,
-      },
-      {
-        id: "word-explorer",
-        name: "Word Explorer",
-        description: "Completed a first Math Language round.",
-        category: "Math Language",
-        icon: "📚",
-        earned: true,
-        earnedDate: "July 11, 2026",
-        progress: 1,
-        target: 1,
-      },
-      {
-        id: "quick-starter",
-        name: "Quick Starter",
-        description: "Completed the 5 × 5 grid in under 30 seconds.",
-        category: "Speed",
-        icon: "⚡",
-        earned: true,
-        earnedDate: "July 13, 2026",
-        progress: 1,
-        target: 1,
-      },
-      {
-        id: "perfect-grid",
-        name: "Perfect Grid",
-        description:
-          "Completed a multiplication grid without an incorrect answer.",
-        category: "Accuracy",
-        icon: "✓",
-        earned: false,
-        earnedDate: null,
-        progress: 0,
-        target: 1,
-      },
-      {
-        id: "ten-games",
-        name: "Ten Games Played",
-        description: "Complete 10 CountMeInTT games.",
-        category: "Consistency",
-        icon: "10",
-        earned: false,
-        earnedDate: null,
-        progress: 3,
-        target: 10,
-      },
-      {
-        id: "word-master",
-        name: "Word Master",
-        description: "Explore all 50 free Math Language terms.",
-        category: "Math Language",
-        icon: "ABC",
-        earned: false,
-        earnedDate: null,
-        progress: 18,
-        target: 50,
-      },
-      {
-        id: "under-20",
-        name: "Under 20",
-        description: "Completed the 5 × 5 grid in under 20 seconds.",
-        category: "Speed",
-        icon: "⏱",
-        earned: false,
-        earnedDate: null,
-        progress: 0,
-        target: 1,
-      },
-      {
-        id: "community-player",
-        name: "Community Player",
-        description: "Participate in a CountMeInTT community challenge.",
-        category: "Community",
-        icon: "🏆",
-        earned: false,
-        earnedDate: null,
-        progress: 0,
-        target: 1,
-      },
-      {
-        id: "fifty-games",
-        name: "Fifty Games Played",
-        description: "Complete 50 CountMeInTT games.",
-        category: "Consistency",
-        icon: "50",
-        earned: false,
-        earnedDate: null,
-        progress: 3,
-        target: 50,
-      },
-      {
-        id: "perfect-five",
-        name: "Accuracy Builder",
-        description: "Complete 5 perfect multiplication grids.",
-        category: "Accuracy",
-        icon: "◎",
-        earned: false,
-        earnedDate: null,
-        progress: 0,
-        target: 5,
-      },
-      {
-        id: "hundred-games",
-        name: "Century Player",
-        description: "Complete 100 CountMeInTT games.",
-        category: "Milestones",
-        icon: "100",
-        earned: false,
-        earnedDate: null,
-        progress: 3,
-        target: 100,
-      },
-      {
-        id: "school-champion",
-        name: "School Champion",
-        description: "Finish first in an eligible school challenge.",
-        category: "Community",
-        icon: "🏫",
-        earned: false,
-        earnedDate: null,
-        progress: 0,
-        target: 1,
-      },
-    ],
-  },
-};
-
-const categoryOptions = [
-  "All Categories",
-  "Speed",
-  "Accuracy",
-  "Consistency",
-  "Math Language",
-  "Community",
-  "Milestones",
-];
-
-function ProgressBar({ progress, target }) {
-  const safeTarget = target > 0 ? target : 1;
-  const percentage = Math.min(100, Math.round((progress / safeTarget) * 100));
+  const lastInitial = lastName
+    .trim()
+    .charAt(0);
 
   return (
-    <div>
-      <div className="flex items-center justify-between gap-4 text-sm">
-        <span className="font-bold text-gray-600">
-          {progress} / {target}
-        </span>
-
-        <span className="font-black text-blue-600">{percentage}%</span>
-      </div>
-
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
-        <div
-          className="h-full rounded-full bg-blue-600 transition-all"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
+    `${firstInitial}${lastInitial}`.toUpperCase() ||
+    "?"
   );
 }
 
+function formatStudent(row) {
+  return {
+    id: row.id,
+    firstName: row.first_name || "",
+    lastName: row.last_name || "",
+    displayName:
+      row.public_display_name ||
+      `${row.first_name || "Student"} ${
+        row.last_name
+          ?.charAt(0)
+          ?.toUpperCase() || ""
+      }.`.trim(),
+    initials: getInitials(
+      row.first_name,
+      row.last_name
+    ),
+    school:
+      row.current_school || "School not added",
+    level:
+      row.current_level || "Level not added",
+    academicYear:
+      row.academic_year || "Not added",
+  };
+}
+
+function formatEarnedDate(value) {
+  if (!value) return "Date unavailable";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
+
+  return new Intl.DateTimeFormat("en-TT", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatDuration(milliseconds) {
+  const value = Number(milliseconds);
+
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  const minutes = Math.floor(value / 60000);
+
+  const seconds = Math.floor(
+    (value % 60000) / 1000
+  );
+
+  const hundredths = Math.floor(
+    (value % 1000) / 10
+  );
+
+  if (minutes > 0) {
+    return `${minutes}:${seconds
+      .toString()
+      .padStart(2, "0")}.${hundredths
+      .toString()
+      .padStart(2, "0")}`;
+  }
+
+  return `${seconds}.${hundredths
+    .toString()
+    .padStart(2, "0")} sec`;
+}
+
+function formatGameMode(mode) {
+  const labels = {
+    "5x5": "5 × 5 Quick",
+    "5x12": "5 × 12 Trainer",
+    "12x12": "12 × 12 Classic",
+    "15x15": "15 × 15 Pro",
+  };
+
+  return labels[mode] || mode || null;
+}
+
 function BadgeCard({ badge }) {
+  const duration = formatDuration(
+    badge.metadata?.duration_ms
+  );
+
+  const gameMode = formatGameMode(
+    badge.metadata?.game_mode
+  );
+
   return (
-    <article
-      className={[
-        "flex h-full flex-col rounded-2xl border bg-white p-5 shadow-sm",
-        badge.earned
-          ? "border-yellow-200"
-          : "border-gray-200 opacity-80",
-      ].join(" ")}
-    >
+    <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-yellow-300 hover:shadow-lg">
       <div className="flex items-start justify-between gap-4">
-        <div
-          className={[
-            "flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-black",
-            badge.earned
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-gray-100 text-gray-500",
-          ].join(" ")}
-        >
-          {badge.icon}
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-yellow-100 text-2xl">
+          {badge.icon || "🏅"}
         </div>
 
-        <span
-          className={[
-            "rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide",
-            badge.earned
-              ? "bg-green-100 text-green-700"
-              : "bg-gray-100 text-gray-600",
-          ].join(" ")}
-        >
-          {badge.earned ? "Earned" : "Locked"}
+        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-black uppercase tracking-wide text-green-700">
+          Earned
         </span>
       </div>
 
-      <p className="mt-5 text-xs font-black uppercase tracking-wider text-blue-600">
-        {badge.category}
-      </p>
-
-      <h3 className="mt-2 text-xl font-black text-gray-950">
+      <h3 className="mt-5 text-xl font-black text-gray-950">
         {badge.name}
       </h3>
 
-      <p className="mt-2 flex-1 leading-7 text-gray-600">
+      <p className="mt-2 leading-7 text-gray-600">
         {badge.description}
       </p>
 
-      {badge.earned ? (
-        <p className="mt-5 text-sm font-bold text-gray-500">
-          Earned {badge.earnedDate}
-        </p>
-      ) : (
-        <div className="mt-5">
-          <ProgressBar progress={badge.progress} target={badge.target} />
+      {(gameMode || duration) && (
+        <div className="mt-4 rounded-xl bg-gray-50 p-4 text-sm">
+          {gameMode && (
+            <p className="font-bold text-gray-700">
+              Game: {gameMode}
+            </p>
+          )}
+
+          {duration && (
+            <p className="mt-1 font-bold text-gray-700">
+              Time: {duration}
+            </p>
+          )}
         </div>
       )}
+
+      <p className="mt-5 text-sm font-bold text-gray-500">
+        Earned {formatEarnedDate(badge.earnedAt)}
+      </p>
     </article>
+  );
+}
+
+function LockedBadgeCard({ badge }) {
+  return (
+    <article className="rounded-2xl border border-gray-200 bg-gray-50 p-5 opacity-80">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gray-200 text-2xl grayscale">
+          {badge.icon || "🏅"}
+        </div>
+
+        <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-black uppercase tracking-wide text-gray-600">
+          Locked
+        </span>
+      </div>
+
+      <h3 className="mt-5 text-xl font-black text-gray-800">
+        {badge.name}
+      </h3>
+
+      <p className="mt-2 leading-7 text-gray-600">
+        {badge.description}
+      </p>
+    </article>
+  );
+}
+
+function LoadingBadges() {
+  return (
+    <div className="platform-page-bg min-h-screen text-gray-950">
+      <SiteHeader />
+
+      <main className="px-5 py-20">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
+
+          <h1 className="mt-6 text-2xl font-black">
+            Loading badges…
+          </h1>
+
+          <p className="mt-3 text-gray-600">
+            We are retrieving the student’s
+            achievements.
+          </p>
+        </div>
+      </main>
+
+      <SiteFooter />
+    </div>
   );
 }
 
 export default function Badges() {
   const { studentId } = useParams();
+  const navigate = useNavigate();
 
-  const student = sampleStudents[studentId] || sampleStudents.joshua;
+  const [student, setStudent] = useState(null);
+  const [earnedBadges, setEarnedBadges] =
+    useState([]);
+  const [allBadges, setAllBadges] = useState([]);
 
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [isLoading, setIsLoading] =
+    useState(true);
+  const [loadError, setLoadError] =
+    useState("");
 
-  const visibleBadges = useMemo(() => {
-    return student.badges.filter((badge) => {
-      const matchesStatus =
-        statusFilter === "All" ||
-        (statusFilter === "Earned" && badge.earned) ||
-        (statusFilter === "Locked" && !badge.earned);
+  useEffect(() => {
+    let active = true;
 
-      const matchesCategory =
-        categoryFilter === "All Categories" ||
-        badge.category === categoryFilter;
+    async function loadBadges() {
+      setIsLoading(true);
+      setLoadError("");
 
-      return matchesStatus && matchesCategory;
-    });
-  }, [student.badges, statusFilter, categoryFilter]);
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-  const earnedBadges = student.badges.filter((badge) => badge.earned);
-  const lockedBadges = student.badges.filter((badge) => !badge.earned);
+        if (userError) {
+          throw userError;
+        }
 
-  const latestEarnedBadge =
-    [...earnedBadges]
-      .filter((badge) => badge.earnedDate)
-      .sort(
-        (a, b) =>
-          new Date(b.earnedDate).getTime() -
-          new Date(a.earnedDate).getTime()
-      )[0] || earnedBadges[0];
+        if (!user) {
+          navigate("/login", {
+            replace: true,
+            state: {
+              from: {
+                pathname: `/students/${studentId}/badges`,
+              },
+            },
+          });
 
-  const closestLockedBadge =
-    [...lockedBadges]
-      .map((badge) => ({
-        ...badge,
-        completion:
-          badge.target > 0 ? badge.progress / badge.target : 0,
-      }))
-      .sort((a, b) => b.completion - a.completion)[0] || null;
+          return;
+        }
+
+        const {
+          data: studentRow,
+          error: studentError,
+        } = await supabase
+          .from("student_profiles")
+          .select(
+            `
+              id,
+              account_id,
+              first_name,
+              last_name,
+              public_display_name,
+              current_school,
+              current_level,
+              academic_year,
+              profile_status
+            `
+          )
+          .eq("id", studentId)
+          .eq("account_id", user.id)
+          .eq("profile_status", "active")
+          .maybeSingle();
+
+        if (studentError) {
+          throw studentError;
+        }
+
+        if (!studentRow) {
+          throw new Error(
+            "This student profile is unavailable or does not belong to your account."
+          );
+        }
+
+        const [
+          {
+            data: badgeDefinitions,
+            error: definitionsError,
+          },
+          {
+            data: earnedRows,
+            error: earnedError,
+          },
+        ] = await Promise.all([
+          supabase
+            .from("badge_definitions")
+            .select(
+              `
+                id,
+                badge_key,
+                name,
+                description,
+                icon,
+                category,
+                requirement_type,
+                requirement_value,
+                sort_order,
+                is_active
+              `
+            )
+            .eq("category", "multiplication")
+            .eq("is_active", true)
+            .order("sort_order", {
+              ascending: true,
+            }),
+
+          supabase
+            .from("student_badges")
+            .select(
+              `
+                id,
+                student_id,
+                account_id,
+                badge_id,
+                game_result_id,
+                earned_at,
+                metadata,
+                badge_definitions (
+                  id,
+                  badge_key,
+                  name,
+                  description,
+                  icon,
+                  category,
+                  sort_order
+                )
+              `
+            )
+            .eq("student_id", studentId)
+            .eq("account_id", user.id)
+            .order("earned_at", {
+              ascending: false,
+            }),
+        ]);
+
+        if (definitionsError) {
+          throw definitionsError;
+        }
+
+        if (earnedError) {
+          throw earnedError;
+        }
+
+        const formattedEarned = (
+          earnedRows || []
+        )
+          .map((row) => {
+            const definition =
+              row.badge_definitions;
+
+            if (!definition) {
+              return null;
+            }
+
+            return {
+              id: row.id,
+              badgeId: row.badge_id,
+              badgeKey: definition.badge_key,
+              name: definition.name,
+              description:
+                definition.description,
+              icon: definition.icon,
+              category: definition.category,
+              sortOrder:
+                definition.sort_order || 0,
+              earnedAt: row.earned_at,
+              metadata: row.metadata || {},
+              gameResultId:
+                row.game_result_id,
+            };
+          })
+          .filter(Boolean);
+
+        if (!active) return;
+
+        setStudent(formatStudent(studentRow));
+        setAllBadges(badgeDefinitions || []);
+        setEarnedBadges(formattedEarned);
+      } catch (error) {
+        console.error(
+          "Badges loading error:",
+          error
+        );
+
+        if (active) {
+          setLoadError(
+            error?.message ||
+              "The badges could not be loaded."
+          );
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadBadges();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate, studentId]);
+
+  const earnedBadgeIds = useMemo(
+    () =>
+      new Set(
+        earnedBadges.map(
+          (badge) => badge.badgeId
+        )
+      ),
+    [earnedBadges]
+  );
+
+  const lockedBadges = useMemo(
+    () =>
+      allBadges.filter(
+        (badge) =>
+          !earnedBadgeIds.has(badge.id)
+      ),
+    [allBadges, earnedBadgeIds]
+  );
+
+  const latestBadge =
+    earnedBadges[0] || null;
+
+  const completionPercent =
+    allBadges.length > 0
+      ? Math.round(
+          (earnedBadges.length /
+            allBadges.length) *
+            100
+        )
+      : 0;
+
+  if (isLoading) {
+    return <LoadingBadges />;
+  }
+
+  if (loadError || !student) {
+    return (
+      <div className="platform-page-bg min-h-screen text-gray-950">
+        <SiteHeader />
+
+        <main className="px-5 py-16">
+          <div className="mx-auto max-w-2xl rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-2xl font-black text-red-700">
+              !
+            </div>
+
+            <h1 className="mt-5 text-3xl font-black">
+              Badges unavailable.
+            </h1>
+
+            <p className="mt-4 leading-7 text-gray-600">
+              {loadError}
+            </p>
+
+            <Link
+              to="/dashboard"
+              className="mt-7 inline-block rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700"
+            >
+              Return to Dashboard
+            </Link>
+          </div>
+        </main>
+
+        <SiteFooter />
+      </div>
+    );
+  }
 
   return (
     <div className="platform-page-bg min-h-screen text-gray-950">
@@ -448,18 +499,18 @@ export default function Badges() {
 
               <div>
                 <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                  Badge Collection
+                  Student achievements
                 </p>
 
                 <h1 className="mt-2 text-4xl font-black leading-tight sm:text-5xl">
-                  {student.displayName}
+                  {student.displayName}’s Badges
                 </h1>
 
-                <p className="mt-2 font-semibold text-gray-700">
-                  {student.level}
+                <p className="mt-3 text-lg text-gray-600">
+                  Track multiplication milestones,
+                  personal bests and completed
+                  challenges.
                 </p>
-
-                <p className="mt-1 text-gray-600">{student.school}</p>
               </div>
             </div>
 
@@ -468,14 +519,14 @@ export default function Badges() {
                 to={`/students/${student.id}`}
                 className="rounded-xl border-2 border-blue-600 bg-white px-5 py-3 text-center font-black text-blue-600 transition hover:bg-blue-50"
               >
-                Back to Profile
+                View Profile
               </Link>
 
               <Link
-                to="/games"
+                to="/games/multiplication"
                 className="rounded-xl bg-blue-600 px-5 py-3 text-center font-black text-white shadow transition hover:bg-blue-700"
               >
-                Explore Games
+                Play Multiplication
               </Link>
             </div>
           </div>
@@ -483,204 +534,170 @@ export default function Badges() {
 
         <section className="px-5 py-12 sm:py-16">
           <div className="mx-auto max-w-7xl">
-            <div className="grid gap-5 sm:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <p className="text-sm font-black uppercase tracking-wide text-blue-600">
-                  Badges Earned
+                  Badges earned
                 </p>
 
-                <p className="mt-3 text-3xl font-black">
+                <p className="mt-4 text-4xl font-black">
                   {earnedBadges.length}
                 </p>
 
                 <p className="mt-2 text-sm font-semibold text-gray-600">
-                  Out of {student.badges.length} available
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <p className="text-sm font-black uppercase tracking-wide text-yellow-700">
-                  Latest Badge
-                </p>
-
-                <p className="mt-3 text-xl font-black">
-                  {latestEarnedBadge?.name || "No badges yet"}
-                </p>
-
-                <p className="mt-2 text-sm font-semibold text-gray-600">
-                  {latestEarnedBadge?.earnedDate || "Start playing to earn one"}
+                  Out of {allBadges.length} available
                 </p>
               </div>
 
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <p className="text-sm font-black uppercase tracking-wide text-green-700">
-                  Membership
+                  Completion
                 </p>
 
-                <p className="mt-3 text-xl font-black">
-                  {student.membership}
+                <p className="mt-4 text-4xl font-black">
+                  {completionPercent}%
                 </p>
 
-                <p className="mt-2 text-sm font-semibold text-gray-600">
-                  Badge access follows the student profile
-                </p>
-              </div>
-            </div>
-
-            {closestLockedBadge && (
-              <div className="mt-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-5">
-                <div className="grid gap-5 md:grid-cols-[1fr_0.8fr] md:items-center">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                      Closest to earning
-                    </p>
-
-                    <h2 className="mt-2 text-2xl font-black">
-                      {closestLockedBadge.name}
-                    </h2>
-
-                    <p className="mt-2 leading-7 text-gray-600">
-                      {closestLockedBadge.description}
-                    </p>
-                  </div>
-
-                  <ProgressBar
-                    progress={closestLockedBadge.progress}
-                    target={closestLockedBadge.target}
+                <div className="mt-4 h-3 overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className="h-full rounded-full bg-green-500 transition-all"
+                    style={{
+                      width: `${completionPercent}%`,
+                    }}
                   />
                 </div>
               </div>
-            )}
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <p className="text-sm font-black uppercase tracking-wide text-purple-700">
+                  Still to earn
+                </p>
+
+                <p className="mt-4 text-4xl font-black">
+                  {lockedBadges.length}
+                </p>
+
+                <p className="mt-2 text-sm font-semibold text-gray-600">
+                  Keep playing to unlock more
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <p className="text-sm font-black uppercase tracking-wide text-yellow-800">
+                  Latest badge
+                </p>
+
+                <p className="mt-4 text-2xl font-black">
+                  {latestBadge
+                    ? `${latestBadge.icon} ${latestBadge.name}`
+                    : "None yet"}
+                </p>
+
+                <p className="mt-2 text-sm font-semibold text-gray-600">
+                  {latestBadge
+                    ? formatEarnedDate(
+                        latestBadge.earnedAt
+                      )
+                    : "Complete a game to begin"}
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="bg-yellow-50 px-5 py-10 sm:py-12">
+        <section className="bg-yellow-50 px-5 py-12 sm:py-16">
           <div className="mx-auto max-w-7xl">
             <div>
               <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                Filter badges
+                Earned badges
               </p>
 
               <h2 className="mt-2 text-3xl font-black">
-                Explore the collection.
+                Achievements unlocked.
               </h2>
             </div>
 
-            <div className="mt-7 grid gap-5 rounded-2xl border border-yellow-200 bg-white p-5 shadow-sm sm:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="statusFilter"
-                  className="mb-2 block text-sm font-black text-gray-800"
-                >
-                  Status
-                </label>
-
-                <select
-                  id="statusFilter"
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-                >
-                  <option value="All">All badges</option>
-                  <option value="Earned">Earned</option>
-                  <option value="Locked">Locked</option>
-                </select>
+            {earnedBadges.length > 0 ? (
+              <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {earnedBadges.map((badge) => (
+                  <BadgeCard
+                    key={badge.id}
+                    badge={badge}
+                  />
+                ))}
               </div>
+            ) : (
+              <div className="mt-7 rounded-2xl border border-dashed border-yellow-300 bg-white p-10 text-center shadow-sm">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-yellow-100 text-3xl">
+                  🏅
+                </div>
 
-              <div>
-                <label
-                  htmlFor="categoryFilter"
-                  className="mb-2 block text-sm font-black text-gray-800"
-                >
-                  Category
-                </label>
+                <h3 className="mt-5 text-2xl font-black">
+                  No badges earned yet.
+                </h3>
 
-                <select
-                  id="categoryFilter"
-                  value={categoryFilter}
-                  onChange={(event) => setCategoryFilter(event.target.value)}
-                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                <p className="mx-auto mt-3 max-w-xl leading-7 text-gray-600">
+                  Complete a verified multiplication
+                  game to begin earning
+                  CountMeInTT badges.
+                </p>
+
+                <Link
+                  to="/games/multiplication"
+                  className="mt-6 inline-block rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700"
                 >
-                  {categoryOptions.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
+                  Play Multiplication
+                </Link>
               </div>
-            </div>
+            )}
           </div>
         </section>
 
         <section className="px-5 py-12 sm:py-16">
           <div className="mx-auto max-w-7xl">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                  Badge collection
-                </p>
+            <div>
+              <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+                Badge challenges
+              </p>
 
-                <h2 className="mt-2 text-3xl font-black">
-                  {visibleBadges.length} badge
-                  {visibleBadges.length === 1 ? "" : "s"} shown.
-                </h2>
-              </div>
+              <h2 className="mt-2 text-3xl font-black">
+                Achievements still to unlock.
+              </h2>
+
+              <p className="mt-3 max-w-3xl leading-7 text-gray-600">
+                Each badge can be earned once by
+                completing its multiplication
+                challenge.
+              </p>
             </div>
 
-            {visibleBadges.length > 0 ? (
-              <div className="mt-7 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {visibleBadges.map((badge) => (
-                  <BadgeCard key={badge.id} badge={badge} />
+            {lockedBadges.length > 0 ? (
+              <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {lockedBadges.map((badge) => (
+                  <LockedBadgeCard
+                    key={badge.id}
+                    badge={badge}
+                  />
                 ))}
               </div>
             ) : (
-              <div className="mt-7 rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-yellow-100 text-2xl">
-                  🏅
+              <div className="mt-7 rounded-2xl border border-green-200 bg-green-50 p-8 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-2xl">
+                  🎉
                 </div>
 
-                <h3 className="mt-5 text-2xl font-black">
-                  No matching badges.
+                <h3 className="mt-4 text-2xl font-black">
+                  Every multiplication badge has
+                  been earned!
                 </h3>
 
-                <p className="mx-auto mt-3 max-w-xl leading-7 text-gray-600">
-                  Try changing the status or category filter.
+                <p className="mt-3 text-gray-600">
+                  Keep playing to improve personal
+                  bests and prepare for future badge
+                  challenges.
                 </p>
               </div>
             )}
-          </div>
-        </section>
-
-        <section className="px-5 pb-12 sm:pb-16">
-          <div className="mx-auto max-w-7xl rounded-3xl bg-blue-600 px-6 py-10 text-center text-white shadow-xl sm:px-10">
-            <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
-              Keep progressing
-            </p>
-
-            <h2 className="mt-2 text-3xl font-black sm:text-4xl">
-              Every game can move you closer to a new badge.
-            </h2>
-
-            <p className="mx-auto mt-4 max-w-2xl leading-7 text-blue-100">
-              Play multiplication, explore Math Language and take part in
-              eligible challenges to continue building your collection.
-            </p>
-
-            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link
-                to="/games/multiplication"
-                className="rounded-xl bg-yellow-300 px-6 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
-              >
-                Play Multiplication
-              </Link>
-
-              <Link
-                to="/math-language"
-                className="rounded-xl border-2 border-white bg-transparent px-6 py-3 font-black text-white transition hover:bg-white/10"
-              >
-                Explore Math Language
-              </Link>
-            </div>
           </div>
         </section>
       </main>
