@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { mathLanguageTerms } from "../data/mathLanguageTerms";
+import GameHeader from "../components/layout/GameHeader";
 import MathLanguageBrand from "../components/mathLanguage/MathLanguageBrand";
 import MathLanguageFooter from "../components/mathLanguage/MathLanguageFooter";
 import ScrollToTopButton from "../components/mathLanguage/ScrollToTopButton";
@@ -51,7 +52,9 @@ export default function MathLanguageDictionary() {
   }, [freeTerms, searchQuery, selectedCategory]);
 
   return (
-   <>
+  <div className="min-h-screen bg-white text-gray-950">
+    <GameHeader />
+
     <main className="min-h-screen bg-white px-4 py-8">
       <section className="mx-auto max-w-6xl">
         <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -248,7 +251,7 @@ export default function MathLanguageDictionary() {
 
     <ScrollToTopButton />
     <MathLanguageFooter />
-    </>
+    </div>
   );
 }
 

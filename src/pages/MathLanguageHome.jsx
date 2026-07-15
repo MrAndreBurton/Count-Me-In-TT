@@ -1,5 +1,6 @@
 import MathLanguageBrand from "../components/mathLanguage/MathLanguageBrand";
 import MathLanguageFooter from "../components/mathLanguage/MathLanguageFooter";
+import SiteHeader from "../components/layout/SiteHeader";
 import ScrollToTopButton from "../components/mathLanguage/ScrollToTopButton";
 
 const skills = [
@@ -47,7 +48,9 @@ const skills = [
 
 export default function MathLanguageHome() {
   return (
-    <>
+  <div className="min-h-screen bg-white text-gray-950">
+    <SiteHeader />
+
       <main className="min-h-screen bg-white px-4 py-8">
         <section className="mx-auto max-w-6xl">
           <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -245,8 +248,7 @@ export default function MathLanguageHome() {
 
       <ScrollToTopButton />
       <MathLanguageFooter />
-    </>
+    </div>
   );
 }
-
 

@@ -585,6 +585,13 @@ export default function StudentProfile() {
               </Link>
 
               <Link
+                to={`/students/${student.id}/login-setup`}
+                className="rounded-xl border border-purple-300 bg-purple-50 px-5 py-3 text-center font-black text-purple-700 transition hover:bg-purple-100"
+               >
+                 Create Student Login
+                </Link>
+
+              <Link
                 to={`/students/${student.id}/results`}
                 className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-black text-gray-700 transition hover:bg-gray-50"
               >

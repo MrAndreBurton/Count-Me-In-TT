@@ -29,6 +29,7 @@ import Games from "./pages/Games";
 import Membership from "./pages/Membership";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import StudentLoginSetup from "./pages/StudentLoginSetup";
 import Dashboard from "./pages/Dashboard";
 import Badges from "./pages/Badges";
 import ResultsHistory from "./pages/ResultsHistory";
@@ -64,6 +65,11 @@ export default function CountMeInApp() {
         <Route
           path="/register"
           element={<Register />}
+        />
+
+        <Route
+          path="/students/:studentId/login-setup"
+          element={<StudentLoginSetup />}
         />
 
         <Route

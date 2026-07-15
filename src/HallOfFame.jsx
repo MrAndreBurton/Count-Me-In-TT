@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import GameHeader from "./components/layout/GameHeader";
 
 /** 1) Sources: keep categories separate per grid (unchanged) */
 const HOF_SOURCES = {
@@ -277,6 +278,11 @@ export default function HallOfFame() {
   }, [winners, monthKey]);
 
   return (
+     <>
+    <GameHeader />
+
+<div className="min-h-screen bg-white text-gray-950">
+
     <div
       style={{
         fontFamily: "sans-serif",
@@ -293,7 +299,7 @@ export default function HallOfFame() {
         <Link to="/leaderboard" className="lb-btn" style={{ position: "absolute", left: 16, top: 16 }}>
           ⬅ Leaderboard
         </Link>
-        <Link to="/" className="lb-btn" style={{ position: "absolute", right: 16, top: 16 }}>
+        <Link to="/games/multiplication" className="lb-btn" style={{ position: "absolute", right: 16, top: 16 }}>
           Back to Game
         </Link>
       </div>
@@ -445,7 +451,10 @@ export default function HallOfFame() {
           <span style={{ fontWeight: 600 }}>A’s Online</span>. All rights reserved.
         </p>
       </div>
-    </div>
+
+</div>
+</div>
+</>
   );
 }
 
