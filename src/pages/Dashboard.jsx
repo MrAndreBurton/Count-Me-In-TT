@@ -1,166 +1,299 @@
-import React, { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
+import { supabase } from "../lib/supabase";
 
-const sampleStudents = [
-  {
-    id: "joshua",
-    firstName: "Joshua",
-    lastName: "Burton",
-    displayName: "Joshua B.",
-    initials: "JB",
-    school: "St Xavier's Private School",
-    level: "Standard 4",
-    academicYear: "2026–2027",
-    membership: {
-      plan: "Annual Membership",
-      status: "Active",
-      expiryDate: "July 12, 2027",
-      tone: "blue",
-    },
-    attention: [
-      {
-        id: "school-review",
-        title: "Confirm school details",
-        description:
-          "Review Joshua’s school and level before the next academic year.",
-        action: "Review Profile",
-        to: "/students/joshua/edit",
-      },
-    ],
+const CHILD_LIMIT = 5;
+
+function getInitials(firstName = "", lastName = "") {
+  const firstInitial = firstName.trim().charAt(0);
+  const lastInitial = lastName.trim().charAt(0);
+
+  return `${firstInitial}${lastInitial}`.toUpperCase() || "?";
+}
+
+function formatDuration(milliseconds) {
+  if (
+    milliseconds === null ||
+    milliseconds === undefined ||
+    Number.isNaN(Number(milliseconds))
+  ) {
+    return null;
+  }
+
+  const totalMilliseconds = Math.max(0, Number(milliseconds));
+  const minutes = Math.floor(totalMilliseconds / 60000);
+  const seconds = Math.floor(
+    (totalMilliseconds % 60000) / 1000
+  );
+  const hundredths = Math.floor(
+    (totalMilliseconds % 1000) / 10
+  );
+
+  if (minutes > 0) {
+    return `${minutes}:${String(seconds).padStart(2, "0")}.${String(
+      hundredths
+    ).padStart(2, "0")}`;
+  }
+
+  return `${seconds}.${String(hundredths).padStart(2, "0")} sec`;
+}
+
+function formatScore(score, maxScore) {
+  if (score === null || score === undefined) {
+    return null;
+  }
+
+  if (maxScore !== null && maxScore !== undefined) {
+    return `${score} / ${maxScore}`;
+  }
+
+  return String(score);
+}
+
+function formatResultValue(result) {
+  const duration = formatDuration(result.duration_ms);
+
+  if (duration) {
+    return duration;
+  }
+
+  return (
+    formatScore(result.score, result.max_score) ||
+    "Result saved"
+  );
+}
+
+function formatGameType(gameType = "") {
+  const labels = {
+    multiplication: "Multiplication",
+    math_language: "Math Language",
+    fractions: "Fractions",
+    decimals: "Decimals",
+    algebra: "Algebra",
+    word_problems: "Word Problems",
+    other: "Other",
+  };
+
+  return labels[gameType] || "CountMeInTT Activity";
+}
+
+function formatRelativeDate(value) {
+  if (!value) return "Date unavailable";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
+
+  const now = new Date();
+
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+
+  const playedDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
+
+  const differenceInDays = Math.round(
+    (today.getTime() - playedDate.getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
+
+  if (differenceInDays === 0) return "Today";
+  if (differenceInDays === 1) return "Yesterday";
+
+  return new Intl.DateTimeFormat("en-TT", {
+    month: "short",
+    day: "numeric",
+    year:
+      date.getFullYear() !== now.getFullYear()
+        ? "numeric"
+        : undefined,
+  }).format(date);
+}
+
+function createProfileSummary(link, studentRow, resultRows = []) {
+  const verifiedResults = resultRows
+    .filter(
+      (result) => result.verification_status === "verified"
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.played_at).getTime() -
+        new Date(a.played_at).getTime()
+    );
+
+  const multiplicationResults = verifiedResults.filter(
+    (result) =>
+      result.game_type === "multiplication" &&
+      result.duration_ms !== null &&
+      result.duration_ms !== undefined
+  );
+
+  const bestMultiplicationResult =
+    multiplicationResults.length > 0
+      ? [...multiplicationResults].sort(
+          (a, b) =>
+            Number(a.duration_ms) -
+            Number(b.duration_ms)
+        )[0]
+      : null;
+
+  const mathLanguageRounds = verifiedResults.filter(
+    (result) => result.game_type === "math_language"
+  ).length;
+
+  const recentActivity = verifiedResults
+    .slice(0, 3)
+    .map((result) => ({
+      id: result.id,
+      title:
+        result.mode_label ||
+        result.game_mode ||
+        formatGameType(result.game_type),
+      gameType: formatGameType(result.game_type),
+      result: formatResultValue(result),
+      date: formatRelativeDate(result.played_at),
+      isPersonalBest: Boolean(result.is_personal_best),
+    }));
+
+  return {
+    id: studentRow.id,
+
+    firstName: studentRow.first_name || "",
+    lastName: studentRow.last_name || "",
+
+    displayName:
+      studentRow.public_display_name ||
+      `${studentRow.first_name || "Player"} ${
+        studentRow.last_name?.charAt(0)?.toUpperCase() || ""
+      }.`.trim(),
+
+    initials: getInitials(
+      studentRow.first_name,
+      studentRow.last_name
+    ),
+
+    profileType: studentRow.profile_type,
+    profileStatus: studentRow.profile_status,
+
+    school:
+      studentRow.current_school || "School not added",
+
+    level:
+      studentRow.current_level || "Level not added",
+
+    academicYear:
+      studentRow.academic_year || "Not added",
+
+    relationshipRole: link.relationship_role,
+    canView: Boolean(link.can_view),
+    canEdit: Boolean(link.can_edit),
+    canManageMembership: Boolean(
+      link.can_manage_membership
+    ),
+    canPlay: Boolean(link.can_play),
+
     progress: {
-      personalBest: "18.42 sec",
-      personalBestMode: "5 × 5 Quick",
-      gamesPlayed: 42,
-      mathLanguageCompleted: 32,
-      mathLanguageTotal: 50,
-      badgesEarned: 7,
-    },
-    recentActivity: [
-      {
-        id: 1,
-        title: "5 × 5 Multiplication",
-        result: "18.42 seconds",
-        date: "Today",
-        badge: "New Personal Best",
-      },
-      {
-        id: 2,
-        title: "Math Language",
-        result: "9 / 10",
-        date: "Yesterday",
-        badge: null,
-      },
-      {
-        id: 3,
-        title: "12 × 12 Multiplication",
-        result: "2:41.18",
-        date: "July 10",
-        badge: null,
-      },
-    ],
-    latestBadge: {
-      icon: "✓",
-      name: "Perfect Grid",
-      description:
-        "Completed a multiplication grid without an incorrect answer.",
-    },
-  },
-  {
-    id: "maya",
-    firstName: "Maya",
-    lastName: "Burton",
-    displayName: "Maya B.",
-    initials: "MB",
-    school: "San Juan Girls' RC School",
-    level: "Standard 2",
-    academicYear: "2026–2027",
-    membership: {
-      plan: "Free Account",
-      status: "Active",
-      expiryDate: null,
-      tone: "gray",
-    },
-    attention: [],
-    progress: {
-      personalBest: "24.80 sec",
-      personalBestMode: "5 × 5 Quick",
-      gamesPlayed: 13,
-      mathLanguageCompleted: 18,
-      mathLanguageTotal: 50,
-      badgesEarned: 3,
-    },
-    recentActivity: [
-      {
-        id: 1,
-        title: "5 × 5 Multiplication",
-        result: "24.80 seconds",
-        date: "Today",
-        badge: "New Personal Best",
-      },
-      {
-        id: 2,
-        title: "Math Language",
-        result: "7 / 10",
-        date: "July 11",
-        badge: null,
-      },
-    ],
-    latestBadge: {
-      icon: "★",
-      name: "First Game",
-      description: "Completed a first CountMeInTT game.",
-    },
-  },
-];
+      personalBest: bestMultiplicationResult
+        ? formatDuration(
+            bestMultiplicationResult.duration_ms
+          )
+        : "—",
 
-function StudentCard({ student, selected, onSelect }) {
-  const membershipClasses =
-    student.membership.plan === "Free Account"
-      ? "bg-gray-100 text-gray-700"
-      : "bg-blue-100 text-blue-700";
+      personalBestMode: bestMultiplicationResult
+        ? bestMultiplicationResult.mode_label ||
+          bestMultiplicationResult.game_mode
+        : "No verified multiplication result yet",
 
+      gamesPlayed: verifiedResults.length,
+      mathLanguageCompleted: mathLanguageRounds,
+      badgesEarned: 0,
+    },
+
+    recentActivity,
+    latestResult: verifiedResults[0] || null,
+  };
+}
+
+function ProfileCard({
+  profile,
+  selected,
+  onSelect,
+  isOwnProfile = false,
+}) {
   return (
     <button
       type="button"
-      onClick={() => onSelect(student.id)}
+      onClick={() => onSelect(profile.id)}
       className={[
-        "rounded-2xl bg-white p-5 text-left shadow-sm transition duration-200",
+        "relative rounded-2xl bg-white p-5 text-left shadow-sm transition duration-200",
         selected
           ? "border-2 border-blue-600 ring-4 ring-blue-100"
           : "border border-gray-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-100 text-lg font-black text-blue-700">
-          {student.initials}
+        <div
+          className={[
+            "flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-black",
+            isOwnProfile
+              ? "bg-blue-100 text-blue-700"
+              : "bg-yellow-100 text-blue-700",
+          ].join(" ")}
+        >
+          {profile.initials}
         </div>
 
         <span
           className={[
             "rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide",
-            membershipClasses,
+            isOwnProfile
+              ? "bg-blue-100 text-blue-700"
+              : "bg-yellow-100 text-yellow-800",
           ].join(" ")}
         >
-          {student.membership.plan}
+          {isOwnProfile
+            ? profile.relationshipRole === "student"
+              ? "Student Profile"
+              : "Parent Profile"
+            : "Child"}
         </span>
       </div>
 
       <h3 className="mt-4 text-xl font-black text-gray-950">
-        {student.displayName}
+        {profile.displayName}
       </h3>
 
-      <p className="mt-1 font-semibold text-gray-600">{student.level}</p>
+      {isOwnProfile ? (
+        <>
+          <p className="mt-1 font-semibold text-gray-600">
+            My playable learning profile
+          </p>
 
-      <p className="mt-1 text-sm leading-6 text-gray-500">
-        {student.school}
-      </p>
+          <p className="mt-2 text-sm leading-6 text-gray-500">
+            Results from games you play while logged in are saved
+            here.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="mt-1 font-semibold text-gray-600">
+            {profile.level}
+          </p>
 
-      {student.membership.expiryDate && (
-        <p className="mt-4 text-sm font-bold text-gray-600">
-          Expires {student.membership.expiryDate}
-        </p>
+          <p className="mt-1 text-sm leading-6 text-gray-500">
+            {profile.school}
+          </p>
+        </>
       )}
 
       <p className="mt-4 font-black text-blue-600">
@@ -170,7 +303,12 @@ function StudentCard({ student, selected, onSelect }) {
   );
 }
 
-function ProgressCard({ label, value, detail, accent = "blue" }) {
+function ProgressCard({
+  label,
+  value,
+  detail,
+  accent = "blue",
+}) {
   const accentClasses = {
     blue: "bg-blue-100 text-blue-700",
     yellow: "bg-yellow-100 text-yellow-800",
@@ -180,34 +318,378 @@ function ProgressCard({ label, value, detail, accent = "blue" }) {
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div
+      <span
         className={[
           "inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide",
-          accentClasses[accent],
+          accentClasses[accent] || accentClasses.blue,
         ].join(" ")}
       >
         {label}
-      </div>
+      </span>
 
-      <p className="mt-4 text-3xl font-black text-gray-950">{value}</p>
+      <p className="mt-4 text-3xl font-black text-gray-950">
+        {value}
+      </p>
 
-      <p className="mt-2 text-sm font-semibold text-gray-600">{detail}</p>
+      <p className="mt-2 text-sm font-semibold text-gray-600">
+        {detail}
+      </p>
+    </div>
+  );
+}
+
+function LoadingDashboard() {
+  return (
+    <div className="platform-page-bg min-h-screen text-gray-950">
+      <SiteHeader />
+
+      <main className="px-5 py-20">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
+
+          <h1 className="mt-6 text-2xl font-black">
+            Loading your dashboard…
+          </h1>
+
+          <p className="mt-3 text-gray-600">
+            We are retrieving your profiles and saved results.
+          </p>
+        </div>
+      </main>
+
+      <SiteFooter />
+    </div>
+  );
+}
+
+function DashboardError({ message }) {
+  return (
+    <div className="platform-page-bg min-h-screen text-gray-950">
+      <SiteHeader />
+
+      <main className="px-5 py-16">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-2xl font-black text-red-700">
+            !
+          </div>
+
+          <h1 className="mt-5 text-3xl font-black">
+            We could not load your dashboard.
+          </h1>
+
+          <p className="mt-4 leading-7 text-gray-600">
+            {message}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-7 rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </main>
+
+      <SiteFooter />
     </div>
   );
 }
 
 export default function Dashboard() {
-  const [activeStudentId, setActiveStudentId] = useState(
-    sampleStudents[0].id
+  const navigate = useNavigate();
+
+  const [accountProfile, setAccountProfile] =
+    useState(null);
+
+  const [linkedProfiles, setLinkedProfiles] =
+    useState([]);
+
+  const [activeProfileId, setActiveProfileId] =
+    useState(null);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDashboard() {
+      setIsLoading(true);
+      setLoadError("");
+
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) {
+          throw userError;
+        }
+
+        if (!user) {
+          navigate("/login", {
+            replace: true,
+            state: {
+              from: {
+                pathname: "/dashboard",
+              },
+            },
+          });
+
+          return;
+        }
+
+        const [
+          { data: profileData, error: profileError },
+          { data: linkRows, error: linksError },
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select(
+              `
+                id,
+                full_name,
+                account_type,
+                phone,
+                communication_preference,
+                account_status
+              `
+            )
+            .eq("id", user.id)
+            .single(),
+
+          supabase
+            .from("account_student_links")
+            .select(
+              `
+                id,
+                account_id,
+                student_id,
+                relationship_role,
+                can_view,
+                can_edit,
+                can_manage_membership,
+                can_play,
+                created_at
+              `
+            )
+            .eq("account_id", user.id)
+            .eq("can_view", true)
+            .order("created_at", {
+              ascending: true,
+            }),
+        ]);
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        if (linksError) {
+          throw linksError;
+        }
+
+        const links = linkRows || [];
+        const studentIds = links.map(
+          (link) => link.student_id
+        );
+
+        let studentRows = [];
+        let resultRows = [];
+
+        if (studentIds.length > 0) {
+          const [
+            { data: studentsData, error: studentsError },
+            { data: resultsData, error: resultsError },
+          ] = await Promise.all([
+            supabase
+              .from("student_profiles")
+              .select(
+                `
+                  id,
+                  account_id,
+                  first_name,
+                  last_name,
+                  public_display_name,
+                  avatar_key,
+                  school_type,
+                  current_school,
+                  current_level,
+                  academic_year,
+                  school_visible,
+                  profile_status,
+                  profile_type,
+                  created_at,
+                  updated_at
+                `
+              )
+              .in("id", studentIds)
+              .eq("profile_status", "active"),
+
+            supabase
+              .from("game_results")
+              .select(
+                `
+                  id,
+                  student_id,
+                  account_id,
+                  game_type,
+                  game_mode,
+                  mode_label,
+                  duration_ms,
+                  score,
+                  max_score,
+                  correct_answers,
+                  incorrect_answers,
+                  accuracy_percent,
+                  submission_type,
+                  verification_status,
+                  is_personal_best,
+                  played_at
+                `
+              )
+              .in("student_id", studentIds)
+              .eq("verification_status", "verified")
+              .order("played_at", {
+                ascending: false,
+              }),
+          ]);
+
+          if (studentsError) {
+            throw studentsError;
+          }
+
+          if (resultsError) {
+            throw resultsError;
+          }
+
+          studentRows = studentsData || [];
+          resultRows = resultsData || [];
+        }
+
+        const summaries = links
+          .map((link) => {
+            const studentRow = studentRows.find(
+              (student) =>
+                String(student.id) ===
+                String(link.student_id)
+            );
+
+            if (!studentRow) {
+              return null;
+            }
+
+            const matchingResults = resultRows.filter(
+              (result) =>
+                String(result.student_id) ===
+                String(studentRow.id)
+            );
+
+            return createProfileSummary(
+              link,
+              studentRow,
+              matchingResults
+            );
+          })
+          .filter(Boolean);
+
+        if (!active) return;
+
+        setAccountProfile(profileData);
+        setLinkedProfiles(summaries);
+
+        setActiveProfileId((currentId) => {
+          const currentStillExists = summaries.some(
+            (profile) => profile.id === currentId
+          );
+
+          if (currentStillExists) {
+            return currentId;
+          }
+
+          const ownProfile = summaries.find(
+            (profile) =>
+              profile.relationshipRole === "self" ||
+              profile.relationshipRole === "student"
+          );
+
+          return ownProfile?.id || summaries[0]?.id || null;
+        });
+      } catch (error) {
+        console.error("Dashboard loading error:", error);
+
+        if (active) {
+          setLoadError(
+            error?.message ||
+              "Your dashboard could not be loaded."
+          );
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadDashboard();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  const ownProfile = useMemo(
+    () =>
+      linkedProfiles.find(
+        (profile) =>
+          profile.relationshipRole === "self" ||
+          profile.relationshipRole === "student"
+      ) || null,
+    [linkedProfiles]
   );
 
-  const activeStudent = useMemo(
+  const childProfiles = useMemo(
     () =>
-      sampleStudents.find(
-        (student) => student.id === activeStudentId
-      ) || sampleStudents[0],
-    [activeStudentId]
+      linkedProfiles.filter(
+        (profile) =>
+          profile.relationshipRole === "parent"
+      ),
+    [linkedProfiles]
   );
+
+  const activeProfile = useMemo(() => {
+    if (!activeProfileId) return null;
+
+    return (
+      linkedProfiles.find(
+        (profile) => profile.id === activeProfileId
+      ) ||
+      ownProfile ||
+      linkedProfiles[0] ||
+      null
+    );
+  }, [linkedProfiles, activeProfileId, ownProfile]);
+
+  const isParentAccount =
+    accountProfile?.account_type === "parent";
+
+  const activeIsOwnProfile =
+    activeProfile?.relationshipRole === "self" ||
+    activeProfile?.relationshipRole === "student";
+
+  const accountFirstName =
+    accountProfile?.full_name
+      ?.trim()
+      .split(/\s+/)[0] || "there";
+
+  if (isLoading) {
+    return <LoadingDashboard />;
+  }
+
+  if (loadError) {
+    return <DashboardError message={loadError} />;
+  }
 
   return (
     <div className="platform-page-bg min-h-screen text-gray-950">
@@ -222,366 +704,431 @@ export default function Dashboard() {
               </p>
 
               <h1 className="mt-2 text-4xl font-black leading-tight sm:text-5xl">
-                Good evening, Andre <span aria-hidden="true">👋</span>
+                {isParentAccount
+                  ? `Good evening, ${accountFirstName}`
+                  : `Welcome back, ${accountFirstName}`}{" "}
+                <span aria-hidden="true">👋</span>
               </h1>
 
               <p className="mt-3 max-w-3xl text-lg leading-8 text-gray-600">
-                Manage your students, memberships and CountMeInTT progress.
+                {isParentAccount
+                  ? "Manage your children and practise using your own learning profile."
+                  : "Play, build your personal best and review your progress."}
               </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Link
-                to="/students/add"
-                className="rounded-xl border-2 border-blue-600 bg-white px-5 py-3 text-center font-black text-blue-600 transition hover:bg-blue-50"
-              >
-                Add Student
-              </Link>
+              {isParentAccount &&
+                childProfiles.length < CHILD_LIMIT && (
+                  <Link
+                    to="/students/add"
+                    className="rounded-xl border-2 border-blue-600 bg-white px-5 py-3 text-center font-black text-blue-600 transition hover:bg-blue-50"
+                  >
+                    Add Student
+                  </Link>
+                )}
 
-              <Link
-                to="/games/multiplication"
-                className="rounded-xl bg-blue-600 px-5 py-3 text-center font-black text-white shadow transition hover:bg-blue-700"
-              >
-                Play Now
-              </Link>
+              {ownProfile?.canPlay && (
+                <Link
+                  to="/games/multiplication"
+                  className="rounded-xl bg-blue-600 px-5 py-3 text-center font-black text-white shadow transition hover:bg-blue-700"
+                >
+                  {isParentAccount
+                    ? `Play as ${ownProfile.displayName}`
+                    : "Play Now"}
+                </Link>
+              )}
             </div>
           </div>
         </section>
 
         <section className="px-5 py-12 sm:py-16">
           <div className="mx-auto max-w-7xl">
-            <div>
-              <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                Your students
-              </p>
+            {ownProfile && (
+              <div>
+                <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+                  My Profile
+                </p>
 
-              <h2 className="mt-2 text-3xl font-black">
-                Choose a student profile.
-              </h2>
-            </div>
+                <h2 className="mt-2 text-3xl font-black">
+                  My learning profile.
+                </h2>
 
-            <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {sampleStudents.map((student) => (
-                <StudentCard
-                  key={student.id}
-                  student={student}
-                  selected={student.id === activeStudentId}
-                  onSelect={setActiveStudentId}
-                />
-              ))}
+                <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  <ProfileCard
+                    profile={ownProfile}
+                    selected={
+                      ownProfile.id === activeProfileId
+                    }
+                    onSelect={setActiveProfileId}
+                    isOwnProfile
+                  />
+                </div>
+              </div>
+            )}
 
-              <Link
-                to="/students/add"
-                className="flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white/80 p-6 text-center transition hover:border-blue-400 hover:bg-blue-50"
-              >
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-3xl font-black text-blue-700">
-                  +
+            {isParentAccount && (
+              <div className={ownProfile ? "mt-12" : ""}>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+                      My Children
+                    </p>
+
+                    <h2 className="mt-2 text-3xl font-black">
+                      Linked student profiles.
+                    </h2>
+                  </div>
+
+                  <div className="rounded-full bg-yellow-100 px-4 py-2 text-sm font-black text-yellow-800">
+                    {childProfiles.length} of {CHILD_LIMIT} used
+                  </div>
                 </div>
 
-                <h3 className="mt-4 text-xl font-black">Add another student</h3>
+                <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  {childProfiles.map((profile) => (
+                    <ProfileCard
+                      key={profile.id}
+                      profile={profile}
+                      selected={
+                        profile.id === activeProfileId
+                      }
+                      onSelect={setActiveProfileId}
+                    />
+                  ))}
 
-                <p className="mt-2 max-w-xs text-sm leading-6 text-gray-600">
-                  Create another learning profile under this account.
-                </p>
-              </Link>
-            </div>
+                  {childProfiles.length < CHILD_LIMIT ? (
+                    <Link
+                      to="/students/add"
+                      className="flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white/80 p-6 text-center transition hover:border-blue-400 hover:bg-blue-50"
+                    >
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-3xl font-black text-blue-700">
+                        +
+                      </div>
+
+                      <h3 className="mt-4 text-xl font-black">
+                        Add another student
+                      </h3>
+
+                      <p className="mt-2 max-w-xs text-sm leading-6 text-gray-600">
+                        {childProfiles.length} of {CHILD_LIMIT} child
+                        profiles currently used.
+                      </p>
+                    </Link>
+                  ) : (
+                    <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-yellow-200 bg-yellow-50 p-6 text-center">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-yellow-200 text-2xl">
+                        ✓
+                      </div>
+
+                      <h3 className="mt-4 text-xl font-black">
+                        Family limit reached
+                      </h3>
+
+                      <p className="mt-2 max-w-xs text-sm leading-6 text-gray-600">
+                        This account currently has five child
+                        profiles.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
-        <section className="bg-yellow-50 px-5 py-12 sm:py-16">
-          <div className="mx-auto max-w-7xl">
-            <div className="grid gap-6 lg:grid-cols-[1fr_0.75fr]">
-              <div className="rounded-2xl border border-yellow-200 bg-white p-6 shadow-sm sm:p-8">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        {activeProfile && (
+          <>
+            <section className="bg-yellow-50 px-5 py-12 sm:py-16">
+              <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1fr_0.75fr]">
+                <div className="rounded-2xl border border-yellow-200 bg-white p-6 shadow-sm sm:p-8">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-yellow-100 text-2xl font-black text-blue-700">
-                      {activeStudent.initials}
+                    <div
+                      className={[
+                        "flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-2xl font-black text-blue-700",
+                        activeIsOwnProfile
+                          ? "bg-blue-100"
+                          : "bg-yellow-100",
+                      ].join(" ")}
+                    >
+                      {activeProfile.initials}
                     </div>
 
                     <div>
                       <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                        Selected student
+                        {activeIsOwnProfile
+                          ? "My Profile"
+                          : "Selected Child"}
                       </p>
 
                       <h2 className="mt-1 text-3xl font-black">
-                        {activeStudent.displayName}
+                        {activeProfile.displayName}
                       </h2>
 
-                      <p className="mt-2 font-semibold text-gray-700">
-                        {activeStudent.level}
-                      </p>
+                      {activeIsOwnProfile ? (
+                        <p className="mt-2 text-gray-600">
+                          Your personal CountMeInTT learning and
+                          practice profile.
+                        </p>
+                      ) : (
+                        <>
+                          <p className="mt-2 font-semibold text-gray-700">
+                            {activeProfile.level}
+                          </p>
 
-                      <p className="mt-1 text-sm text-gray-600">
-                        {activeStudent.school}
-                      </p>
+                          <p className="mt-1 text-sm text-gray-600">
+                            {activeProfile.school}
+                          </p>
 
-                      <p className="mt-1 text-sm font-bold text-gray-500">
-                        Academic Year {activeStudent.academicYear}
-                      </p>
+                          <p className="mt-1 text-sm font-bold text-gray-500">
+                            Academic Year{" "}
+                            {activeProfile.academicYear}
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  <div className="rounded-xl bg-blue-50 px-4 py-3">
-                    <p className="text-xs font-black uppercase tracking-wide text-blue-700">
-                      Membership
-                    </p>
+                  <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                    {activeProfile.canPlay && (
+                      <Link
+                        to="/games/multiplication"
+                        className="rounded-xl bg-blue-600 px-5 py-3 text-center font-black text-white transition hover:bg-blue-700"
+                      >
+                        Play as {activeProfile.displayName}
+                      </Link>
+                    )}
 
-                    <p className="mt-1 font-black text-gray-950">
-                      {activeStudent.membership.plan}
-                    </p>
+                    <Link
+                      to={`/students/${activeProfile.id}`}
+                      className="rounded-xl border-2 border-blue-600 bg-white px-5 py-3 text-center font-black text-blue-600 transition hover:bg-blue-50"
+                    >
+                      View Profile
+                    </Link>
 
-                    {activeStudent.membership.expiryDate && (
-                      <p className="mt-1 text-sm text-gray-600">
-                        Expires {activeStudent.membership.expiryDate}
-                      </p>
+                    {activeProfile.canEdit &&
+                      !activeIsOwnProfile && (
+                        <Link
+                          to={`/students/${activeProfile.id}/edit`}
+                          className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-black text-gray-700 transition hover:bg-gray-50"
+                        >
+                          Edit Profile
+                        </Link>
+                      )}
+
+                    <Link
+                      to={`/students/${activeProfile.id}/results`}
+                      className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-black text-gray-700 transition hover:bg-gray-50"
+                    >
+                      View Results
+                    </Link>
+
+                    {activeProfile.canManageMembership && (
+                      <Link
+                        to="/membership"
+                        className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-black text-gray-700 transition hover:bg-gray-50"
+                      >
+                        Manage Membership
+                      </Link>
                     )}
                   </div>
                 </div>
 
-                <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  <Link
-                    to="/games/multiplication"
-                    className="rounded-xl bg-blue-600 px-5 py-3 text-center font-black text-white transition hover:bg-blue-700"
-                  >
-                    Continue Playing
-                  </Link>
+                <div className="rounded-2xl border border-yellow-200 bg-white p-6 shadow-sm">
+                  <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+                    Profile access
+                  </p>
 
-                  <Link
-                    to={`/students/${activeStudent.id}`}
-                    className="rounded-xl border-2 border-blue-600 bg-white px-5 py-3 text-center font-black text-blue-600 transition hover:bg-blue-50"
-                  >
-                    View Profile
-                  </Link>
+                  {activeIsOwnProfile ? (
+                    <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-5">
+                      <h3 className="font-black text-gray-950">
+                        Playable profile
+                      </h3>
 
-                  <Link
-                    to={`/students/${activeStudent.id}/edit`}
-                    className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-black text-gray-700 transition hover:bg-gray-50"
-                  >
-                    Edit Profile
-                  </Link>
+                      <p className="mt-2 text-sm leading-6 text-gray-600">
+                        Results from games you play while logged in
+                        will be saved to this profile.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-xl border border-yellow-200 bg-yellow-50 p-5">
+                      <h3 className="font-black text-gray-950">
+                        Parent-managed profile
+                      </h3>
 
-                  <Link
-                    to="/membership"
-                    className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-black text-gray-700 transition hover:bg-gray-50"
-                  >
-                    Manage Membership
-                  </Link>
+                      <p className="mt-2 text-sm leading-6 text-gray-600">
+                        You can view and manage this child’s
+                        information, but gameplay cannot be saved
+                        under the child from the parent login.
+                      </p>
+
+                      <p className="mt-3 text-sm font-black text-blue-600">
+                        Student login setup will be added next.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
+            </section>
 
-              <div className="rounded-2xl border border-yellow-200 bg-white p-6 shadow-sm">
+            <section className="px-5 py-12 sm:py-16">
+              <div className="mx-auto max-w-7xl">
                 <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                  Needs your attention
+                  Quick Progress
                 </p>
 
-                {activeStudent.attention.length > 0 ? (
-                  <div className="mt-5 grid gap-4">
-                    {activeStudent.attention.map((item) => (
-                      <div
-                        key={item.id}
-                        className="rounded-xl border border-yellow-200 bg-yellow-50 p-4"
-                      >
-                        <h3 className="font-black text-gray-950">
-                          {item.title}
-                        </h3>
+                <h2 className="mt-2 text-3xl font-black">
+                  Verified CountMeInTT activity.
+                </h2>
 
-                        <p className="mt-2 text-sm leading-6 text-gray-600">
-                          {item.description}
-                        </p>
+                <div className="mt-7 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                  <ProgressCard
+                    label="Personal Best"
+                    value={
+                      activeProfile.progress.personalBest
+                    }
+                    detail={
+                      activeProfile.progress
+                        .personalBestMode
+                    }
+                    accent="blue"
+                  />
 
-                        <Link
-                          to={item.to}
-                          className="mt-3 inline-block font-black text-blue-600 hover:underline"
-                        >
-                          {item.action} →
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="mt-5 rounded-xl border border-green-200 bg-green-50 p-5">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 font-black text-green-700">
-                      ✓
+                  <ProgressCard
+                    label="Games Played"
+                    value={
+                      activeProfile.progress.gamesPlayed
+                    }
+                    detail="Verified results saved"
+                    accent="green"
+                  />
+
+                  <ProgressCard
+                    label="Math Language"
+                    value={
+                      activeProfile.progress
+                        .mathLanguageCompleted
+                    }
+                    detail="Verified rounds completed"
+                    accent="yellow"
+                  />
+
+                  <ProgressCard
+                    label="Badges"
+                    value={
+                      activeProfile.progress.badgesEarned
+                    }
+                    detail="Badge system coming later"
+                    accent="purple"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="px-5 pb-12 sm:pb-16">
+              <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+                        Recent Activity
+                      </p>
+
+                      <h2 className="mt-2 text-2xl font-black">
+                        Latest verified results.
+                      </h2>
                     </div>
 
-                    <h3 className="mt-4 font-black text-gray-950">
-                      You’re all caught up.
-                    </h3>
-
-                    <p className="mt-2 text-sm leading-6 text-gray-600">
-                      There are no urgent profile or membership actions for
-                      {` ${activeStudent.displayName}`} right now.
-                    </p>
+                    <Link
+                      to={`/students/${activeProfile.id}/results`}
+                      className="font-black text-blue-600 hover:underline"
+                    >
+                      View all results →
+                    </Link>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
 
-        <section className="px-5 py-12 sm:py-16">
-          <div className="mx-auto max-w-7xl">
-            <div>
-              <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                Quick progress
-              </p>
+                  {activeProfile.recentActivity.length > 0 ? (
+                    <div className="mt-6 divide-y divide-gray-100">
+                      {activeProfile.recentActivity.map(
+                        (activity) => (
+                          <div
+                            key={activity.id}
+                            className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="font-black text-gray-950">
+                                  {activity.title}
+                                </h3>
 
-              <h2 className="mt-2 text-3xl font-black">
-                A simple view of recent growth.
-              </h2>
-            </div>
+                                {activity.isPersonalBest && (
+                                  <span className="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-yellow-800">
+                                    Personal Best
+                                  </span>
+                                )}
+                              </div>
 
-            <div className="mt-7 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-              <ProgressCard
-                label="Personal Best"
-                value={activeStudent.progress.personalBest}
-                detail={activeStudent.progress.personalBestMode}
-                accent="blue"
-              />
+                              <p className="mt-1 text-sm text-gray-500">
+                                {activity.gameType} ·{" "}
+                                {activity.date}
+                              </p>
+                            </div>
 
-              <ProgressCard
-                label="Games Played"
-                value={activeStudent.progress.gamesPlayed}
-                detail="Completed CountMeInTT games"
-                accent="green"
-              />
+                            <p className="text-lg font-black text-blue-600">
+                              {activity.result}
+                            </p>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-7 text-center">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 text-2xl">
+                        🎮
+                      </div>
 
-              <ProgressCard
-                label="Math Language"
-                value={`${activeStudent.progress.mathLanguageCompleted} / ${activeStudent.progress.mathLanguageTotal}`}
-                detail="Free terms explored"
-                accent="yellow"
-              />
+                      <h3 className="mt-4 text-xl font-black">
+                        No verified results yet.
+                      </h3>
 
-              <ProgressCard
-                label="Badges"
-                value={activeStudent.progress.badgesEarned}
-                detail="Badges earned"
-                accent="purple"
-              />
-            </div>
-          </div>
-        </section>
+                      <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-gray-600">
+                        Results will appear after this profile
+                        completes a connected CountMeInTT game.
+                      </p>
+                    </div>
+                  )}
+                </div>
 
-        <section className="px-5 pb-12 sm:pb-16">
-          <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                    Recent activity
+                <div className="rounded-2xl bg-blue-600 p-6 text-white shadow-lg">
+                  <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
+                    Membership
                   </p>
 
                   <h2 className="mt-2 text-2xl font-black">
-                    Latest saved results.
+                    Free Account
                   </h2>
-                </div>
 
-                <Link
-                  to={`/students/${activeStudent.id}/results`}
-                  className="font-black text-blue-600 hover:underline"
-                >
-                  View all results →
-                </Link>
-              </div>
+                  <p className="mt-3 text-blue-100">
+                    Save a personal best and retain the latest 10
+                    results.
+                  </p>
 
-              <div className="mt-6 divide-y divide-gray-100">
-                {activeStudent.recentActivity.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                  <Link
+                    to="/membership"
+                    className="mt-6 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
                   >
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-black text-gray-950">
-                          {activity.title}
-                        </h3>
-
-                        {activity.badge && (
-                          <span className="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-yellow-800">
-                            {activity.badge}
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="mt-1 text-sm text-gray-500">
-                        {activity.date}
-                      </p>
-                    </div>
-
-                    <p className="text-lg font-black text-blue-600">
-                      {activity.result}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid gap-6">
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                  Latest badge
-                </p>
-
-                <div className="mt-5 flex items-start gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-yellow-100 text-2xl font-black text-yellow-800">
-                    {activeStudent.latestBadge.icon}
-                  </div>
-
-                  <div>
-                    <h2 className="text-xl font-black">
-                      {activeStudent.latestBadge.name}
-                    </h2>
-
-                    <p className="mt-2 text-sm leading-6 text-gray-600">
-                      {activeStudent.latestBadge.description}
-                    </p>
-                  </div>
+                    Explore Membership
+                  </Link>
                 </div>
-
-                <Link
-                  to={`/students/${activeStudent.id}/badges`}
-                  className="mt-5 inline-block font-black text-blue-600 hover:underline"
-                >
-                  View badges →
-                </Link>
               </div>
-
-              <div className="rounded-2xl bg-blue-600 p-6 text-white shadow-lg">
-                <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
-                  Membership
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black">
-                  {activeStudent.membership.plan}
-                </h2>
-
-                {activeStudent.membership.expiryDate ? (
-                  <p className="mt-3 text-blue-100">
-                    Active until {activeStudent.membership.expiryDate}.
-                  </p>
-                ) : (
-                  <p className="mt-3 text-blue-100">
-                    Save a personal best and the latest 10 results.
-                  </p>
-                )}
-
-                <Link
-                  to="/membership"
-                  className="mt-6 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
-                >
-                  {activeStudent.membership.plan === "Free Account"
-                    ? "Explore Membership"
-                    : "Manage Membership"}
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+            </section>
+          </>
+        )}
       </main>
 
       <SiteFooter />
     </div>
   );
 }
+
 

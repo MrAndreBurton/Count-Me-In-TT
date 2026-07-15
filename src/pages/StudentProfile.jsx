@@ -1,160 +1,143 @@
-import React from "react";
-import { Link, useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import {
+  Link,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
+import { supabase } from "../lib/supabase";
 
-const sampleStudents = {
-  joshua: {
-    id: "joshua",
-    firstName: "Joshua",
-    lastName: "Burton",
-    displayName: "Joshua B.",
-    initials: "JB",
-    school: "St Xavier's Private School",
-    level: "Standard 4",
-    academicYear: "2026–2027",
-    schoolVisible: true,
-    membership: {
-      plan: "Annual Membership",
-      status: "Active",
-      expiryDate: "July 12, 2027",
-    },
-    progress: {
-      personalBest: "18.42 sec",
-      personalBestMode: "5 × 5 Quick",
-      gamesPlayed: 42,
-      mathLanguageCompleted: 32,
-      mathLanguageTotal: 50,
-      badgesEarned: 7,
-    },
-    recentResults: [
-      {
-        id: 1,
-        title: "5 × 5 Multiplication",
-        result: "18.42 seconds",
-        date: "Today",
-        badge: "New Personal Best",
-      },
-      {
-        id: 2,
-        title: "Math Language",
-        result: "9 / 10",
-        date: "Yesterday",
-        badge: null,
-      },
-      {
-        id: 3,
-        title: "12 × 12 Multiplication",
-        result: "2:41.18",
-        date: "July 10",
-        badge: null,
-      },
-    ],
-    badges: [
-      {
-        id: 1,
-        icon: "✓",
-        name: "Perfect Grid",
-        description:
-          "Completed a multiplication grid without an incorrect answer.",
-      },
-      {
-        id: 2,
-        icon: "⚡",
-        name: "Quick Starter",
-        description: "Completed the 5 × 5 Quick Grid in under 30 seconds.",
-      },
-      {
-        id: 3,
-        icon: "📚",
-        name: "Word Explorer",
-        description: "Completed a first Math Language round.",
-      },
-    ],
-    schoolHistory: [
-      {
-        id: 1,
-        academicYear: "2026–2027",
-        school: "St Xavier's Private School",
-        level: "Standard 4",
-        current: true,
-      },
-      {
-        id: 2,
-        academicYear: "2025–2026",
-        school: "St Xavier's Private School",
-        level: "Standard 3",
-        current: false,
-      },
-    ],
-  },
+function getInitials(firstName = "", lastName = "") {
+  const firstInitial = firstName.trim().charAt(0);
+  const lastInitial = lastName.trim().charAt(0);
 
-  maya: {
-    id: "maya",
-    firstName: "Maya",
-    lastName: "Burton",
-    displayName: "Maya B.",
-    initials: "MB",
-    school: "San Juan Girls' RC School",
-    level: "Standard 2",
-    academicYear: "2026–2027",
-    schoolVisible: false,
-    membership: {
-      plan: "Free Account",
-      status: "Active",
-      expiryDate: null,
-    },
-    progress: {
-      personalBest: "24.80 sec",
-      personalBestMode: "5 × 5 Quick",
-      gamesPlayed: 13,
-      mathLanguageCompleted: 18,
-      mathLanguageTotal: 50,
-      badgesEarned: 3,
-    },
-    recentResults: [
-      {
-        id: 1,
-        title: "5 × 5 Multiplication",
-        result: "24.80 seconds",
-        date: "Today",
-        badge: "New Personal Best",
-      },
-      {
-        id: 2,
-        title: "Math Language",
-        result: "7 / 10",
-        date: "July 11",
-        badge: null,
-      },
-    ],
-    badges: [
-      {
-        id: 1,
-        icon: "★",
-        name: "First Game",
-        description: "Completed a first CountMeInTT game.",
-      },
-      {
-        id: 2,
-        icon: "📚",
-        name: "Word Explorer",
-        description: "Completed a first Math Language round.",
-      },
-    ],
-    schoolHistory: [
-      {
-        id: 1,
-        academicYear: "2026–2027",
-        school: "San Juan Girls' RC School",
-        level: "Standard 2",
-        current: true,
-      },
-    ],
-  },
-};
+  return `${firstInitial}${lastInitial}`.toUpperCase() || "?";
+}
 
-function StatCard({ label, value, detail, tone = "blue" }) {
+function formatDuration(milliseconds) {
+  if (
+    milliseconds === null ||
+    milliseconds === undefined ||
+    Number.isNaN(Number(milliseconds))
+  ) {
+    return null;
+  }
+
+  const totalMilliseconds = Math.max(0, Number(milliseconds));
+  const minutes = Math.floor(totalMilliseconds / 60000);
+  const seconds = Math.floor(
+    (totalMilliseconds % 60000) / 1000
+  );
+  const hundredths = Math.floor(
+    (totalMilliseconds % 1000) / 10
+  );
+
+  if (minutes > 0) {
+    return `${minutes}:${String(seconds).padStart(2, "0")}.${String(
+      hundredths
+    ).padStart(2, "0")}`;
+  }
+
+  return `${seconds}.${String(hundredths).padStart(2, "0")} sec`;
+}
+
+function formatScore(score, maxScore) {
+  if (score === null || score === undefined) {
+    return null;
+  }
+
+  if (maxScore !== null && maxScore !== undefined) {
+    return `${score} / ${maxScore}`;
+  }
+
+  return String(score);
+}
+
+function formatResultValue(result) {
+  const duration = formatDuration(result.duration_ms);
+
+  if (duration) {
+    return duration;
+  }
+
+  const score = formatScore(result.score, result.max_score);
+
+  return score || "Result saved";
+}
+
+function formatGameType(gameType = "") {
+  const labels = {
+    multiplication: "Multiplication",
+    math_language: "Math Language",
+    fractions: "Fractions",
+    decimals: "Decimals",
+    algebra: "Algebra",
+    word_problems: "Word Problems",
+    other: "Other",
+  };
+
+  return labels[gameType] || "CountMeInTT Activity";
+}
+
+function formatRelativeDate(value) {
+  if (!value) return "Date unavailable";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
+
+  const now = new Date();
+
+  const todayStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+
+  const resultDateStart = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
+
+  const differenceInDays = Math.round(
+    (todayStart.getTime() - resultDateStart.getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
+
+  if (differenceInDays === 0) return "Today";
+  if (differenceInDays === 1) return "Yesterday";
+
+  return new Intl.DateTimeFormat("en-TT", {
+    month: "short",
+    day: "numeric",
+    year:
+      date.getFullYear() !== now.getFullYear()
+        ? "numeric"
+        : undefined,
+  }).format(date);
+}
+
+function formatSchoolType(schoolType = "") {
+  const labels = {
+    primary: "Primary School",
+    secondary: "Secondary School",
+    homeschool: "Homeschool",
+    not_enrolled: "Not currently enrolled",
+  };
+
+  return labels[schoolType] || "Not added";
+}
+
+function StatCard({
+  label,
+  value,
+  detail,
+  tone = "blue",
+}) {
   const toneClasses = {
     blue: "bg-blue-100 text-blue-700",
     yellow: "bg-yellow-100 text-yellow-800",
@@ -167,23 +150,332 @@ function StatCard({ label, value, detail, tone = "blue" }) {
       <span
         className={[
           "inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide",
-          toneClasses[tone],
+          toneClasses[tone] || toneClasses.blue,
         ].join(" ")}
       >
         {label}
       </span>
 
-      <p className="mt-4 text-3xl font-black text-gray-950">{value}</p>
+      <p className="mt-4 text-3xl font-black text-gray-950">
+        {value}
+      </p>
 
-      <p className="mt-2 text-sm font-semibold text-gray-600">{detail}</p>
+      <p className="mt-2 text-sm font-semibold text-gray-600">
+        {detail}
+      </p>
+    </div>
+  );
+}
+
+function LoadingProfile() {
+  return (
+    <div className="platform-page-bg min-h-screen text-gray-950">
+      <SiteHeader />
+
+      <main className="px-5 py-20">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
+
+          <h1 className="mt-6 text-2xl font-black">
+            Loading student profile…
+          </h1>
+
+          <p className="mt-3 text-gray-600">
+            We are retrieving the student’s profile, progress and
+            academic history.
+          </p>
+        </div>
+      </main>
+
+      <SiteFooter />
+    </div>
+  );
+}
+
+function ProfileError({ message }) {
+  return (
+    <div className="platform-page-bg min-h-screen text-gray-950">
+      <SiteHeader />
+
+      <main className="px-5 py-16">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-2xl font-black text-red-700">
+            !
+          </div>
+
+          <h1 className="mt-5 text-3xl font-black">
+            Student profile unavailable.
+          </h1>
+
+          <p className="mt-4 leading-7 text-gray-600">
+            {message}
+          </p>
+
+          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link
+              to="/dashboard"
+              className="rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700"
+            >
+              Return to Dashboard
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="rounded-xl border-2 border-blue-600 bg-white px-6 py-3 font-black text-blue-600 transition hover:bg-blue-50"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <SiteFooter />
     </div>
   );
 }
 
 export default function StudentProfile() {
   const { studentId } = useParams();
+  const navigate = useNavigate();
 
-  const student = sampleStudents[studentId] || sampleStudents.joshua;
+  const [student, setStudent] = useState(null);
+  const [results, setResults] = useState([]);
+  const [schoolHistory, setSchoolHistory] = useState([]);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadStudentProfile() {
+      setIsLoading(true);
+      setLoadError("");
+
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) {
+          throw userError;
+        }
+
+        if (!user) {
+          navigate("/login", {
+            replace: true,
+            state: {
+              from: {
+                pathname: `/students/${studentId}`,
+              },
+            },
+          });
+
+          return;
+        }
+
+        const [
+          { data: studentData, error: studentError },
+          { data: resultRows, error: resultsError },
+          { data: historyRows, error: historyError },
+        ] = await Promise.all([
+          supabase
+            .from("student_profiles")
+            .select(
+              `
+                id,
+                account_id,
+                first_name,
+                last_name,
+                public_display_name,
+                avatar_key,
+                school_type,
+                current_school,
+                current_level,
+                academic_year,
+                school_visible,
+                profile_status,
+                created_at,
+                updated_at
+              `
+            )
+            .eq("id", studentId)
+            .eq("profile_status", "active")
+            .maybeSingle(),
+
+          supabase
+            .from("game_results")
+            .select(
+              `
+                id,
+                student_id,
+                account_id,
+                game_type,
+                game_mode,
+                mode_label,
+                duration_ms,
+                score,
+                max_score,
+                correct_answers,
+                incorrect_answers,
+                accuracy_percent,
+                submission_type,
+                verification_status,
+                is_personal_best,
+                played_at
+              `
+            )
+            .eq("student_id", studentId)
+            .eq("verification_status", "verified")
+            .order("played_at", {
+              ascending: false,
+            }),
+
+          supabase
+            .from("student_school_history")
+            .select(
+              `
+                id,
+                student_id,
+                account_id,
+                academic_year,
+                school_type,
+                school_name,
+                school_level,
+                is_current,
+                started_at,
+                ended_at,
+                created_at,
+                updated_at
+              `
+            )
+            .eq("student_id", studentId)
+            .order("academic_year", {
+              ascending: false,
+            }),
+        ]);
+
+        if (studentError) {
+          throw studentError;
+        }
+
+        if (!studentData) {
+          throw new Error(
+            "This student profile does not exist or you do not have permission to view it."
+          );
+        }
+
+        if (resultsError) {
+          throw resultsError;
+        }
+
+        if (historyError) {
+          throw historyError;
+        }
+
+        if (!active) return;
+
+        setStudent({
+          id: studentData.id,
+          accountId: studentData.account_id,
+          firstName: studentData.first_name || "",
+          lastName: studentData.last_name || "",
+
+          displayName:
+            studentData.public_display_name ||
+            `${studentData.first_name || "Student"} ${
+              studentData.last_name
+                ?.charAt(0)
+                ?.toUpperCase() || ""
+            }.`.trim(),
+
+          initials: getInitials(
+            studentData.first_name,
+            studentData.last_name
+          ),
+
+          schoolType: studentData.school_type || "",
+          school:
+            studentData.current_school || "School not added",
+          level:
+            studentData.current_level || "Level not added",
+          academicYear:
+            studentData.academic_year || "Not added",
+          schoolVisible: Boolean(studentData.school_visible),
+          profileStatus: studentData.profile_status,
+
+          membership: {
+            plan: "Free Account",
+            status: "Active",
+            expiryDate: null,
+          },
+        });
+
+        setResults(resultRows || []);
+        setSchoolHistory(historyRows || []);
+      } catch (error) {
+        console.error(
+          "Student profile loading error:",
+          error
+        );
+
+        if (active) {
+          setLoadError(
+            error?.message ||
+              "The student profile could not be loaded."
+          );
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadStudentProfile();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate, studentId]);
+
+  const multiplicationResults = results.filter(
+    (result) =>
+      result.game_type === "multiplication" &&
+      result.duration_ms !== null &&
+      result.duration_ms !== undefined
+  );
+
+  const bestMultiplicationResult =
+    multiplicationResults.length > 0
+      ? [...multiplicationResults].sort(
+          (a, b) =>
+            Number(a.duration_ms) - Number(b.duration_ms)
+        )[0]
+      : null;
+
+  const mathLanguageRounds = results.filter(
+    (result) => result.game_type === "math_language"
+  ).length;
+
+  const recentResults = results.slice(0, 3);
+
+  if (isLoading) {
+    return <LoadingProfile />;
+  }
+
+  if (loadError || !student) {
+    return (
+      <ProfileError
+        message={
+          loadError ||
+          "This student profile could not be found."
+        }
+      />
+    );
+  }
 
   return (
     <div className="platform-page-bg min-h-screen text-gray-950">
@@ -210,7 +502,9 @@ export default function StudentProfile() {
                   {student.level}
                 </p>
 
-                <p className="mt-1 text-gray-600">{student.school}</p>
+                <p className="mt-1 text-gray-600">
+                  {student.school}
+                </p>
 
                 <p className="mt-1 text-sm font-bold text-gray-500">
                   Academic Year {student.academicYear}
@@ -239,6 +533,13 @@ export default function StudentProfile() {
               >
                 View Results
               </Link>
+
+              <Link
+                to="/dashboard"
+                className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-black text-gray-700 transition hover:bg-gray-50"
+              >
+                Dashboard
+              </Link>
             </div>
           </div>
         </section>
@@ -253,34 +554,50 @@ export default function StudentProfile() {
               <h2 className="mt-2 text-3xl font-black">
                 Learning progress at a glance.
               </h2>
+
+              <p className="mt-3 max-w-3xl leading-7 text-gray-600">
+                These figures are calculated from verified
+                CountMeInTT results.
+              </p>
             </div>
 
             <div className="mt-7 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard
                 label="Personal Best"
-                value={student.progress.personalBest}
-                detail={student.progress.personalBestMode}
+                value={
+                  bestMultiplicationResult
+                    ? formatDuration(
+                        bestMultiplicationResult.duration_ms
+                      )
+                    : "—"
+                }
+                detail={
+                  bestMultiplicationResult
+                    ? bestMultiplicationResult.mode_label ||
+                      bestMultiplicationResult.game_mode
+                    : "No verified multiplication result yet"
+                }
                 tone="blue"
               />
 
               <StatCard
                 label="Games Played"
-                value={student.progress.gamesPlayed}
-                detail="Completed CountMeInTT games"
+                value={results.length}
+                detail="Verified results saved"
                 tone="green"
               />
 
               <StatCard
                 label="Math Language"
-                value={`${student.progress.mathLanguageCompleted} / ${student.progress.mathLanguageTotal}`}
-                detail="Terms explored"
+                value={mathLanguageRounds}
+                detail="Verified rounds completed"
                 tone="yellow"
               />
 
               <StatCard
                 label="Badges"
-                value={student.progress.badgesEarned}
-                detail="Badges earned"
+                value="0"
+                detail="Badge system coming later"
                 tone="purple"
               />
             </div>
@@ -331,12 +648,28 @@ export default function StudentProfile() {
 
                 <div className="rounded-xl border border-gray-200 p-5">
                   <dt className="text-sm font-black uppercase tracking-wide text-gray-500">
+                    School Type
+                  </dt>
+
+                  <dd className="mt-2 font-black text-gray-950">
+                    {formatSchoolType(student.schoolType)}
+                  </dd>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 p-5 sm:col-span-2">
+                  <dt className="text-sm font-black uppercase tracking-wide text-gray-500">
                     Public school visibility
                   </dt>
 
                   <dd className="mt-2 font-black text-gray-950">
                     {student.schoolVisible ? "Visible" : "Hidden"}
                   </dd>
+
+                  <p className="mt-2 text-sm leading-6 text-gray-600">
+                    {student.schoolVisible
+                      ? "The school may appear beside eligible public leaderboard results."
+                      : "The school remains hidden on public leaderboard results."}
+                  </p>
                 </div>
               </dl>
 
@@ -354,30 +687,23 @@ export default function StudentProfile() {
               </p>
 
               <h2 className="mt-2 text-3xl font-black">
-                {student.membership.plan}
+                Free Account
               </h2>
 
               <p className="mt-3 font-semibold text-blue-100">
-                Status: {student.membership.status}
+                Status: Active
               </p>
 
-              {student.membership.expiryDate ? (
-                <p className="mt-2 text-blue-100">
-                  Active until {student.membership.expiryDate}.
-                </p>
-              ) : (
-                <p className="mt-2 text-blue-100">
-                  Personal best and the latest 10 results are saved.
-                </p>
-              )}
+              <p className="mt-2 text-blue-100">
+                Save a personal best and retain the latest 10
+                results.
+              </p>
 
               <Link
                 to="/membership"
                 className="mt-7 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
               >
-                {student.membership.plan === "Free Account"
-                  ? "Explore Membership"
-                  : "Manage Membership"}
+                Explore Membership
               </Link>
             </div>
           </div>
@@ -393,7 +719,7 @@ export default function StudentProfile() {
                   </p>
 
                   <h2 className="mt-2 text-2xl font-black">
-                    Latest saved activity.
+                    Latest verified activity.
                   </h2>
                 </div>
 
@@ -405,36 +731,56 @@ export default function StudentProfile() {
                 </Link>
               </div>
 
-              <div className="mt-6 divide-y divide-gray-100">
-                {student.recentResults.map((result) => (
-                  <div
-                    key={result.id}
-                    className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-black text-gray-950">
-                          {result.title}
-                        </h3>
+              {recentResults.length > 0 ? (
+                <div className="mt-6 divide-y divide-gray-100">
+                  {recentResults.map((result) => (
+                    <div
+                      key={result.id}
+                      className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-black text-gray-950">
+                            {result.mode_label ||
+                              result.game_mode ||
+                              formatGameType(result.game_type)}
+                          </h3>
 
-                        {result.badge && (
-                          <span className="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-yellow-800">
-                            {result.badge}
-                          </span>
-                        )}
+                          {result.is_personal_best && (
+                            <span className="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-yellow-800">
+                              Personal Best
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="mt-1 text-sm text-gray-500">
+                          {formatGameType(result.game_type)} ·{" "}
+                          {formatRelativeDate(result.played_at)}
+                        </p>
                       </div>
 
-                      <p className="mt-1 text-sm text-gray-500">
-                        {result.date}
+                      <p className="text-lg font-black text-blue-600">
+                        {formatResultValue(result)}
                       </p>
                     </div>
-
-                    <p className="text-lg font-black text-blue-600">
-                      {result.result}
-                    </p>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-yellow-100 text-2xl">
+                    🎮
                   </div>
-                ))}
-              </div>
+
+                  <h3 className="mt-5 text-xl font-black">
+                    No verified results yet.
+                  </h3>
+
+                  <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-600">
+                    Results will appear after the student completes a
+                    connected CountMeInTT game.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -457,27 +803,19 @@ export default function StudentProfile() {
                 </Link>
               </div>
 
-              <div className="mt-6 grid gap-4">
-                {student.badges.slice(0, 3).map((badge) => (
-                  <div
-                    key={badge.id}
-                    className="flex items-start gap-4 rounded-xl border border-gray-200 p-4"
-                  >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-yellow-100 text-xl font-black text-yellow-800">
-                      {badge.icon}
-                    </div>
+              <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-100 text-2xl">
+                  🏅
+                </div>
 
-                    <div>
-                      <h3 className="font-black text-gray-950">
-                        {badge.name}
-                      </h3>
+                <h3 className="mt-5 text-xl font-black">
+                  No badges earned yet.
+                </h3>
 
-                      <p className="mt-1 text-sm leading-6 text-gray-600">
-                        {badge.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-600">
+                  Badges will appear as the student reaches
+                  CountMeInTT milestones.
+                </p>
               </div>
             </div>
           </div>
@@ -504,55 +842,68 @@ export default function StudentProfile() {
               </Link>
             </div>
 
-            <div className="mt-7 grid gap-4">
-              {student.schoolHistory.map((record) => (
-                <div
-                  key={record.id}
-                  className={[
-                    "grid gap-4 rounded-xl border p-5 sm:grid-cols-[0.7fr_1.3fr_0.8fr_auto] sm:items-center",
-                    record.current
-                      ? "border-blue-200 bg-blue-50"
-                      : "border-gray-200 bg-white",
-                  ].join(" ")}
-                >
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-wide text-gray-500">
-                      Academic Year
-                    </p>
+            {schoolHistory.length > 0 ? (
+              <div className="mt-7 grid gap-4">
+                {schoolHistory.map((record) => (
+                  <div
+                    key={record.id}
+                    className={[
+                      "grid gap-4 rounded-xl border p-5 sm:grid-cols-[0.7fr_1.3fr_0.8fr_auto] sm:items-center",
+                      record.is_current
+                        ? "border-blue-200 bg-blue-50"
+                        : "border-gray-200 bg-white",
+                    ].join(" ")}
+                  >
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-wide text-gray-500">
+                        Academic Year
+                      </p>
 
-                    <p className="mt-1 font-black text-gray-950">
-                      {record.academicYear}
-                    </p>
+                      <p className="mt-1 font-black text-gray-950">
+                        {record.academic_year}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-wide text-gray-500">
+                        School
+                      </p>
+
+                      <p className="mt-1 font-black text-gray-950">
+                        {record.school_name}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-wide text-gray-500">
+                        Level
+                      </p>
+
+                      <p className="mt-1 font-black text-gray-950">
+                        {record.school_level}
+                      </p>
+                    </div>
+
+                    {record.is_current && (
+                      <span className="w-fit rounded-full bg-blue-100 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">
+                        Current
+                      </span>
+                    )}
                   </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-7 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+                <h3 className="font-black">
+                  No academic history recorded.
+                </h3>
 
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-wide text-gray-500">
-                      School
-                    </p>
-
-                    <p className="mt-1 font-black text-gray-950">
-                      {record.school}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-wide text-gray-500">
-                      Level
-                    </p>
-
-                    <p className="mt-1 font-black text-gray-950">
-                      {record.level}
-                    </p>
-                  </div>
-
-                  {record.current && (
-                    <span className="w-fit rounded-full bg-blue-100 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">
-                      Current
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
+                <p className="mt-2 text-sm leading-6 text-gray-600">
+                  School-history records will appear after academic
+                  information is saved.
+                </p>
+              </div>
+            )}
           </div>
         </section>
       </main>

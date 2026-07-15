@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
+import { supabase } from "../lib/supabase";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -13,6 +15,8 @@ export default function Login() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -21,19 +25,76 @@ export default function Login() {
       ...current,
       [name]: type === "checkbox" ? checked : value,
     }));
+
+    if (errorMessage) {
+      setErrorMessage("");
+    }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Temporary behaviour until Supabase is connected.
-    console.log("Login submitted:", formData);
+    if (isSubmitting) return;
 
-    alert("Login functionality will be connected to Supabase next.");
+    setErrorMessage("");
+    setIsSubmitting(true);
 
-    // Temporary preview route for future dashboard testing.
-    // Remove this when real authentication is connected.
-    // navigate("/dashboard");
+    const email = formData.email.trim().toLowerCase();
+
+    try {
+      const { data, error } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password: formData.password,
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data?.session || !data?.user) {
+        throw new Error(
+          "Your session could not be created. Please try again."
+        );
+      }
+
+      console.log("Supabase login successful:", data.user);
+
+      const redirectPath =
+        location.state?.from?.pathname || "/dashboard";
+
+      navigate(redirectPath, {
+        replace: true,
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+
+      const rawMessage =
+        error?.message ||
+        "We could not log you in. Please try again.";
+
+      const lowerMessage = rawMessage.toLowerCase();
+
+      if (
+        lowerMessage.includes("invalid login credentials") ||
+        lowerMessage.includes("invalid credentials")
+      ) {
+        setErrorMessage(
+          "The email address or password is incorrect."
+        );
+      } else if (
+        lowerMessage.includes("email not confirmed") ||
+        lowerMessage.includes("email_not_confirmed")
+      ) {
+        setErrorMessage(
+          "Please verify your email address before logging in."
+        );
+      } else {
+        setErrorMessage(rawMessage);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -125,7 +186,12 @@ export default function Login() {
 
                     <button
                       type="button"
-                      onClick={() => setShowPassword((current) => !current)}
+                      onClick={() =>
+                        setShowPassword((current) => !current)
+                      }
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                       className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent px-2 py-1 text-sm font-black text-blue-600 hover:border-transparent"
                     >
                       {showPassword ? "Hide" : "Show"}
@@ -147,11 +213,21 @@ export default function Login() {
                   </span>
                 </label>
 
+                {errorMessage && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700"
+                  >
+                    {errorMessage}
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700"
+                  disabled={isSubmitting}
+                  className="w-full rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Log In
+                  {isSubmitting ? "Logging In..." : "Log In"}
                 </button>
               </form>
 
