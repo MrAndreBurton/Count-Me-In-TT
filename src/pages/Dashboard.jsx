@@ -799,22 +799,33 @@ export default function Dashboard() {
                 )}
 
               {ownProfile?.canPlay && (
-                <Link
-                  to="/games/multiplication"
-                  className="rounded-xl bg-blue-600 px-5 py-3 text-center font-black text-white shadow transition hover:bg-blue-700"
-                >
-                  {isParentAccount
-                    ? `Play as ${ownProfile.displayName}`
-                    : "Play Now"}
-                </Link>
-              )}
+  <>
+    <Link
+      to="/games/multiplication"
+      className="rounded-xl bg-blue-600 px-5 py-3 text-center font-black text-white shadow transition hover:bg-blue-700"
+    >
+      {isParentAccount
+        ? `Play as ${ownProfile.displayName}`
+        : "Play Multiplication"}
+    </Link>
+
+    {!isParentAccount && (
+      <Link
+        to="/math-language/play"
+        className="rounded-xl bg-yellow-400 px-5 py-3 text-center font-black text-gray-950 shadow transition hover:bg-yellow-300"
+      >
+        Play Math Language
+      </Link>
+    )}
+  </>
+)}
             </div>
           </div>
         </section>
 
         <section className="px-5 py-12 sm:py-16">
           <div className="mx-auto max-w-7xl">
-            {ownProfile && (
+            {ownProfile && isParentAccount && (
               <div>
                 <p className="text-sm font-black uppercase tracking-wider text-blue-600">
                   My Profile
@@ -961,13 +972,24 @@ export default function Dashboard() {
 
                   <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                     {activeProfile.canPlay && (
-                      <Link
-                        to="/games/multiplication"
-                        className="rounded-xl bg-blue-600 px-5 py-3 text-center font-black text-white transition hover:bg-blue-700"
-                      >
-                        Play as {activeProfile.displayName}
-                      </Link>
-                    )}
+  <Link
+    to="/games/multiplication"
+    className="rounded-xl bg-blue-600 px-5 py-3 text-center font-black text-white transition hover:bg-blue-700"
+  >
+    {isParentAccount
+      ? `Play as ${activeProfile.displayName}`
+      : "Play Multiplication"}
+  </Link>
+)}
+
+{!isParentAccount && activeProfile.canPlay && (
+  <Link
+    to="/math-language/play"
+    className="rounded-xl bg-yellow-400 px-5 py-3 text-center font-black text-gray-950 transition hover:bg-yellow-300"
+  >
+    Play Math Language
+  </Link>
+)}
 
                     <Link
                       to={`/students/${activeProfile.id}`}
@@ -1010,17 +1032,20 @@ export default function Dashboard() {
                   </p>
 
                   {activeIsOwnProfile ? (
-                    <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-5">
-                      <h3 className="font-black text-gray-950">
-                        Playable profile
-                      </h3>
+  <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-5">
+    <h3 className="font-black text-gray-950">
+      {isParentAccount
+        ? "Playable profile"
+        : "Your learning profile"}
+    </h3>
 
-                      <p className="mt-2 text-sm leading-6 text-gray-600">
-                        Results from games you play while logged in
-                        will be saved to this profile.
-                      </p>
-                    </div>
-                  ) : (
+    <p className="mt-2 text-sm leading-6 text-gray-600">
+      {isParentAccount
+        ? "Results from games you play while logged in will be saved to this profile."
+        : "Your game results, personal bests and badges are saved here automatically."}
+    </p>
+  </div>
+) : (
                     <div className="mt-5 rounded-xl border border-yellow-200 bg-yellow-50 p-5">
                       <h3 className="font-black text-gray-950">
                         Parent-managed profile
@@ -1033,7 +1058,7 @@ export default function Dashboard() {
                       </p>
 
                       <p className="mt-3 text-sm font-black text-blue-600">
-                        Student login setup will be added next.
+                        Student login access can be managed from the student profile.
                       </p>
                     </div>
                   )}
@@ -1245,12 +1270,19 @@ export default function Dashboard() {
                       results.
                     </p>
 
-                    <Link
-                      to="/membership"
-                      className="mt-6 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
-                    >
-                      Explore Membership
-                    </Link>
+                    {isParentAccount ? (
+  <Link
+    to="/membership"
+    className="mt-6 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
+  >
+    Explore Membership
+  </Link>
+) : (
+  <p className="mt-5 rounded-xl bg-blue-500/40 p-4 text-sm font-semibold text-blue-50">
+    Ask your parent or guardian about membership options.
+  </p>
+)}
+
                   </div>
                 </div>
               </div>
