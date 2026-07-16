@@ -277,11 +277,12 @@ export default function StudentProfile() {
         }
 
         const [
-          { data: studentData, error: studentError },
-          { data: resultRows, error: resultsError },
-          { data: historyRows, error: historyError },
-          { data: badgeRows, error: badgesError },
-        ] = await Promise.all([
+  { data: studentData, error: studentError },
+  { data: resultRows, error: resultsError },
+  { data: historyRows, error: historyError },
+  { data: badgeRows, error: badgesError },
+  { data: accessLink, error: accessError },
+] = await Promise.all([
           supabase
             .from("student_profiles")
             .select(
@@ -298,6 +299,8 @@ export default function StudentProfile() {
                 academic_year,
                 school_visible,
                 profile_status,
+                student_account_id,
+                login_enabled,
                 created_at,
                 updated_at
               `
@@ -384,6 +387,21 @@ export default function StudentProfile() {
             .order("earned_at", {
               ascending: false,
             }),
+
+supabase
+  .from("account_student_links")
+  .select(
+    `
+      relationship_role,
+      can_view,
+      can_edit
+    `
+  )
+  .eq("account_id", user.id)
+  .eq("student_id", studentId)
+  .maybeSingle(),
+
+
         ]);
 
         if (studentError) {
@@ -407,6 +425,16 @@ export default function StudentProfile() {
         if (badgesError) {
           throw badgesError;
         }
+
+if (accessError) {
+  throw accessError;
+}
+
+if (!accessLink?.can_view) {
+  throw new Error(
+    "You do not have permission to view this student profile."
+  );
+}
 
         const formattedBadges = (badgeRows || [])
           .map((row) => {
@@ -434,6 +462,20 @@ export default function StudentProfile() {
         setStudent({
           id: studentData.id,
           accountId: studentData.account_id,
+
+canEdit: Boolean(accessLink?.can_edit),
+
+relationshipRole:
+  accessLink?.relationship_role || "",
+
+          studentAccountId:
+            studentData.student_account_id || null,
+
+          loginEnabled:
+            Boolean(studentData.login_enabled),
+
+
+
           firstName: studentData.first_name || "",
           lastName: studentData.last_name || "",
 
@@ -577,19 +619,26 @@ export default function StudentProfile() {
                 Play Now
               </Link>
 
-              <Link
-                to={`/students/${student.id}/edit`}
-                className="rounded-xl border-2 border-blue-600 bg-white px-5 py-3 text-center font-black text-blue-600 transition hover:bg-blue-50"
-              >
-                Edit Profile
-              </Link>
+             {student.canEdit && (
+  <Link
+    to={`/students/${student.id}/edit`}
+    className="rounded-xl border-2 border-blue-600 bg-white px-5 py-3 text-center font-black text-blue-600 transition hover:bg-blue-50"
+  >
+    Edit Profile
+  </Link>
+)}
+              {student.relationshipRole === "parent" && (
+  <Link
+    to={`/students/${student.id}/login-setup`}
+    className="rounded-xl border border-purple-300 bg-purple-50 px-5 py-3 text-center font-black text-purple-700 transition hover:bg-purple-100"
+  >
+    {student.studentAccountId
+      ? "Manage Student Login"
+      : "Create Student Login"}
+  </Link>
+)}
 
-              <Link
-                to={`/students/${student.id}/login-setup`}
-                className="rounded-xl border border-purple-300 bg-purple-50 px-5 py-3 text-center font-black text-purple-700 transition hover:bg-purple-100"
-               >
-                 Create Student Login
-                </Link>
+
 
               <Link
                 to={`/students/${student.id}/results`}
@@ -737,12 +786,16 @@ export default function StudentProfile() {
                 </div>
               </dl>
 
-              <Link
-                to={`/students/${student.id}/edit`}
-                className="mt-7 inline-block font-black text-blue-600 hover:underline"
-              >
-                Update academic information →
-              </Link>
+              {student.canEdit && (
+  <Link
+    to={`/students/${student.id}/edit`}
+    className="mt-7 inline-block font-black text-blue-600 hover:underline"
+  >
+    Update academic information →
+  </Link>
+)}
+
+
             </div>
 
             <div className="rounded-2xl bg-blue-600 p-6 text-white shadow-lg sm:p-8">
@@ -932,12 +985,16 @@ export default function StudentProfile() {
                 </h2>
               </div>
 
-              <Link
-                to={`/students/${student.id}/edit`}
-                className="font-black text-blue-600 hover:underline"
-              >
-                Update current record →
-              </Link>
+              {student.canEdit && (
+  <Link
+    to={`/students/${student.id}/edit`}
+    className="font-black text-blue-600 hover:underline"
+  >
+    Update current record →
+  </Link>
+)}
+
+
             </div>
 
             {schoolHistory.length > 0 ? (

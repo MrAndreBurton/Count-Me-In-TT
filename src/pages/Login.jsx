@@ -3,7 +3,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
 import { supabase } from "../lib/supabase";
-import { signInStudent } from "../lib/studentLogin";
+import {
+  recordStudentLogin,
+  signInStudent,
+} from "../lib/studentLogin";
 
 const LOGIN_TYPES = {
   ADULT: "adult",
@@ -123,35 +126,67 @@ export default function Login() {
   };
 
   const handleStudentLogin = async () => {
-    const outcome = await signInStudent({
-      username: studentForm.username,
-      password: studentForm.password,
-    });
+  const outcome = await signInStudent({
+    username: studentForm.username,
+    password: studentForm.password,
+  });
 
-    if (!outcome?.session || !outcome?.user) {
-      throw new Error(
-        "Your student session could not be created. Please try again."
-      );
-    }
+  if (!outcome?.session || !outcome?.user) {
+    throw new Error(
+      "Your student session could not be created. Please try again."
+    );
+  }
 
-    const { data: loginAccount, error: loginAccountError } =
-      await supabase
-        .from("student_login_accounts")
-        .select("id, login_status, must_change_password")
-        .eq("student_account_id", outcome.user.id)
-        .maybeSingle();
+  const {
+    data: loginAccount,
+    error: loginAccountError,
+  } = await supabase
+    .from("student_login_accounts")
+    .select(
+      `
+        id,
+        login_status,
+        must_change_password,
+        last_login_at
+      `
+    )
+    .eq("student_account_id", outcome.user.id)
+    .maybeSingle();
 
-    if (loginAccountError) throw loginAccountError;
+  if (loginAccountError) {
+    throw loginAccountError;
+  }
 
-    if (loginAccount?.login_status === "disabled") {
-      await supabase.auth.signOut();
-      throw new Error(
-        "This student login has been disabled. Please ask a parent or guardian for help."
-      );
-    }
+  if (!loginAccount) {
+    await supabase.auth.signOut();
 
-    return loginAccount;
+    throw new Error(
+      "This student login is not connected to a learning profile."
+    );
+  }
+
+  if (loginAccount.login_status === "disabled") {
+    await supabase.auth.signOut();
+
+    throw new Error(
+      "This student login has been disabled. Please ask a parent or guardian for help."
+    );
+  }
+
+  try {
+    await recordStudentLogin();
+  } catch (error) {
+    console.error(
+      "Unable to record student login:",
+      error
+    );
+  }
+
+  return {
+    user: outcome.user,
+    loginAccount,
   };
+};
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -510,5 +545,3 @@ export default function Login() {
     </div>
   );
 }
-
-

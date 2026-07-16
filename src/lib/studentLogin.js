@@ -408,6 +408,54 @@ export async function updateStudentLoginStatus({
   };
 }
 
+export async function recordStudentLogin() {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  if (!session) {
+    throw new Error(
+      "A student session is required."
+    );
+  }
+
+  const { data, error } =
+    await supabase.functions.invoke(
+      "record-student-login"
+    );
+
+  if (error) {
+    console.error(
+      "Record student login error:",
+      error
+    );
+
+    let responseBody = null;
+
+    try {
+      if (error.context) {
+        responseBody =
+          await error.context.json();
+      }
+    } catch {
+      // Keep the original error.
+    }
+
+    throw new Error(
+      responseBody?.error ||
+        error.message ||
+        "The student login time could not be recorded."
+    );
+  }
+
+  return data;
+}
+
 export function studentUsernameToLoginEmail(username) {
   const normalizedUsername =
     normalizeStudentUsername(username);

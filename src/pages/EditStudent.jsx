@@ -179,20 +179,58 @@ export default function EditStudent() {
         }
 
         if (!user) {
-          navigate("/login", {
-            replace: true,
-            state: {
-              from: {
-                pathname: `/students/${studentId}/edit`,
-              },
-            },
-          });
+  navigate("/login", {
+    replace: true,
+    state: {
+      from: {
+        pathname: `/students/${studentId}/edit`,
+      },
+    },
+  });
 
-          return;
-        }
+  return;
+}
 
-        const { data, error } = await supabase
-          .from("student_profiles")
+/*
+  Confirm that the currently logged-in account
+  is allowed to edit this specific student profile.
+*/
+const {
+  data: accessLink,
+  error: accessError,
+} = await supabase
+  .from("account_student_links")
+  .select(
+    `
+      relationship_role,
+      can_view,
+      can_edit
+    `
+  )
+  .eq("account_id", user.id)
+  .eq("student_id", studentId)
+  .maybeSingle();
+
+if (accessError) {
+  throw accessError;
+}
+
+if (!accessLink?.can_view) {
+  throw new Error(
+    "You do not have permission to view this student profile."
+  );
+}
+
+if (!accessLink?.can_edit) {
+  throw new Error(
+    "You do not have permission to edit this student profile."
+  );
+}
+
+const { data, error } = await supabase
+  .from("student_profiles")
+
+
           .select(
             `
               id,
