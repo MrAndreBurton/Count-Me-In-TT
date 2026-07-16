@@ -11,8 +11,7 @@ export function normalizeStudentUsername(value) {
 }
 
 export function validateStudentUsername(value) {
-  const normalizedUsername =
-    normalizeStudentUsername(value);
+  const normalizedUsername = normalizeStudentUsername(value);
 
   if (!normalizedUsername) {
     return {
@@ -26,8 +25,7 @@ export function validateStudentUsername(value) {
     return {
       valid: false,
       normalizedUsername,
-      message:
-        "Username must contain at least 4 characters.",
+      message: "Username must contain at least 4 characters.",
     };
   }
 
@@ -35,16 +33,11 @@ export function validateStudentUsername(value) {
     return {
       valid: false,
       normalizedUsername,
-      message:
-        "Username cannot contain more than 30 characters.",
+      message: "Username cannot contain more than 30 characters.",
     };
   }
 
-  if (
-    !/^[a-z0-9][a-z0-9._-]*$/.test(
-      normalizedUsername
-    )
-  ) {
+  if (!/^[a-z0-9][a-z0-9._-]*$/.test(normalizedUsername)) {
     return {
       valid: false,
       normalizedUsername,
@@ -60,21 +53,20 @@ export function validateStudentUsername(value) {
   };
 }
 
-export function validateTemporaryPassword(value) {
+export function validatePassword(value) {
   const password = String(value || "");
 
   if (!password) {
     return {
       valid: false,
-      message: "Enter a temporary password.",
+      message: "Enter a password.",
     };
   }
 
   if (password.length < 8) {
     return {
       valid: false,
-      message:
-        "Temporary password must contain at least 8 characters.",
+      message: "Password must contain at least 8 characters.",
     };
   }
 
@@ -84,9 +76,7 @@ export function validateTemporaryPassword(value) {
   };
 }
 
-export async function getStudentLoginAccount(
-  studentId
-) {
+export async function getStudentLoginAccount(studentId) {
   const cleanStudentId = cleanText(studentId);
 
   if (!cleanStudentId) {
@@ -111,21 +101,19 @@ export async function getStudentLoginAccount(
 
   const { data, error } = await supabase
     .from("student_login_accounts")
-    .select(
-      `
-        id,
-        student_id,
-        parent_account_id,
-        student_account_id,
-        username,
-        normalized_username,
-        login_status,
-        must_change_password,
-        last_login_at,
-        created_at,
-        updated_at
-      `
-    )
+    .select(`
+      id,
+      student_id,
+      parent_account_id,
+      student_account_id,
+      username,
+      normalized_username,
+      login_status,
+      must_change_password,
+      last_login_at,
+      created_at,
+      updated_at
+    `)
     .eq("student_id", cleanStudentId)
     .eq("parent_account_id", user.id)
     .maybeSingle();
@@ -143,7 +131,7 @@ export async function getStudentLoginAccount(
 export async function createStudentLogin({
   studentId,
   username,
-  temporaryPassword,
+  password,
 }) {
   const cleanStudentId = cleanText(studentId);
 
@@ -151,17 +139,14 @@ export async function createStudentLogin({
     throw new Error("Student profile is required.");
   }
 
-  const usernameValidation =
-    validateStudentUsername(username);
+  const usernameValidation = validateStudentUsername(username);
 
   if (!usernameValidation.valid) {
     throw new Error(usernameValidation.message);
   }
 
   const passwordValidation =
-    validateTemporaryPassword(
-      temporaryPassword
-    );
+    validatePassword(password);
 
   if (!passwordValidation.valid) {
     throw new Error(passwordValidation.message);
@@ -182,63 +167,51 @@ export async function createStudentLogin({
     );
   }
 
-  const { data, error } =
-    await supabase.functions.invoke(
-      "create-student-login",
-      {
-        body: {
-          studentId: cleanStudentId,
-          username:
-            usernameValidation.normalizedUsername,
-          temporaryPassword: String(
-            temporaryPassword
-          ),
-        },
-      }
-    );
-
- if (error) {
-  console.error(
-    "Student login function error:",
-    error
-  );
-
-  let responseBody = null;
-
-  try {
-    const response = error.context;
-
-    if (response) {
-      responseBody = await response.json();
+  const { data, error } = await supabase.functions.invoke(
+    "create-student-login",
+    {
+      body: {
+        studentId: cleanStudentId,
+        username: usernameValidation.normalizedUsername,
+        password: String(password),
+      },
     }
-  } catch (responseError) {
-    console.error(
-      "Unable to read function error response:",
-      responseError
-    );
-  }
-
-  console.error(
-    "Student login function response JSON:",
-    JSON.stringify(responseBody, null, 2)
   );
 
-  const serverMessage =
-    typeof responseBody?.error === "string"
-      ? responseBody.error
-      : typeof responseBody?.message === "string"
-        ? responseBody.message
-        : typeof responseBody?.error?.message === "string"
-          ? responseBody.error.message
-          : error.message ||
-            "The student login could not be created.";
+  if (error) {
+    console.error("Student login function error:", error);
 
-  throw new Error(serverMessage);
-}
+    let responseBody = null;
 
+    try {
+      const response = error.context;
+      if (response) {
+        responseBody = await response.json();
+      }
+    } catch (responseError) {
+      console.error(
+        "Unable to read function error response:",
+        responseError
+      );
+    }
 
+    console.error(
+      "Student login function response JSON:",
+      JSON.stringify(responseBody, null, 2)
+    );
 
+    const serverMessage =
+      typeof responseBody?.error === "string"
+        ? responseBody.error
+        : typeof responseBody?.message === "string"
+          ? responseBody.message
+          : typeof responseBody?.error?.message === "string"
+            ? responseBody.error.message
+            : error.message ||
+              "The student login could not be created.";
 
+    throw new Error(serverMessage);
+  }
 
   if (!data?.success) {
     throw new Error(
@@ -256,9 +229,95 @@ export async function createStudentLogin({
   };
 }
 
-export function studentUsernameToLoginEmail(
-  username
-) {
+export async function resetStudentPassword({
+  studentId,
+  newPassword,
+}) {
+  const cleanStudentId = cleanText(studentId);
+
+  if (!cleanStudentId) {
+    throw new Error("Student profile is required.");
+  }
+
+  const passwordValidation =
+    validatePassword(newPassword);
+
+  if (!passwordValidation.valid) {
+    throw new Error(passwordValidation.message);
+  }
+
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  if (!session) {
+    throw new Error(
+      "You must be logged in as a parent to reset a student password."
+    );
+  }
+
+  const { data, error } = await supabase.functions.invoke(
+    "reset-student-password",
+    {
+      body: {
+        studentId: cleanStudentId,
+        newPassword: String(newPassword),
+      },
+    }
+  );
+
+  if (error) {
+    console.error(
+      "Reset student password function error:",
+      error
+    );
+
+    let responseBody = null;
+
+    try {
+      if (error.context) {
+        responseBody = await error.context.json();
+      }
+    } catch (responseError) {
+      console.error(
+        "Unable to read password-reset response:",
+        responseError
+      );
+    }
+
+    const message =
+      typeof responseBody?.error === "string"
+        ? responseBody.error
+        : typeof responseBody?.message === "string"
+          ? responseBody.message
+          : error.message ||
+            "The student password could not be reset.";
+
+    throw new Error(message);
+  }
+
+  if (!data?.success) {
+    throw new Error(
+      data?.error ||
+        "The student password could not be reset."
+    );
+  }
+
+  return {
+    success: true,
+    message:
+      data.message ||
+      "Student password reset successfully.",
+    student: data.student,
+  };
+}
+
+export function studentUsernameToLoginEmail(username) {
   const normalizedUsername =
     normalizeStudentUsername(username);
 
@@ -296,8 +355,7 @@ export async function signInStudent({
 
   if (error) {
     throw new Error(
-      error.message ===
-      "Invalid login credentials"
+      error.message === "Invalid login credentials"
         ? "The username or password is incorrect."
         : error.message
     );
@@ -308,4 +366,5 @@ export async function signInStudent({
     session: data.session,
   };
 }
+
 

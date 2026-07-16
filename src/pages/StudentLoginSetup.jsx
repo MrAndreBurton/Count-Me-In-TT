@@ -7,8 +7,9 @@ import {
   createStudentLogin,
   getStudentLoginAccount,
   normalizeStudentUsername,
+  resetStudentPassword,
   validateStudentUsername,
-  validateTemporaryPassword,
+  validatePassword,
 } from "../lib/studentLogin";
 
 function getInitials(firstName = "", lastName = "") {
@@ -34,7 +35,7 @@ function statusLabel(status = "") {
     pending: "Pending",
     active: "Active",
     disabled: "Disabled",
-    password_reset_required: "Temporary Password Active",
+    password_reset_required: "Password Active",
   };
 
   return labels[status] || "Unknown";
@@ -116,7 +117,7 @@ export default function StudentLoginSetup() {
   const [existingLogin, setExistingLogin] = useState(null);
 
   const [username, setUsername] = useState("");
-  const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -126,6 +127,12 @@ export default function StudentLoginSetup() {
   const [loadError, setLoadError] = useState("");
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const [resetPassword, setResetPassword] = useState("");
+  const [confirmResetPassword, setConfirmResetPassword] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetPasswordError, setResetPasswordError] = useState("");
+  const [resetPasswordSuccess, setResetPasswordSuccess] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -278,11 +285,11 @@ export default function StudentLoginSetup() {
   );
 
   const passwordValidation = useMemo(
-    () => validateTemporaryPassword(temporaryPassword),
-    [temporaryPassword]
+    () => validatePassword(password),
+    [password]
   );
 
-  const passwordsMatch = temporaryPassword === confirmPassword;
+  const passwordsMatch = password === confirmPassword;
   const normalizedPreview = normalizeStudentUsername(username);
 
   const formIsValid =
@@ -310,12 +317,12 @@ export default function StudentLoginSetup() {
     }
 
     if (!confirmPassword) {
-      setFormError("Confirm the temporary password.");
+      setFormError("Confirm the password.");
       return;
     }
 
     if (!passwordsMatch) {
-      setFormError("The temporary passwords do not match.");
+      setFormError("The passwords do not match.");
       return;
     }
 
@@ -325,14 +332,14 @@ export default function StudentLoginSetup() {
       const outcome = await createStudentLogin({
         studentId,
         username: usernameValidation.normalizedUsername,
-        temporaryPassword,
+        password,
       });
 
       setExistingLogin(outcome.login);
       setSuccessMessage(
         outcome.message || "Student login created successfully."
       );
-      setTemporaryPassword("");
+      setPassword("");
       setConfirmPassword("");
     } catch (error) {
       console.error("Create student login error:", error);
@@ -341,6 +348,49 @@ export default function StudentLoginSetup() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handlePasswordReset(event) {
+    event.preventDefault();
+
+    if (isResettingPassword) return;
+
+    setResetPasswordError("");
+    setResetPasswordSuccess("");
+
+    const validation = validatePassword(resetPassword);
+
+    if (!validation.valid) {
+      setResetPasswordError(validation.message);
+      return;
+    }
+
+    if (resetPassword !== confirmResetPassword) {
+      setResetPasswordError("The new passwords do not match.");
+      return;
+    }
+
+    setIsResettingPassword(true);
+
+    try {
+      const outcome = await resetStudentPassword({
+        studentId,
+        newPassword: resetPassword,
+      });
+
+      setResetPasswordSuccess(
+        outcome.message || "Student password reset successfully."
+      );
+      setResetPassword("");
+      setConfirmResetPassword("");
+    } catch (error) {
+      console.error("Student password reset error:", error);
+      setResetPasswordError(
+        error?.message || "The student password could not be reset."
+      );
+    } finally {
+      setIsResettingPassword(false);
     }
   }
 
@@ -422,7 +472,7 @@ export default function StudentLoginSetup() {
 
                 <div className="rounded-xl bg-yellow-50 p-4">
                   <p className="font-black text-gray-950">
-                    2. Create a temporary password
+                    2. Create a password
                   </p>
                   <p className="mt-1 text-sm leading-6 text-gray-600">
                     Share it privately with the student.
@@ -524,14 +574,86 @@ export default function StudentLoginSetup() {
                     <h3 className="font-black text-gray-950">Next step</h3>
                     <p className="mt-2 text-sm leading-6 text-gray-600">
                       The student can use the Student Login option with
-                      this username and the temporary password you created.
+                      this username and the password you created.
                     </p>
                   </div>
 
-                  <p className="mt-6 text-sm leading-6 text-gray-500">
-                    Password reset and login-disable controls will be added
-                    after the first student-login test is complete.
-                  </p>
+                  <div className="mt-7 border-t border-gray-200 pt-7">
+                    <p className="text-sm font-black uppercase tracking-wider text-purple-700">
+                      Reset Student Password
+                    </p>
+
+                    <h3 className="mt-2 text-2xl font-black text-gray-950">
+                      Create a new password.
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-gray-600">
+                      The student’s old password will stop working immediately.
+                    </p>
+
+                    {resetPasswordError && (
+                      <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 font-bold text-red-800">
+                        ⚠️ {resetPasswordError}
+                      </div>
+                    )}
+
+                    {resetPasswordSuccess && (
+                      <div className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 font-bold text-green-800">
+                        ✅ {resetPasswordSuccess}
+                      </div>
+                    )}
+
+                    <form onSubmit={handlePasswordReset} className="mt-5 grid gap-4">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={resetPassword}
+                        onChange={(event) => {
+                          setResetPassword(event.target.value);
+                          setResetPasswordError("");
+                          setResetPasswordSuccess("");
+                        }}
+                        placeholder="New password — at least 8 characters"
+                        autoComplete="new-password"
+                        className="w-full rounded-xl border border-gray-300 px-4 py-3 font-semibold outline-none transition focus:border-purple-500 focus:ring-4 focus:ring-purple-100"
+                        required
+                      />
+
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={confirmResetPassword}
+                        onChange={(event) => {
+                          setConfirmResetPassword(event.target.value);
+                          setResetPasswordError("");
+                          setResetPasswordSuccess("");
+                        }}
+                        placeholder="Confirm new password"
+                        autoComplete="new-password"
+                        className="w-full rounded-xl border border-gray-300 px-4 py-3 font-semibold outline-none transition focus:border-purple-500 focus:ring-4 focus:ring-purple-100"
+                        required
+                      />
+
+                      <button
+                        type="submit"
+                        disabled={
+                          isResettingPassword ||
+                          !resetPassword ||
+                          !confirmResetPassword
+                        }
+                        className={[
+                          "rounded-xl px-5 py-3 font-black text-white shadow transition",
+                          isResettingPassword ||
+                          !resetPassword ||
+                          !confirmResetPassword
+                            ? "cursor-not-allowed bg-purple-300"
+                            : "bg-purple-600 hover:bg-purple-700",
+                        ].join(" ")}
+                      >
+                        {isResettingPassword
+                          ? "Resetting Password…"
+                          : "Reset Student Password"}
+                      </button>
+                    </form>
+                  </div>
                 </>
               ) : (
                 <>
@@ -588,15 +710,15 @@ export default function StudentLoginSetup() {
 
                     <label className="block">
                       <span className="text-sm font-black text-gray-700">
-                        Temporary Password
+                        Password
                       </span>
 
                       <div className="mt-2 flex gap-2">
                         <input
                           type={showPassword ? "text" : "password"}
-                          value={temporaryPassword}
+                          value={password}
                           onChange={(event) => {
-                            setTemporaryPassword(event.target.value);
+                            setPassword(event.target.value);
                             setFormError("");
                           }}
                           autoComplete="new-password"
@@ -615,7 +737,7 @@ export default function StudentLoginSetup() {
                         </button>
                       </div>
 
-                      {temporaryPassword && (
+                      {password && (
                         <p
                           className={[
                             "mt-2 text-sm font-semibold",
@@ -633,7 +755,7 @@ export default function StudentLoginSetup() {
 
                     <label className="block">
                       <span className="text-sm font-black text-gray-700">
-                        Confirm Temporary Password
+                        Confirm Password
                       </span>
 
                       <input
@@ -669,7 +791,7 @@ export default function StudentLoginSetup() {
                         Before creating the login
                       </p>
                       <p className="mt-2 text-sm leading-6 text-gray-600">
-                        Record the temporary password somewhere safe.
+                        Record the password somewhere safe.
                         For security, it will not be shown again after
                         the login is created.
                       </p>
@@ -701,5 +823,6 @@ export default function StudentLoginSetup() {
     </div>
   );
 }
+
 
 

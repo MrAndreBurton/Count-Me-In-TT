@@ -10,7 +10,7 @@ const corsHeaders = {
 type RequestBody = {
   studentId?: string;
   username?: string;
-  temporaryPassword?: string;
+  password?: string;
 };
 
 function jsonResponse(
@@ -149,8 +149,8 @@ Deno.serve(async (request) => {
       body.username || ""
     ).trim();
 
-    const temporaryPassword = String(
-      body.temporaryPassword || ""
+    const password = String(
+      body.password || ""
     );
 
     if (!studentId) {
@@ -192,11 +192,11 @@ Deno.serve(async (request) => {
       );
     }
 
-    if (temporaryPassword.length < 8) {
+    if (password.length < 8) {
       return jsonResponse(
         {
           error:
-            "Temporary password must contain at least 8 characters.",
+            "Password must contain at least 8 characters.",
         },
         400
       );
@@ -411,14 +411,14 @@ Deno.serve(async (request) => {
       error: createUserError,
     } = await adminClient.auth.admin.createUser({
       email: loginEmail,
-      password: temporaryPassword,
+      password,
       email_confirm: true,
       user_metadata: {
         full_name: displayName,
         account_type: "student",
         student_profile_id: studentId,
         username: normalizedUsername,
-        must_change_password: true,
+        must_change_password: false,
       },
     });
 
@@ -566,13 +566,14 @@ if (
         student_id: studentId,
         parent_account_id: user.id,
         student_account_id: createdAuthUserId,
-        username: username,
+        username: normalizedUsername,
         normalized_username:
           normalizedUsername,
         login_email: loginEmail,
         login_status:
-          "password_reset_required",
-        must_change_password: true,
+          "active",
+        must_change_password: false,
+        last_login_at: null,
       })
       .select(
         `
