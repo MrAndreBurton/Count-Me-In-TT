@@ -317,6 +317,97 @@ export async function resetStudentPassword({
   };
 }
 
+export async function updateStudentLoginStatus({
+  studentId,
+  enabled,
+}) {
+  const cleanStudentId = cleanText(studentId);
+
+  if (!cleanStudentId) {
+    throw new Error("Student profile is required.");
+  }
+
+  if (typeof enabled !== "boolean") {
+    throw new Error(
+      "Enabled status must be true or false."
+    );
+  }
+
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  if (!session) {
+    throw new Error(
+      "You must be logged in as a parent to update a student login."
+    );
+  }
+
+  const { data, error } =
+    await supabase.functions.invoke(
+      "update-student-login-status",
+      {
+        body: {
+          studentId: cleanStudentId,
+          enabled,
+        },
+      }
+    );
+
+  if (error) {
+    console.error(
+      "Update student login status function error:",
+      error
+    );
+
+    let responseBody = null;
+
+    try {
+      if (error.context) {
+        responseBody =
+          await error.context.json();
+      }
+    } catch (responseError) {
+      console.error(
+        "Unable to read login-status response:",
+        responseError
+      );
+    }
+
+    const message =
+      typeof responseBody?.error === "string"
+        ? responseBody.error
+        : typeof responseBody?.message === "string"
+          ? responseBody.message
+          : error.message ||
+            "The student login status could not be updated.";
+
+    throw new Error(message);
+  }
+
+  if (!data?.success) {
+    throw new Error(
+      data?.error ||
+        "The student login status could not be updated."
+    );
+  }
+
+  return {
+    success: true,
+    message:
+      data.message ||
+      (enabled
+        ? "Student login re-enabled successfully."
+        : "Student login disabled successfully."),
+    login: data.login,
+  };
+}
+
 export function studentUsernameToLoginEmail(username) {
   const normalizedUsername =
     normalizeStudentUsername(username);
