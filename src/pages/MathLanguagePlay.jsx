@@ -290,6 +290,43 @@ const playerName =
       simpleMeaning: currentQuestion.simpleMeaning,
     };
 
+if (!membershipState.loading && membershipState.guest) {
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-12">
+      <section className="rounded-3xl border border-yellow-200 bg-white p-8 text-center shadow-sm">
+        <p className="text-sm font-black uppercase tracking-wider text-yellow-700">
+          Free Account Required
+        </p>
+
+        <h1 className="mt-3 text-3xl font-black text-gray-950">
+          Sign in to play the Math Language Challenge
+        </h1>
+
+        <p className="mx-auto mt-4 max-w-xl leading-7 text-gray-600">
+          Create a free CountMeInTT account to access the
+          10-word and 25-word rounds and save your results.
+        </p>
+
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <a
+            href="/login"
+            className="rounded-xl bg-yellow-400 px-6 py-3 font-black text-gray-950 hover:bg-yellow-300"
+          >
+            Sign In
+          </a>
+
+          <a
+            href="/register"
+            className="rounded-xl border-2 border-gray-900 px-6 py-3 font-black text-gray-950 hover:bg-gray-50"
+          >
+            Create Free Account
+          </a>
+        </div>
+      </section>
+    </main>
+  );
+}
+
     setGameState((previous) => ({
       ...previous,
       selectedAnswer: answer.label,

@@ -364,34 +364,46 @@ export default function Membership() {
         </section>
 
         <section className="px-5 pb-14 sm:pb-16">
-          <div className="mx-auto max-w-7xl rounded-3xl bg-blue-600 px-6 py-10 text-center text-white shadow-xl sm:px-10">
-            <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
-              Start free
-            </p>
+  <div className="mx-auto max-w-7xl rounded-3xl bg-blue-600 px-6 py-10 text-center text-white shadow-xl sm:px-10">
+    <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
+      Start free
+    </p>
 
-            <h2 className="mt-2 text-3xl font-black sm:text-4xl">
-              Upgrade when you are ready.
-            </h2>
+    <h2 className="mt-2 text-3xl font-black sm:text-4xl">
+      Create your free CountMeInTT account.
+    </h2>
 
-            <p className="mx-auto mt-4 max-w-2xl leading-7 text-blue-100">
-              Create a student profile, save progress and choose Term or Annual
-              Membership later.
-            </p>
+    <p className="mx-auto mt-4 max-w-2xl leading-7 text-blue-100">
+      Create a student profile, save progress and upgrade to Term or Annual
+      Membership whenever you are ready.
+    </p>
 
-            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-              <div className="rounded-xl bg-white/15 px-6 py-3 font-black text-white">
-                Free Accounts Coming Soon
-              </div>
+    <div className="mt-7 flex flex-col items-center justify-center gap-3">
+      <Link
+        to="/register"
+        className="w-full rounded-xl bg-yellow-300 px-6 py-3 font-black text-gray-950 transition hover:bg-yellow-200 sm:w-auto"
+      >
+        Create Free Account
+      </Link>
 
-              <Link
-                to="/games/multiplication"
-                className="rounded-xl bg-yellow-300 px-6 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
-              >
-                Continue as Guest
-              </Link>
-            </div>
-          </div>
-        </section>
+      <Link
+        to="/login"
+        className="w-full rounded-xl border-2 border-white/70 bg-white/10 px-6 py-3 font-black text-white transition hover:bg-white/20 sm:w-auto"
+      >
+        Sign In
+      </Link>
+
+      <Link
+        to="/games/multiplication"
+        className="mt-1 text-sm font-bold text-blue-100 underline decoration-blue-200 underline-offset-4 transition hover:text-white"
+      >
+        Continue as Guest
+      </Link>
+    </div>
+  </div>
+</section>
+
+
       </main>
 
       <SiteFooter />
