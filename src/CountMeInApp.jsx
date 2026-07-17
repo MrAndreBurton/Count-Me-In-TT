@@ -27,6 +27,7 @@ import MathLanguageHome from "./pages/MathLanguageHome";
 import Home from "./pages/Home";
 import Games from "./pages/Games";
 import Membership from "./pages/Membership";
+import MembershipRequest from "./pages/MembershipRequest";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import StudentLoginSetup from "./pages/StudentLoginSetup";
@@ -60,6 +61,11 @@ export default function CountMeInApp() {
           element={<Membership />}
         />
 
+        <Route
+          path="/membership/request"
+          element={<MembershipRequest />}
+         />
+        
         <Route path="/login" element={<Login />} />
 
         <Route

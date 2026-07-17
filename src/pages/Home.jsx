@@ -114,59 +114,76 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-yellow-50 px-5 py-14 sm:py-16">
-          <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-            <div>
-              <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                Free CountMeInTT account
-              </p>
+        
+<section className="bg-yellow-50 px-5 py-14 sm:py-16">
+  <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+    <div>
+      <p className="text-sm font-black uppercase tracking-wider text-blue-600">
+        Your CountMeInTT account
+      </p>
 
-              <h2 className="mt-2 text-3xl font-black sm:text-4xl">
-                Create a free account and keep your progress.
-              </h2>
+      <h2 className="mt-2 text-3xl font-black sm:text-4xl">
+        Save your progress and unlock more ways to learn.
+      </h2>
 
-              <p className="mt-4 max-w-2xl leading-7 text-gray-700">
-                CountMeInTT will remain open for everyone to play. A free
-                account gives students a personal learning profile and a
-                record of their progress.
-              </p>
+      <p className="mt-4 max-w-2xl leading-7 text-gray-700">
+        CountMeInTT remains open for everyone to play. Create a free account
+        to build a personal learning profile and keep track of progress, or
+        explore our membership options for access to additional learning
+        tools and features.
+      </p>
 
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="inline-flex rounded-xl bg-blue-100 px-6 py-3 font-black text-blue-700">
-                  Free Accounts Coming Soon
-                </div>
+      <div className="mt-7">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Link
+            to="/register"
+            className="rounded-xl bg-blue-600 px-6 py-3 text-center font-black text-white transition hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-md"
+          >
+            Create Free Account
+          </Link>
 
-                <Link
-                  to="/games/multiplication"
-                  className="rounded-xl border-2 border-blue-600 bg-white px-6 py-3 text-center font-black text-blue-600 transition hover:bg-blue-50"
-                >
-                  Continue as Guest
-                </Link>
-              </div>
-            </div>
+          <Link
+            to="/membership"
+            className="rounded-xl bg-yellow-400 px-6 py-3 text-center font-black text-gray-900 transition hover:-translate-y-0.5 hover:bg-yellow-500 hover:shadow-md"
+          >
+            Explore Membership
+          </Link>
+        </div>
 
-            <div className="rounded-2xl border border-yellow-200 bg-white p-6 shadow-sm">
-              <h3 className="text-xl font-black">With a free account:</h3>
+        <p className="mt-4 text-sm font-semibold text-gray-600">
+          Not ready to create an account?{" "}
+          <Link
+            to="/games/multiplication"
+            className="font-black text-blue-600 underline decoration-2 underline-offset-4 hover:text-blue-700"
+          >
+            Continue as a guest
+          </Link>
+        </p>
+      </div>
+    </div>
 
-              <ul className="mt-5 grid gap-4">
-                {accountBenefits.map((benefit) => (
-                  <li key={benefit} className="flex items-start gap-3">
-                    <span
-                      aria-hidden="true"
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-yellow-200 font-black text-gray-950"
-                    >
-                      ✓
-                    </span>
+    <div className="rounded-2xl border border-yellow-200 bg-white p-6 shadow-sm">
+      <h3 className="text-xl font-black">With a free account:</h3>
 
-                    <span className="pt-0.5 font-semibold text-gray-700">
-                      {benefit}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </section>
+      <ul className="mt-5 grid gap-4">
+        {accountBenefits.map((benefit) => (
+          <li key={benefit} className="flex items-start gap-3">
+            <span
+              aria-hidden="true"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-yellow-200 font-black text-gray-950"
+            >
+              ✓
+            </span>
+
+            <span className="pt-0.5 font-semibold text-gray-700">
+              {benefit}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</section>
 
         <section className="px-5 py-14 sm:py-16">
           <div className="mx-auto max-w-7xl">

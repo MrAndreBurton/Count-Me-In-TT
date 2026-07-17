@@ -19,7 +19,8 @@ const plans = [
       "Access to free games",
       "Top 50 Math Language terms",
     ],
-    action: "Free Accounts Coming Soon",
+    action: "Create Free Account",
+    link: "/register",
   },
   {
     name: "Term Membership",
@@ -36,7 +37,8 @@ const plans = [
       "Student reports",
       "Premium badges and activities",
     ],
-    action: "Term Membership Coming Soon",
+    action: "Request Term Membership",
+    link: "/membership/request?plan=term",
   },
   {
     name: "Annual Membership",
@@ -53,7 +55,8 @@ const plans = [
       "Continuous yearly progress",
       "Full platform membership benefits",
     ],
-    action: "Annual Membership Coming Soon",
+    action: "Request Annual Membership",
+    link: "/membership/request?plan=annual",
   },
 ];
 
@@ -129,18 +132,22 @@ function PlanCard({ plan }) {
         ))}
       </ul>
 
-      <div className="mt-auto pt-7">
-        <div
-          className={[
-            "w-full rounded-xl px-5 py-3 text-center font-black",
-            plan.featured
-              ? "bg-blue-100 text-blue-700"
-              : "bg-gray-100 text-gray-600",
-          ].join(" ")}
-        >
-          {plan.action}
-        </div>
-      </div>
+       <div className="mt-auto pt-7">
+         <Link
+           to={plan.link}
+           className={[
+             "block w-full rounded-xl border px-5 py-3 text-center font-black transition",
+             "hover:-translate-y-0.5 hover:shadow-md",
+             plan.name === "Free Account"
+               ? "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+               : plan.featured
+               ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+               : "border-yellow-400 bg-yellow-400 text-gray-900 hover:bg-yellow-500",
+           ].join(" ")}
+         >
+           {plan.action}
+         </Link>
+       </div>
     </article>
   );
 }
@@ -337,7 +344,7 @@ export default function Membership() {
               </ul>
 
               <span className="mt-6 inline-block font-black text-blue-600">
-                Full Membership Terms — Coming Soon
+                Become a Term or Annual Member.
               </span>
             </div>
 
