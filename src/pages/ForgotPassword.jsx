@@ -2,18 +2,53 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
+import { supabase } from "../lib/supabase";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const handleSubmit = async (event) => {
+  event.preventDefault();
 
-    // Temporary until Supabase password recovery is connected.
-    console.log("Password reset requested for:", email);
+  if (isSubmitting) return;
+
+  setErrorMessage("");
+  setIsSubmitting(true);
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  try {
+    console.log("Sending password reset request...");
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      normalizedEmail,
+      {
+        redirectTo: `${window.location.origin}/reset-password`,
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    console.log("Password reset request accepted by Supabase.");
+
+    setEmail(normalizedEmail);
     setSubmitted(true);
-  };
+  } catch (error) {
+    console.error("Password reset request error:", error);
+
+    setErrorMessage(
+      error?.message ||
+        "We could not send the password-reset email. Please try again."
+    );
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="platform-page-bg min-h-screen text-gray-950">
@@ -70,18 +105,34 @@ export default function ForgotPassword() {
                         autoComplete="email"
                         required
                         value={email}
-                        onChange={(event) => setEmail(event.target.value)}
+                        onChange={(event) => {
+                          setEmail(event.target.value);
+                          setErrorMessage("");
+                        }}
                         placeholder="you@example.com"
                         className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
 
-                    <button
-                      type="submit"
-                      className="w-full rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700"
-                    >
-                      Send Reset Instructions
-                    </button>
+                    {errorMessage && (
+                      <div
+                        role="alert"
+                        className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700"
+                       >
+                        {errorMessage}
+                       </div>
+                     )}
+
+                     <button
+                       type="submit"
+                       disabled={isSubmitting}
+                       className="w-full rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                       {isSubmitting
+                         ? "Sending Instructions..."
+                         : "Send Reset Instructions"}
+                     </button>
+
                   </form>
                 </>
               ) : (

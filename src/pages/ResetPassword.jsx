@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
+import { supabase } from "../lib/supabase";
 
 export default function ResetPassword() {
   const [formData, setFormData] = useState({
@@ -13,6 +14,9 @@ export default function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [complete, setComplete] = useState(false);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -22,18 +26,64 @@ export default function ResetPassword() {
     }));
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const handleSubmit = async (event) => {
+  event.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      alert("The passwords do not match.");
-      return;
+  if (isSubmitting) return;
+
+  setErrorMessage("");
+
+  if (formData.password !== formData.confirmPassword) {
+    setErrorMessage("The passwords do not match.");
+    return;
+  }
+
+  if (formData.password.length < 8) {
+    setErrorMessage(
+      "Your new password must contain at least 8 characters."
+    );
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const { data, error } = await supabase.auth.updateUser({
+      password: formData.password,
+    });
+
+    if (error) {
+      throw error;
     }
 
-    // Temporary until Supabase password update is connected.
-    console.log("Password update submitted.");
+    if (!data?.user) {
+      throw new Error(
+        "Your password could not be updated. Please request a new reset link."
+      );
+    }
+
     setComplete(true);
-  };
+  } catch (error) {
+    console.error("Password update error:", error);
+
+    const message =
+      error?.message ||
+      "Your password could not be updated. Please request a new reset link.";
+
+    if (
+      message.toLowerCase().includes("session") ||
+      message.toLowerCase().includes("auth")
+    ) {
+      setErrorMessage(
+        "This password reset link is invalid or has expired. Please request a new one."
+      );
+    } else {
+      setErrorMessage(message);
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="platform-page-bg min-h-screen text-gray-950">
@@ -137,13 +187,25 @@ export default function ResetPassword() {
                         </button>
                       </div>
                     </div>
+                    {errorMessage && (
+                      <div
+                        role="alert"
+                        className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700"
+                       >
+                         {errorMessage}
+                       </div>
+                     )}
 
-                    <button
-                      type="submit"
-                      className="w-full rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700"
-                    >
-                      Update Password
-                    </button>
+                     <button
+                       type="submit"
+                       disabled={isSubmitting}
+                       className="w-full rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                       {isSubmitting
+                         ? "Updating Password..."
+                         : "Update Password"}
+                     </button>
+
                   </form>
                 </>
               ) : (
