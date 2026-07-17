@@ -7,6 +7,10 @@ import {
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
 import { supabase } from "../lib/supabase";
+import {
+  formatMembershipDate,
+  getCurrentStudentMembership,
+} from "../lib/membership";
 
 function getInitials(firstName = "", lastName = "") {
   const firstInitial = firstName.trim().charAt(0);
@@ -282,7 +286,9 @@ export default function StudentProfile() {
   { data: historyRows, error: historyError },
   { data: badgeRows, error: badgesError },
   { data: accessLink, error: accessError },
+  membershipOutcome,
 ] = await Promise.all([
+
           supabase
             .from("student_profiles")
             .select(
@@ -401,7 +407,7 @@ supabase
   .eq("student_id", studentId)
   .maybeSingle(),
 
-
+getCurrentStudentMembership(studentId),
         ]);
 
         if (studentError) {
@@ -503,10 +509,36 @@ relationshipRole:
           profileStatus: studentData.profile_status,
 
           membership: {
-            plan: "Free Account",
-            status: "Active",
-            expiryDate: null,
-          },
+  plan:
+    membershipOutcome?.plan?.name ||
+    "Free Account",
+
+  planKey:
+    membershipOutcome?.plan?.key ||
+    "free",
+
+  isPaid:
+    Boolean(
+      membershipOutcome?.plan?.isPaid
+    ),
+
+  status:
+    membershipOutcome?.status ||
+    "active",
+
+  startsAt:
+    membershipOutcome?.startsAt ||
+    null,
+
+  expiresAt:
+    membershipOutcome?.expiresAt ||
+    null,
+
+  entitlements:
+    membershipOutcome?.plan?.entitlements ||
+    {},
+},
+
 
           badges: formattedBadges,
           badgesEarned: formattedBadges.length,
@@ -798,32 +830,55 @@ relationshipRole:
 
             </div>
 
-            <div className="rounded-2xl bg-blue-600 p-6 text-white shadow-lg sm:p-8">
-              <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
-                Membership
-              </p>
+           <div className="rounded-2xl bg-blue-600 p-6 text-white shadow-lg sm:p-8">
+  <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
+    Membership
+  </p>
 
-              <h2 className="mt-2 text-3xl font-black">
-                Free Account
-              </h2>
+  <h2 className="mt-2 text-3xl font-black">
+    {student.membership.plan}
+  </h2>
 
-              <p className="mt-3 font-semibold text-blue-100">
-                Status: Active
-              </p>
+  <p className="mt-3 font-semibold text-blue-100">
+    Status:{" "}
+    {student.membership.status
+      ? student.membership.status
+          .charAt(0)
+          .toUpperCase() +
+        student.membership.status.slice(1)
+      : "Active"}
+  </p>
 
-              <p className="mt-2 text-blue-100">
-                Save a personal best and retain the latest 10
-                results.
-              </p>
+  {student.membership.expiresAt ? (
+    <p className="mt-2 text-blue-100">
+      Expires:{" "}
+      {formatMembershipDate(
+        student.membership.expiresAt
+      )}
+    </p>
+  ) : (
+    <p className="mt-2 text-blue-100">
+      No expiry date.
+    </p>
+  )}
 
-              <Link
-                to="/membership"
-                className="mt-7 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
-              >
-                Explore Membership
-              </Link>
-            </div>
-          </div>
+  <p className="mt-3 text-blue-100">
+    {student.membership.isPaid
+      ? "Full CountMeInTT membership access is active for this student."
+      : "Free access includes saved progress and the latest 10 results."}
+  </p>
+
+  <Link
+    to="/membership"
+    className="mt-7 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
+  >
+    {student.membership.isPaid
+      ? "View Membership"
+      : "Explore Membership"}
+  </Link>
+</div>
+</div>
+
         </section>
 
         <section className="px-5 py-12 sm:py-16">

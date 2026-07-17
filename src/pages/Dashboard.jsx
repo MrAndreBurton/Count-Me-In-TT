@@ -120,15 +120,33 @@ function formatRelativeDate(value) {
   }).format(date);
 }
 
+function formatMembershipDate(value) {
+  if (!value) return null;
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("en-TT", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
 function createProfileSummary(
   link,
   studentRow,
   resultRows = [],
-  badgeRows = []
+  badgeRows = [],
+  membershipRow = null
 ) {
   const verifiedResults = resultRows
     .filter(
-      (result) => result.verification_status === "verified"
+      (result) =>
+        result.verification_status === "verified"
     )
     .sort(
       (a, b) =>
@@ -155,6 +173,9 @@ function createProfileSummary(
   const mathLanguageRounds = verifiedResults.filter(
     (result) => result.game_type === "math_language"
   ).length;
+
+   const membershipPlan =
+  membershipRow?.membership_plans || null;
 
   const sortedBadges = [...badgeRows].sort(
     (a, b) =>
@@ -228,6 +249,39 @@ function createProfileSummary(
       link.can_manage_membership
     ),
     canPlay: Boolean(link.can_play),
+
+    membership: {
+  id: membershipRow?.id || null,
+
+  planKey:
+    membershipPlan?.plan_key ||
+    "free",
+
+  planName:
+    membershipPlan?.name ||
+    "Free Account",
+
+  status:
+    membershipRow?.status ||
+    "active",
+
+  startsAt:
+    membershipRow?.starts_at ||
+    null,
+
+  expiresAt:
+    membershipRow?.expires_at ||
+    null,
+
+  isPaid:
+    Boolean(
+      membershipPlan?.is_paid
+    ),
+
+  entitlements:
+    membershipPlan?.entitlements ||
+    {},
+},
 
     progress: {
       personalBest: bestMultiplicationResult
@@ -526,93 +580,61 @@ export default function Dashboard() {
         let studentRows = [];
         let resultRows = [];
         let badgeRows = [];
+        let membershipRows = [];
 
         if (studentIds.length > 0) {
           const [
-            { data: studentsData, error: studentsError },
-            { data: resultsData, error: resultsError },
-            { data: badgesData, error: badgesError },
-          ] = await Promise.all([
-            supabase
-              .from("student_profiles")
-              .select(
-                `
-                  id,
-                  account_id,
-                  first_name,
-                  last_name,
-                  public_display_name,
-                  avatar_key,
-                  school_type,
-                  current_school,
-                  current_level,
-                  academic_year,
-                  school_visible,
-                  profile_status,
-                  profile_type,
-                  created_at,
-                  updated_at
-                `
-              )
-              .in("id", studentIds)
-              .eq("profile_status", "active"),
+  { data: studentsData, error: studentsError },
+  { data: resultsData, error: resultsError },
+  { data: badgesData, error: badgesError },
+  {
+    data: membershipsData,
+    error: membershipsError,
+  },
+] = await Promise.all([
+  // 1. Student profiles
+  supabase
+    .from("student_profiles")
+    .select("*")
+    .in("id", studentIds),
 
-            supabase
-              .from("game_results")
-              .select(
-                `
-                  id,
-                  student_id,
-                  account_id,
-                  game_type,
-                  game_mode,
-                  mode_label,
-                  duration_ms,
-                  score,
-                  max_score,
-                  correct_answers,
-                  incorrect_answers,
-                  accuracy_percent,
-                  submission_type,
-                  verification_status,
-                  is_personal_best,
-                  played_at
-                `
-              )
-              .in("student_id", studentIds)
-              .eq("verification_status", "verified")
-              .order("played_at", {
-                ascending: false,
-              }),
+  // 2. Game results
+  supabase
+    .from("game_results")
+    .select("*")
+    .in("student_id", studentIds),
 
-            supabase
-              .from("student_badges")
-              .select(
-                `
-                  id,
-                  student_id,
-                  account_id,
-                  badge_id,
-                  game_result_id,
-                  earned_at,
-                  metadata,
-                  badge_definitions (
-                    id,
-                    badge_key,
-                    name,
-                    description,
-                    icon,
-                    category,
-                    sort_order
-                  )
-                `
-              )
-              .eq("account_id", user.id)
-              .in("student_id", studentIds)
-              .order("earned_at", {
-                ascending: false,
-              }),
-          ]);
+  // 3. Student badges
+  supabase
+    .from("student_badges")
+    .select("*")
+    .in("student_id", studentIds),
+
+  // 4. Current memberships
+  supabase
+    .from("student_memberships")
+    .select(
+      `
+        id,
+        student_id,
+        status,
+        starts_at,
+        expires_at,
+        is_current,
+        membership_plans (
+          id,
+          plan_key,
+          name,
+          plan_type,
+          price_ttd,
+          is_paid,
+          entitlements
+        )
+      `
+    )
+    .in("student_id", studentIds)
+    .eq("is_current", true),
+]);
 
           if (studentsError) {
             throw studentsError;
@@ -626,48 +648,81 @@ export default function Dashboard() {
             throw badgesError;
           }
 
+         if (membershipsError) {
+           console.error(
+             "Membership loading error:",
+             membershipsError
+           );
+         }
+
           studentRows = studentsData || [];
           resultRows = resultsData || [];
           badgeRows = badgesData || [];
+
+          membershipRows = membershipsError
+            ? []
+            : membershipsData || [];
         }
 
+console.log("DASHBOARD DEBUG — links:", links);
+console.log("DASHBOARD DEBUG — studentRows:", studentRows);
+console.log("DASHBOARD DEBUG — resultRows:", resultRows);
+console.log("DASHBOARD DEBUG — badgeRows:", badgeRows);
+console.log(
+  "DASHBOARD DEBUG — membershipRows:",
+  membershipRows
+);
+
         const summaries = links
-          .map((link) => {
-            const studentRow = studentRows.find(
-              (student) =>
-                String(student.id) ===
-                String(link.student_id)
-            );
+  .map((link) => {
+    const studentRow = studentRows.find(
+      (student) =>
+        String(student.id) ===
+        String(link.student_id)
+    );
 
-            if (!studentRow) {
-              return null;
-            }
+    if (!studentRow) {
+      return null;
+    }
 
-            const matchingResults = resultRows.filter(
-              (result) =>
-                String(result.student_id) ===
-                String(studentRow.id)
-            );
+    const matchingResults = resultRows.filter(
+      (result) =>
+        String(result.student_id) ===
+        String(studentRow.id)
+    );
 
-            const matchingBadges = badgeRows.filter(
-              (badge) =>
-                String(badge.student_id) ===
-                String(studentRow.id)
-            );
+    const matchingBadges = badgeRows.filter(
+      (badge) =>
+        String(badge.student_id) ===
+        String(studentRow.id)
+    );
 
-            return createProfileSummary(
-              link,
-              studentRow,
-              matchingResults,
-              matchingBadges
-            );
-          })
-          .filter(Boolean);
+    const matchingMembership =
+      membershipRows.find(
+        (membership) =>
+          String(membership.student_id) ===
+          String(studentRow.id)
+      ) || null;
 
-        if (!active) return;
+    return createProfileSummary(
+      link,
+      studentRow,
+      matchingResults,
+      matchingBadges,
+      matchingMembership
+    );
+  })
+  .filter(Boolean);
 
-        setAccountProfile(profileData);
-        setLinkedProfiles(summaries);
+        console.log(
+  "DASHBOARD DEBUG — summaries:",
+  summaries
+);
+
+if (!active) return;
+
+setAccountProfile(profileData);
+setLinkedProfiles(summaries);
 
         setActiveProfileId((currentId) => {
           const currentStillExists = summaries.some(
@@ -1256,32 +1311,61 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  <div className="rounded-2xl bg-blue-600 p-6 text-white shadow-lg">
-                    <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
-                      Membership
-                    </p>
-
-                    <h2 className="mt-2 text-2xl font-black">
-                      Free Account
-                    </h2>
-
-                    <p className="mt-3 text-blue-100">
-                      Save a personal best and retain the latest 10
-                      results.
-                    </p>
-
-                    {isParentAccount ? (
-  <Link
-    to="/membership"
-    className="mt-6 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
-  >
-    Explore Membership
-  </Link>
-) : (
-  <p className="mt-5 rounded-xl bg-blue-500/40 p-4 text-sm font-semibold text-blue-50">
-    Ask your parent or guardian about membership options.
+                 <div className="rounded-2xl bg-blue-600 p-6 text-white shadow-lg">
+  <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
+    Membership
   </p>
-)}
+
+  <h2 className="mt-2 text-2xl font-black">
+    {activeProfile.membership.planName}
+  </h2>
+
+  <p className="mt-3 text-blue-100">
+    Status:{" "}
+    {activeProfile.membership.status
+      ? activeProfile.membership.status
+          .charAt(0)
+          .toUpperCase() +
+        activeProfile.membership.status.slice(1)
+      : "Active"}
+  </p>
+
+  {activeProfile.membership.expiresAt ? (
+    <p className="mt-2 text-blue-100">
+      Expires:{" "}
+      {formatMembershipDate(
+        activeProfile.membership.expiresAt
+      )}
+    </p>
+  ) : (
+    <p className="mt-2 text-blue-100">
+      No expiry date.
+    </p>
+  )}
+
+  <p className="mt-3 text-blue-100">
+    {activeProfile.membership.isPaid
+      ? "Full CountMeInTT membership access is active."
+      : "Free access includes saved progress and the latest 10 results."}
+  </p>
+
+  {isParentAccount ? (
+    <Link
+      to="/membership"
+      className="mt-6 inline-block rounded-xl bg-yellow-300 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-200"
+    >
+      {activeProfile.membership.isPaid
+        ? "View Membership"
+        : "Explore Membership"}
+    </Link>
+  ) : (
+    <p className="mt-5 rounded-xl bg-blue-500/40 p-4 text-sm font-semibold text-blue-50">
+      {activeProfile.membership.isPaid
+        ? "Your membership is active."
+        : "Ask your parent or guardian about membership options."}
+    </p>
+  )}
+
 
                   </div>
                 </div>
