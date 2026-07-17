@@ -72,6 +72,34 @@ export async function getCurrentStudentMembership(studentId) {
   };
 }
 
+export async function getPlayableProfileMembership() {
+  const { getPlayableProfile } = await import(
+    "./gameResults"
+  );
+
+  const playableProfile =
+    await getPlayableProfile();
+
+  if (!playableProfile) {
+    return {
+      guest: true,
+      profile: null,
+      membership: null,
+    };
+  }
+
+  const membership =
+    await getCurrentStudentMembership(
+      playableProfile.profile.id
+    );
+
+  return {
+    guest: false,
+    profile: playableProfile.profile,
+    membership,
+  };
+}
+
 export function formatMembershipDate(value) {
   if (!value) return null;
 

@@ -1,4 +1,8 @@
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 import GameHeader from "../components/layout/GameHeader";
 import { saveMathLanguageResult } from "../lib/mathLanguageResults";
@@ -8,6 +12,17 @@ import { getBadgeResult } from "../utils/mathLanguage/getBadgeResult";
 import MathLanguageBrand from "../components/mathLanguage/MathLanguageBrand";
 import MathLanguageFooter from "../components/mathLanguage/MathLanguageFooter";
 import ScrollToTopButton from "../components/mathLanguage/ScrollToTopButton";
+import {
+  getPlayableProfileMembership,
+} from "../lib/membership";
+
+import {
+  canPlayMathLanguageLevel,
+  getMathLanguageWordBank,
+  getMembershipPlanName,
+} from "../lib/membershipAccess";
+
+
 
 const ROUND_LEVELS = [
   {
@@ -33,6 +48,19 @@ const ROUND_LEVELS = [
   },
 ];
 
+function getAllowedMathLanguageTerms(wordBank) {
+  if (wordBank === "full_200") {
+    return mathLanguageTerms;
+  }
+
+  return mathLanguageTerms.filter(
+    (term) =>
+      String(term.accessLevel || "")
+        .trim()
+        .toLowerCase() === "free"
+  );
+}
+
 function createInitialGameState() {
   return {
     status: "intro",
@@ -53,6 +81,72 @@ export default function MathLanguagePlay() {
   const [saveStatus, setSaveStatus] = useState("idle");
   const [saveMessage, setSaveMessage] = useState("");
 
+  const [membershipState, setMembershipState] =
+  useState({
+    loading: true,
+    guest: false,
+    profile: null,
+    membership: null,
+    error: "",
+  });
+
+useEffect(() => {
+  let isMounted = true;
+
+  async function loadMembershipAccess() {
+    try {
+      const outcome =
+        await getPlayableProfileMembership();
+
+      if (!isMounted) return;
+
+      setMembershipState({
+        loading: false,
+        guest: outcome.guest,
+        profile: outcome.profile,
+        membership: outcome.membership,
+        error: "",
+      });
+    } catch (error) {
+      console.error(
+        "Math Language membership loading error:",
+        error
+      );
+
+      if (!isMounted) return;
+
+      setMembershipState({
+        loading: false,
+        guest: false,
+        profile: null,
+        membership: null,
+        error:
+          error?.message ||
+          "Your membership access could not be loaded.",
+      });
+    }
+  }
+
+  loadMembershipAccess();
+
+  return () => {
+    isMounted = false;
+  };
+}, []);
+
+const membership = membershipState.membership;
+
+const membershipPlanName =
+  membershipState.guest
+    ? "Guest Access"
+    : getMembershipPlanName(membership);
+
+const playerName =
+  membershipState.profile?.public_display_name ||
+  membershipState.profile?.first_name ||
+  (membershipState.guest
+    ? "Guest Player"
+    : "Player");
 
   const selectedLevel = useMemo(
     () =>
@@ -62,47 +156,109 @@ export default function MathLanguagePlay() {
     [gameState.selectedLevelId]
   );
 
-  const startRound = (levelId = gameState.selectedLevelId) => {
-    const level =
-      ROUND_LEVELS.find((option) => option.id === levelId) ||
-      ROUND_LEVELS[0];
+  const startRound = (
+  levelId = gameState.selectedLevelId
+) => {
+  if (membershipState.loading) {
+    return;
+  }
 
-    const questions = getPlayableQuestions(
-      mathLanguageTerms,
+  if (membershipState.error) {
+    setSaveStatus("error");
+    setSaveMessage(membershipState.error);
+    return;
+  }
+
+  const level =
+    ROUND_LEVELS.find(
+      (option) => option.id === levelId
+    ) || ROUND_LEVELS[0];
+
+  const hasLevelAccess =
+    canPlayMathLanguageLevel(
+      membership,
       level.questionCount
     );
 
-   if (!questions.length) {
-  setGameState((previous) => ({
-    ...previous,
-    selectedLevelId: level.id,
-    status: "error",
-  }));
-  return;
-}
+  if (!hasLevelAccess) {
+    setSaveStatus("locked");
+    setSaveMessage(
+      `${level.name} requires a full CountMeInTT membership.`
+    );
+    return;
+  }
 
-setSaveStatus("idle");
-setSaveMessage("");
+  const wordBank =
+    getMathLanguageWordBank(
+      membership,
+      level.questionCount
+    );
 
-setGameState({
-  status: "active",
-  selectedLevelId: level.id,
-  questions,
-  currentQuestionIndex: 0,
-  selectedAnswer: null,
-  hasAnswered: false,
-  score: 0,
-  answersLog: [],
-  missedQuestions: [],
-});
-  };
+  const allowedTerms =
+    getAllowedMathLanguageTerms(wordBank);
 
-  const chooseLevel = (levelId) => {
+  const questions = getPlayableQuestions(
+    allowedTerms,
+    level.questionCount
+  );
+
+  if (!questions.length) {
     setGameState((previous) => ({
       ...previous,
-      selectedLevelId: levelId,
+      selectedLevelId: level.id,
+      status: "error",
     }));
-  };
+
+    return;
+  }
+
+  setSaveStatus("idle");
+  setSaveMessage("");
+
+  setGameState({
+    status: "active",
+    selectedLevelId: level.id,
+    questions,
+    currentQuestionIndex: 0,
+    selectedAnswer: null,
+    hasAnswered: false,
+    score: 0,
+    answersLog: [],
+    missedQuestions: [],
+  });
+};
+
+  const chooseLevel = (levelId) => {
+  const level = ROUND_LEVELS.find(
+    (option) => option.id === levelId
+  );
+
+  if (!level || membershipState.loading) {
+    return;
+  }
+
+  const hasLevelAccess =
+    canPlayMathLanguageLevel(
+      membership,
+      level.questionCount
+    );
+
+  if (!hasLevelAccess) {
+    setSaveStatus("locked");
+    setSaveMessage(
+      `${level.name} is available with a full CountMeInTT membership.`
+    );
+    return;
+  }
+
+  setSaveStatus("idle");
+  setSaveMessage("");
+
+  setGameState((previous) => ({
+    ...previous,
+    selectedLevelId: levelId,
+  }));
+};
 
  const returnToLevelSelection = () => {
   setSaveStatus("idle");
@@ -260,6 +416,31 @@ setGameState({
               Choose how many words you want to test. Each completed
               level counts as one Math Language round.
             </p>
+            <div className="mt-5 flex flex-col gap-2 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <p className="text-xs font-black uppercase tracking-wider text-gray-500">
+      Playing As
+    </p>
+
+    <p className="mt-1 font-black text-gray-950">
+      {membershipState.loading
+        ? "Loading player…"
+        : playerName}
+    </p>
+  </div>
+
+  <div className="sm:text-right">
+    <p className="text-xs font-black uppercase tracking-wider text-gray-500">
+      Access
+    </p>
+
+    <p className="mt-1 font-black text-blue-700">
+      {membershipState.loading
+        ? "Checking membership…"
+        : membershipPlanName}
+    </p>
+  </div>
+</div>
 
             <div className="mt-6 rounded-2xl bg-yellow-50 p-5 text-gray-800">
               Some words tell you to add. Others tell you to subtract,
@@ -269,40 +450,92 @@ setGameState({
 
             <div className="mt-7 grid gap-4">
               {ROUND_LEVELS.map((level) => {
-                const selected =
-                  gameState.selectedLevelId === level.id;
+  const selected =
+    gameState.selectedLevelId === level.id;
 
-                return (
-                  <button
-                    key={level.id}
-                    type="button"
-                    onClick={() => chooseLevel(level.id)}
-                    className={[
-                      "rounded-2xl border-2 p-5 text-left transition",
-                      selected
-                        ? `${level.accent} ring-4 ring-yellow-100`
-                        : "border-gray-200 bg-white hover:border-yellow-300 hover:bg-yellow-50",
-                    ].join(" ")}
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-xl font-black text-gray-950">
-                          {level.name}
-                        </p>
+  const hasAccess =
+    !membershipState.loading &&
+    !membershipState.error &&
+    canPlayMathLanguageLevel(
+      membership,
+      level.questionCount
+    );
 
-                        <p className="mt-2 leading-6 text-gray-600">
-                          {level.description}
-                        </p>
-                      </div>
+  const isLocked =
+    !membershipState.loading &&
+    !hasAccess;
 
-                      <div className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-black text-blue-700 shadow-sm">
-                        {level.questionCount} Words
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+  return (
+    <button
+      key={level.id}
+      type="button"
+      onClick={() => chooseLevel(level.id)}
+      disabled={
+        membershipState.loading ||
+        Boolean(membershipState.error) ||
+        isLocked
+      }
+      className={[
+        "rounded-2xl border-2 p-5 text-left transition",
+        isLocked
+          ? "cursor-not-allowed border-gray-200 bg-gray-50 opacity-75"
+          : selected
+            ? `${level.accent} ring-4 ring-yellow-100`
+            : "border-gray-200 bg-white hover:border-yellow-300 hover:bg-yellow-50",
+      ].join(" ")}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xl font-black text-gray-950">
+              {level.name}
+            </p>
+
+            {isLocked && (
+              <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-black uppercase tracking-wide text-gray-700">
+                Locked
+              </span>
+            )}
+          </div>
+
+          <p className="mt-2 leading-6 text-gray-600">
+            {level.description}
+          </p>
+
+          {isLocked && (
+            <p className="mt-2 text-sm font-black text-purple-700">
+              Full Membership Required
+            </p>
+          )}
+        </div>
+
+        <div className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-black text-blue-700 shadow-sm">
+          {membershipState.loading
+            ? "Checking…"
+            : `${level.questionCount} Words`}
+        </div>
+      </div>
+    </button>
+  );
+})}
             </div>
+
+{saveMessage && (
+  <div
+    className={[
+      "mt-4 rounded-xl border p-4 text-sm font-bold",
+      saveStatus === "locked"
+        ? "border-purple-200 bg-purple-50 text-purple-800"
+        : saveStatus === "error"
+          ? "border-red-200 bg-red-50 text-red-800"
+          : "border-gray-200 bg-gray-50 text-gray-700",
+    ].join(" ")}
+  >
+    {saveStatus === "locked" && "🔒 "}
+    {saveStatus === "error" && "⚠️ "}
+    {saveMessage}
+  </div>
+)}
 
             <div className="mt-7 grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-gray-200 p-4">
@@ -336,15 +569,42 @@ setGameState({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                startRound(gameState.selectedLevelId)
-              }
-              className="mt-7 w-full rounded-xl bg-yellow-400 px-5 py-4 text-lg font-black text-gray-950 transition hover:bg-yellow-300"
-            >
-              Start {selectedLevel.name}
-            </button>
+           <button
+  type="button"
+  onClick={() =>
+    startRound(gameState.selectedLevelId)
+  }
+  disabled={
+    membershipState.loading ||
+    Boolean(membershipState.error) ||
+    !canPlayMathLanguageLevel(
+      membership,
+      selectedLevel.questionCount
+    )
+  }
+  className={[
+    "mt-7 w-full rounded-xl px-5 py-4 text-lg font-black transition",
+    membershipState.loading ||
+    membershipState.error ||
+    !canPlayMathLanguageLevel(
+      membership,
+      selectedLevel.questionCount
+    )
+      ? "cursor-not-allowed bg-gray-200 text-gray-500"
+      : "bg-yellow-400 text-gray-950 hover:bg-yellow-300",
+  ].join(" ")}
+>
+  {membershipState.loading
+    ? "Checking Access…"
+    : canPlayMathLanguageLevel(
+          membership,
+          selectedLevel.questionCount
+        )
+      ? `Start ${selectedLevel.name}`
+      : "Full Membership Required"}
+</button>
+
+
           </section>
         </main>
 
