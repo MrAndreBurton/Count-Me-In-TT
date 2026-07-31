@@ -14,6 +14,9 @@ import BocasChallenge from "./BocasChallenge";
 import BocasLitFestLeaderboard from "./BocasLitFestLeaderboard";
 import BocasHallOfFame from "./BocasHallOfFame";
 
+import BocasCouvaChallenge from "./pages/BocasCouvaChallenge";
+import BocasCouvaLeaderboard from "./pages/BocasCouvaLeaderboard";
+
 import YouthopiaChallenge from "./pages/YouthopiaChallenge";
 import YouthopiaLeaderboard from "./pages/YouthopiaLeaderboard";
 import YouthopiaHallOfFame from "./pages/YouthopiaHallOfFame";
@@ -42,6 +45,20 @@ import ResetPassword from "./pages/ResetPassword";
 import AddStudent from "./pages/AddStudent";
 import Supporters from "./pages/Supporters";
 import ResultTest from "./pages/ResultTest";
+
+import AdminRoute from "./components/admin/AdminRoute";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import WorkspaceSelector from "./pages/WorkspaceSelector";
+
+import StudentsPage from "./pages/admin/StudentsPage";
+import StudentProfilePage from "./pages/admin/StudentProfilePage";
+import EditStudentPage from "./pages/admin/EditStudentPage";
+import AddStudentPage from "./pages/admin/AddStudentPage";
+
+import ParentsPage from "./pages/admin/ParentsPage";
+import ParentProfilePage from "./pages/admin/ParentProfilePage";
+import AddParentPage from "./pages/admin/AddParentPage";
+import EditParentPage from "./pages/admin/EditParentPage";
 
 import CoreGame from "./components/multiplication/CoreGame";
 import ScrollToTop from "./components/ScrollToTop";
@@ -133,6 +150,92 @@ export default function CountMeInApp() {
           element={<ResultTest />}
         />
 
+        <Route
+          path="/admin"
+          element={
+           <AdminRoute>
+             <AdminDashboard />
+            </AdminRoute>
+           }
+         />
+
+        <Route
+          path="/workspace"
+          element={<WorkspaceSelector />}
+        />
+
+        <Route
+          path="/admin/students"
+          element={
+           <AdminRoute>
+            <StudentsPage />
+           </AdminRoute>
+          }
+         />
+      
+        <Route
+         path="/admin/students/new"
+         element={
+           <AdminRoute>
+             <AddStudentPage />
+          </AdminRoute>
+         }
+       />
+
+        <Route
+          path="/admin/students/:studentId"
+          element={
+           <AdminRoute>
+             <StudentProfilePage />
+           </AdminRoute>
+          }
+         />
+
+       <Route
+         path="/admin/students/:studentId/edit"
+         element={
+           <AdminRoute>
+             <EditStudentPage />
+           </AdminRoute>
+         }
+       />
+
+       <Route
+          path="/admin/parents"
+          element={
+           <AdminRoute>
+             <ParentsPage />
+           </AdminRoute>
+         }
+       />
+
+       <Route
+         path="/admin/parents/new"
+         element={
+           <AdminRoute>
+             <AddParentPage />
+            </AdminRoute>
+         }
+       />
+
+       <Route
+         path="/admin/parents/:parentId/edit"
+         element={
+           <AdminRoute>
+             <EditParentPage />
+           </AdminRoute>
+         }
+       />
+
+       <Route
+         path="/admin/parents/:parentId"
+         element={
+           <AdminRoute>
+             <ParentProfilePage />
+           </AdminRoute>
+         }
+       />
+       
         <Route
           path="/games/multiplication"
           element={
@@ -393,6 +496,16 @@ export default function CountMeInApp() {
         <Route
           path="/bocas-2026"
           element={<BocasChallenge />}
+        />
+
+        <Route
+          path="/bocas-couva-challenge"
+          element={<BocasCouvaChallenge />}
+        />
+
+        <Route
+          path="/bocas-couva-leaderboard"
+          element={<BocasCouvaLeaderboard />}
         />
 
         <Route

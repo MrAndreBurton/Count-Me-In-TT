@@ -1,5 +1,6 @@
 {
   "schools": [
+    "A's Online Tutoring Services",
     "Advanced Skill Training Centre (ASTC)",
     "Aranguez North Secondary",
     "Arete Institute of Science",
@@ -176,6 +177,11 @@
     "Woodbrook Secondary"
   ],
   "schoolRecords": [
+    {
+      "name": "A's Online Tutoring Services",
+      "district": "St George",
+      "management": "private"
+    },
     {
       "name": "Advanced Skill Training Centre (ASTC)",
       "district": "Victoria",

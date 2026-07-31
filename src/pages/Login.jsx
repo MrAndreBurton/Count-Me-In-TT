@@ -91,39 +91,58 @@ export default function Login() {
   };
 
   const handleAdultLogin = async () => {
-    const email = adultForm.email.trim().toLowerCase();
+  const email = adultForm.email.trim().toLowerCase();
 
-    const { data, error } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password: adultForm.password,
-      });
+  const { data, error } =
+    await supabase.auth.signInWithPassword({
+      email,
+      password: adultForm.password,
+    });
 
-    if (error) throw error;
+  if (error) throw error;
 
-    if (!data?.session || !data?.user) {
-      throw new Error(
-        "Your session could not be created. Please try again."
-      );
-    }
+  if (!data?.session || !data?.user) {
+    throw new Error(
+      "Your session could not be created. Please try again."
+    );
+  }
 
-    const { data: accountProfile, error: profileError } =
-      await supabase
-        .from("profiles")
-        .select("id, account_type, account_status")
-        .eq("id", data.user.id)
-        .maybeSingle();
+  const { data: accountProfile, error: profileError } =
+    await supabase
+      .from("profiles")
+      .select(
+        "id, account_type, account_status, admin_role"
+      )
+      .eq("id", data.user.id)
+      .maybeSingle();
 
-    if (profileError) throw profileError;
+  if (profileError) throw profileError;
 
-    if (
-      accountProfile?.account_status &&
-      accountProfile.account_status !== "active"
-    ) {
-      await supabase.auth.signOut();
-      throw new Error("This account is not currently active.");
-    }
+  if (!accountProfile) {
+    await supabase.auth.signOut();
+
+    throw new Error(
+      "Your account profile could not be found."
+    );
+  }
+
+  if (
+    accountProfile.account_status &&
+    accountProfile.account_status !== "active"
+  ) {
+    await supabase.auth.signOut();
+
+    throw new Error(
+      "This account is not currently active."
+    );
+  }
+
+  return {
+    user: data.user,
+    session: data.session,
+    accountProfile,
   };
+};
 
   const handleStudentLogin = async () => {
   const outcome = await signInStudent({
@@ -189,36 +208,65 @@ export default function Login() {
 };
 
   const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (isSubmitting) return;
+  event.preventDefault();
 
-    setErrorMessage("");
-    setIsSubmitting(true);
+  if (isSubmitting) return;
 
-    try {
-      if (isStudentLogin) {
-        await handleStudentLogin();
-      } else {
+  setErrorMessage("");
+  setIsSubmitting(true);
+
+  try {
+    let redirectPath = "/dashboard";
+
+    if (isStudentLogin) {
+      await handleStudentLogin();
+
+      redirectPath =
+        location.state?.from?.pathname ||
+        "/student-dashboard";
+    } else {
+      const { accountProfile } =
         await handleAdultLogin();
+
+      const adminRoles = [
+        "super_admin",
+        "admin",
+        "moderator",
+      ];
+
+      const hasAdminAccess =
+        adminRoles.includes(
+          accountProfile?.admin_role
+        ) &&
+        accountProfile?.account_status ===
+          "active";
+
+      if (location.state?.from?.pathname) {
+        redirectPath =
+          location.state.from.pathname;
+      } else if (hasAdminAccess) {
+        redirectPath = "/workspace";
+      } else {
+        redirectPath = "/dashboard";
       }
-
-      const redirectPath =
-        location.state?.from?.pathname || "/dashboard";
-
-      navigate(redirectPath, { replace: true });
-    } catch (error) {
-      console.error("Login error:", error);
-
-      setErrorMessage(
-        isStudentLogin
-          ? error?.message ||
-              "The student username or password is incorrect."
-          : normalizeAdultLoginError(error)
-      );
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+
+    navigate(redirectPath, {
+      replace: true,
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+
+    setErrorMessage(
+      isStudentLogin
+        ? error?.message ||
+            "The student username or password is incorrect."
+        : normalizeAdultLoginError(error)
+    );
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const currentRememberMe = isStudentLogin
     ? studentForm.rememberMe
