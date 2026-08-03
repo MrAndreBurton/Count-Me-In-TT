@@ -143,22 +143,35 @@ export default function SiteHeader() {
     }
 
     async function initialiseAccount() {
-      setIsLoadingAccount(true);
+  setIsLoadingAccount(true);
 
-      const {
-        data: { user: currentUser },
-        error,
-      } = await supabase.auth.getUser();
+  const {
+    data: { user: currentUser },
+    error,
+  } = await supabase.auth.getUser();
 
-      if (error) {
-        console.error(
-          "Site header authentication error:",
-          error
-        );
-      }
+  const errorMessage = String(
+    error?.message || ""
+  ).toLowerCase();
 
-      await loadAccount(currentUser || null);
-    }
+  const isMissingSession =
+    errorMessage.includes("auth session missing") ||
+    errorMessage.includes("session missing");
+
+  if (error && !isMissingSession) {
+    console.error(
+      "Site header authentication error:",
+      error
+    );
+  }
+
+  if (!currentUser) {
+    await loadAccount(null);
+    return;
+  }
+
+  await loadAccount(currentUser);
+}
 
     initialiseAccount();
 

@@ -137,7 +137,7 @@ export default function WorkspaceSelector() {
     if (profile?.account_type === "student") {
       return (
         <Navigate
-          to="/student-dashboard"
+          to="/dashboard"
           replace
         />
       );

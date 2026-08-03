@@ -223,7 +223,7 @@ export default function Login() {
 
       redirectPath =
         location.state?.from?.pathname ||
-        "/student-dashboard";
+        "/dashboard";
     } else {
       const { accountProfile } =
         await handleAdultLogin();

@@ -134,6 +134,12 @@ useEffect(() => {
 
 const membership = membershipState.membership;
 
+const hasFullMathLanguageAccess =
+  canPlayMathLanguageLevel(
+    membership,
+    40
+  );
+
 const membershipPlanName =
   membershipState.guest
     ? "Guest Access"
@@ -555,13 +561,12 @@ if (membershipState.guest) {
       onClick={() => chooseLevel(level.id)}
       disabled={
         membershipState.loading ||
-        Boolean(membershipState.error) ||
-        isLocked
+        Boolean(membershipState.error)
       }
       className={[
         "rounded-2xl border-2 p-5 text-left transition",
         isLocked
-          ? "cursor-not-allowed border-gray-200 bg-gray-50 opacity-75"
+          ? "cursor-pointer border-gray-200 bg-gray-50 opacity-75 hover:border-purple-300 hover:bg-purple-50"
           : selected
             ? `${level.accent} ring-4 ring-yellow-100`
             : "border-gray-200 bg-white hover:border-yellow-300 hover:bg-yellow-50",
@@ -614,9 +619,20 @@ if (membershipState.guest) {
           : "border-gray-200 bg-gray-50 text-gray-700",
     ].join(" ")}
   >
-    {saveStatus === "locked" && "🔒 "}
-    {saveStatus === "error" && "⚠️ "}
-    {saveMessage}
+    <p>
+      {saveStatus === "locked" && "🔒 "}
+      {saveStatus === "error" && "⚠️ "}
+      {saveMessage}
+    </p>
+
+    {saveStatus === "locked" && (
+      <Link
+        to="/membership"
+        className="mt-3 inline-block rounded-lg bg-purple-700 px-4 py-2 font-black text-white transition hover:bg-purple-800"
+      >
+        Explore Membership
+      </Link>
+    )}
   </div>
 )}
 
@@ -928,25 +944,30 @@ if (membershipState.guest) {
               </Link>
             </div>
 
-            <div className="mt-7 rounded-2xl border border-yellow-200 bg-yellow-50 p-5 text-left">
-              <h2 className="mb-2 text-xl font-black text-gray-950">
-                Unlock the Full 200-Word SEA Math Language Game
-              </h2>
+            {!hasFullMathLanguageAccess && (
+  <div className="mt-7 rounded-2xl border border-yellow-200 bg-yellow-50 p-5 text-left">
+    <p className="text-sm font-black uppercase tracking-wider text-yellow-700">
+      Full Membership
+    </p>
 
-              <p className="text-gray-700">
-                The full version will unlock trap-word challenges,
-                SEA question-decoder practice, category mastery and
-                boss levels.
-              </p>
+    <h2 className="mt-2 text-xl font-black text-gray-950">
+      Unlock the Full 200-Word SEA Math Language Game
+    </h2>
 
-              <button
-                type="button"
-                disabled
-                className="mt-4 rounded-xl bg-gray-200 px-5 py-3 font-black text-gray-600"
-              >
-                Unlock Full Version — Coming Soon
-              </button>
-            </div>
+    <p className="mt-2 text-gray-700">
+      Explore the complete 200-word bank and access
+      additional Math Language challenges with a paid
+      CountMeInTT membership.
+    </p>
+
+    <Link
+      to="/membership"
+      className="mt-4 inline-block rounded-xl bg-yellow-400 px-5 py-3 font-black text-gray-950 transition hover:bg-yellow-300"
+    >
+      Explore Membership
+    </Link>
+  </div>
+)}
           </section>
         </main>
 

@@ -18,6 +18,11 @@ import {
   saveMultiplicationResult,
 } from "../../lib/gameResults";
 
+import {
+  getLeaderboardCategory,
+  getLearningCategoryLabel,
+} from "../../lib/learningCategory";
+
 function createAntiCheat(gridId) {
   const perfNow = () =>
     typeof performance !== "undefined"
@@ -395,13 +400,17 @@ export default function CoreGame({
           profile.profile_type === "account_holder" ||
           link.relationship_role === "self";
 
-        const category = isParentProfile
-          ? "NoSchool"
-          : profile.school_type === "secondary"
-            ? "Secondary"
-            : profile.school_type === "not_enrolled"
-              ? "NoSchool"
-              : "Primary";
+     const category = isParentProfile
+  ? "NoSchool"
+  : getLeaderboardCategory(profile);
+
+if (!category) {
+  throw new Error(
+    `Unsupported learning category: ${
+      profile?.school_type || "missing"
+    }`
+  );
+}
 
         const playerData = {
           userId: user.id,
@@ -421,7 +430,7 @@ export default function CoreGame({
         };
 
         setLoggedInPlayer(playerData);
-
+    
         setFormData((current) => ({
           ...current,
           name: playerData.name,
@@ -1013,12 +1022,10 @@ export default function CoreGame({
           formData.school.trim() ||
           "N/A";
 
-    const submissionClass =
-      submissionCategory === "NoSchool"
-        ? "N/A"
-        : loggedInPlayer?.classLevel ||
-          formData.classLevel.trim() ||
-          "N/A";
+     const submissionClass =
+       loggedInPlayer?.classLevel ||
+       formData.classLevel.trim() ||
+       "N/A";
 
     const submissionEmail =
       loggedInPlayer?.email ||
@@ -1396,9 +1403,7 @@ export default function CoreGame({
                       className="rounded bg-blue-100 px-4 py-2 shadow"
                     >
                       <strong>
-                        {category === "NoSchool"
-                          ? "No School"
-                          : category}
+                        {getLearningCategoryLabel(category)}
                         :
                       </strong>{" "}
                       {topPlayers[category]?.Name ||
@@ -1830,10 +1835,9 @@ export default function CoreGame({
                         Category
                       </dt>
                       <dd className="font-bold">
-                        {loggedInPlayer.category ===
-                        "NoSchool"
-                          ? "No School"
-                          : loggedInPlayer.category}
+                        {getLearningCategoryLabel(
+                          loggedInPlayer.category
+                        )}
                       </dd>
                     </div>
 

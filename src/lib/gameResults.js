@@ -140,6 +140,7 @@ export async function getPlayableProfile() {
         avatar_key,
         profile_type,
         profile_status,
+        school_type,
         current_school,
         current_level,
         academic_year,

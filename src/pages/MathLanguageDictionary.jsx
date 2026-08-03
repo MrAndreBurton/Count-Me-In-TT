@@ -4,6 +4,8 @@ import {
   useState,
 } from "react";
 
+import { Link } from "react-router-dom";
+
 import { mathLanguageTerms } from "../data/mathLanguageTerms";
 import GameHeader from "../components/layout/GameHeader";
 import MathLanguageBrand from "../components/mathLanguage/MathLanguageBrand";
@@ -51,24 +53,47 @@ useEffect(() => {
         membership: outcome.membership,
         error: "",
       });
-    } catch (error) {
-      console.error(
-        "Math Language dictionary membership error:",
-        error,
-      );
+   } catch (error) {
+  const errorMessage = String(
+    error?.message || ""
+  ).toLowerCase();
 
-      if (!isMounted) return;
+  const isMissingSession =
+    errorMessage.includes("auth session missing") ||
+    errorMessage.includes("session missing") ||
+    errorMessage.includes("not authenticated");
 
-      setMembershipState({
-        loading: false,
-        guest: false,
-        profile: null,
-        membership: null,
-        error:
-          error?.message ||
-          "Your dictionary access could not be loaded.",
-      });
-    }
+  if (!isMounted) return;
+
+  if (isMissingSession) {
+    setMembershipState({
+      loading: false,
+      guest: true,
+      profile: null,
+      membership: null,
+      error: "",
+    });
+
+    return;
+  }
+
+  console.error(
+    "Math Language dictionary membership error:",
+    error
+  );
+
+  setMembershipState({
+    loading: false,
+    guest: false,
+    profile: null,
+    membership: null,
+    error:
+      error?.message ||
+      "Your dictionary access could not be loaded.",
+  });
+}
+
+
   }
 
   loadMembershipAccess();
@@ -173,6 +198,101 @@ if (membershipState.error) {
   );
 }
 
+if (membershipState.guest) {
+  return (
+    <div className="min-h-screen bg-white text-gray-950">
+      <GameHeader />
+
+      <main className="px-4 py-12 sm:py-16">
+        <section className="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-yellow-200 bg-white shadow-lg">
+          <div className="bg-yellow-50 p-7 text-center sm:p-10">
+            <div className="mb-5">
+              <MathLanguageBrand />
+            </div>
+
+            <p className="text-sm font-black uppercase tracking-wider text-yellow-700">
+              Free Account Required
+            </p>
+
+            <h1 className="mx-auto mt-3 max-w-2xl text-3xl font-black leading-tight text-gray-950 sm:text-4xl">
+              Create an account to explore the SEA Math Dictionary.
+            </h1>
+
+            <p className="mx-auto mt-4 max-w-2xl leading-7 text-gray-700">
+              A free CountMeInTT account gives you access to the Top
+              50 must-know SEA Math words, saved game results and a
+              personal learning profile.
+            </p>
+          </div>
+
+          <div className="p-7 sm:p-9">
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                "Top 50 SEA Math words",
+                "Math Language practice rounds",
+                "Saved learning progress",
+              ].map((feature) => (
+                <div
+                  key={feature}
+                  className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-center"
+                >
+                  <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-yellow-200 font-black text-gray-950">
+                    ✓
+                  </div>
+
+                  <p className="mt-3 font-black text-gray-800">
+                    {feature}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Link
+                to="/register"
+                className="rounded-xl bg-yellow-400 px-6 py-3 text-center font-black text-gray-950 transition hover:bg-yellow-300"
+              >
+                Create Free Account
+              </Link>
+
+              <Link
+                to="/login"
+                state={{
+                  from: {
+                    pathname: "/math-language/dictionary",
+                  },
+                }}
+                className="rounded-xl border-2 border-blue-600 bg-white px-6 py-3 text-center font-black text-blue-600 transition hover:bg-blue-50"
+              >
+                Sign In
+              </Link>
+            </div>
+
+            <p className="mt-5 text-center text-sm leading-6 text-gray-500">
+              After creating an account, you can request Term or
+              Annual Membership for access to the complete 200-word
+              dictionary.
+            </p>
+
+            <div className="mt-5 text-center">
+              <Link
+                to="/membership"
+                className="font-black text-blue-700 underline underline-offset-4"
+              >
+                View Membership Options
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <MathLanguageFooter />
+    </div>
+  );
+}
+
+
+
   return (
   <div className="min-h-screen bg-white text-gray-950">
     <GameHeader />
@@ -212,12 +332,12 @@ if (membershipState.error) {
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100"
             />
 
-            <a
-              href="/math-language/play"
-              className="rounded-xl bg-yellow-400 px-5 py-3 text-center font-bold text-gray-950 hover:bg-yellow-300"
-            >
-              Start Challenge
-            </a>
+            <Link
+  to="/math-language/play"
+  className="rounded-xl bg-yellow-400 px-5 py-3 text-center font-bold text-gray-950 hover:bg-yellow-300"
+>
+  Start Challenge
+</Link>
           </div>
 
           <div className="mt-5 flex flex-wrap gap-2">
@@ -347,12 +467,12 @@ if (membershipState.error) {
                 </div>
               )}
 
-              <a
-                href="/math-language/play"
-                className="inline-flex rounded-xl border border-yellow-300 px-4 py-3 font-bold text-gray-900 hover:bg-yellow-50"
+             <Link
+               to="/math-language/play"
+               className="inline-flex rounded-xl border border-yellow-300 px-4 py-3 font-bold text-gray-900 hover:bg-yellow-50"
               >
                 Practise This Word
-              </a>
+            </Link>
             </div>
            </div>
           )}
@@ -374,12 +494,12 @@ if (membershipState.error) {
             practice, category mastery, and boss levels.
           </p>
 
-          <a
-  href="/membership"
+         <Link
+  to="/membership"
   className="inline-flex rounded-xl bg-yellow-400 px-5 py-3 font-bold text-gray-950 hover:bg-yellow-300"
 >
   View Membership Options
-</a>
+</Link>
 
 </div>
 )}
