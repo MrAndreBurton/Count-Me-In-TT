@@ -60,6 +60,11 @@ import ParentProfilePage from "./pages/admin/ParentProfilePage";
 import AddParentPage from "./pages/admin/AddParentPage";
 import EditParentPage from "./pages/admin/EditParentPage";
 
+import MembershipsPage from "./pages/admin/MembershipsPage";
+import MembershipProfilePage from "./pages/admin/MembershipProfilePage";
+import MembershipRequestsPage from "./pages/admin/MembershipRequestsPage";
+import MembershipRequestProfilePage from "./pages/admin/MembershipRequestProfilePage";
+
 import CoreGame from "./components/multiplication/CoreGame";
 import ScrollToTop from "./components/ScrollToTop";
 
@@ -235,7 +240,35 @@ export default function CountMeInApp() {
            </AdminRoute>
          }
        />
-       
+
+       <Route
+         path="/admin/memberships"
+         element={
+           <AdminRoute>
+             <MembershipsPage />
+           </AdminRoute>
+         }
+        />
+
+       <Route
+         path="/admin/memberships/requests"
+         element={<MembershipRequestsPage />}
+       />
+
+       <Route
+         path="/admin/memberships/requests/:requestId"
+         element={<MembershipRequestProfilePage />}
+       />
+
+       <Route
+         path="/admin/memberships/:membershipId"
+         element={
+           <AdminRoute>
+             <MembershipProfilePage />
+           </AdminRoute>
+         }
+       />
+
         <Route
           path="/games/multiplication"
           element={

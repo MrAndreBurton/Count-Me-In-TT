@@ -15,54 +15,13 @@ import AdminLayout from "../../components/admin/layout/AdminLayout";
 import ParentCard from "../../components/admin/parents/ParentCard";
 
 import {
+  mapSupabaseParentToAdminParent,
+} from "../../utils/adminParentMapper";
+
+
+import {
   fetchAdminParents,
 } from "../../services/adminParentsService";
-
-function getInitials(name = "") {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("");
-}
-
-function formatAccountStatus(status) {
-  if (!status) return "Pending";
-
-  return (
-    status.charAt(0).toUpperCase() +
-    status.slice(1)
-  );
-}
-
-function formatCommunicationPreference(
-  preference,
-) {
-  if (!preference) return "Not provided";
-
-  if (preference === "whatsapp") {
-    return "WhatsApp";
-  }
-
-  return (
-    preference.charAt(0).toUpperCase() +
-    preference.slice(1)
-  );
-}
-
-function formatDate(dateValue) {
-  if (!dateValue) return "Not available";
-
-  return new Date(dateValue).toLocaleDateString(
-    "en-TT",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    },
-  );
-}
 
 export default function ParentsPage() {
   const [searchTerm, setSearchTerm] =
@@ -90,27 +49,12 @@ useEffect(() => {
 
       if (!isMounted) return;
 
-      const mappedParents = data.map((parent) => ({
-        id: parent.id,
-        name: parent.full_name,
-        initials: getInitials(parent.full_name),
-        email: "",
-        phone: parent.phone || "Not provided",
-        relationship: "Parent",
-        status: formatAccountStatus(
-          parent.account_status,
-        ),
-        communicationPreference:
-          formatCommunicationPreference(
-            parent.communication_preference,
-          ),
-        joined: formatDate(parent.created_at),
-        lastActive: "Not available",
-        notes: "No admin notes added.",
-        studentIds: [],
-      }));
+      const mappedParents = data.map(
+        mapSupabaseParentToAdminParent,
+      );
 
       setParents(mappedParents);
+
     } catch (error) {
       console.error(
         "Unable to load parents:",

@@ -22,8 +22,6 @@ import {
   getMembershipPlanName,
 } from "../lib/membershipAccess";
 
-
-
 const ROUND_LEVELS = [
   {
     id: "quick",
@@ -290,43 +288,6 @@ const playerName =
       simpleMeaning: currentQuestion.simpleMeaning,
     };
 
-if (!membershipState.loading && membershipState.guest) {
-  return (
-    <main className="mx-auto max-w-3xl px-4 py-12">
-      <section className="rounded-3xl border border-yellow-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-sm font-black uppercase tracking-wider text-yellow-700">
-          Free Account Required
-        </p>
-
-        <h1 className="mt-3 text-3xl font-black text-gray-950">
-          Sign in to play the Math Language Challenge
-        </h1>
-
-        <p className="mx-auto mt-4 max-w-xl leading-7 text-gray-600">
-          Create a free CountMeInTT account to access the
-          10-word and 25-word rounds and save your results.
-        </p>
-
-        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <a
-            href="/login"
-            className="rounded-xl bg-yellow-400 px-6 py-3 font-black text-gray-950 hover:bg-yellow-300"
-          >
-            Sign In
-          </a>
-
-          <a
-            href="/register"
-            className="rounded-xl border-2 border-gray-900 px-6 py-3 font-black text-gray-950 hover:bg-gray-50"
-          >
-            Create Free Account
-          </a>
-        </div>
-      </section>
-    </main>
-  );
-}
-
     setGameState((previous) => ({
       ...previous,
       selectedAnswer: answer.label,
@@ -429,6 +390,91 @@ if (!membershipState.loading && membershipState.guest) {
       </Link>
     </nav>
   );
+
+if (membershipState.loading) {
+  return (
+    <div className="min-h-screen bg-white text-gray-950">
+      <GameHeader />
+
+      <main className="px-4 py-16">
+        <section className="mx-auto max-w-xl rounded-3xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-yellow-400" />
+
+          <p className="mt-5 font-black text-gray-700">
+            Checking your membership access...
+          </p>
+        </section>
+      </main>
+
+      <MathLanguageFooter />
+    </div>
+  );
+}
+
+if (membershipState.error) {
+  return (
+    <div className="min-h-screen bg-white text-gray-950">
+      <GameHeader />
+
+      <main className="px-4 py-16">
+        <section className="mx-auto max-w-xl rounded-3xl border border-red-200 bg-red-50 p-8 text-center">
+          <h1 className="text-2xl font-black text-red-900">
+            Unable to check access
+          </h1>
+
+          <p className="mt-3 text-red-700">
+            {membershipState.error}
+          </p>
+        </section>
+      </main>
+
+      <MathLanguageFooter />
+    </div>
+  );
+}
+
+if (membershipState.guest) {
+  return (
+    <div className="min-h-screen bg-white text-gray-950">
+      <GameHeader />
+
+      <main className="px-4 py-12">
+        <section className="mx-auto max-w-3xl rounded-3xl border border-yellow-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-sm font-black uppercase tracking-wider text-yellow-700">
+            Free Account Required
+          </p>
+
+          <h1 className="mt-3 text-3xl font-black text-gray-950">
+            Sign in to play the Math Language Challenge
+          </h1>
+
+          <p className="mx-auto mt-4 max-w-xl leading-7 text-gray-600">
+            Create a free CountMeInTT account to access the
+            10-word and 25-word rounds and save your results.
+          </p>
+
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link
+              to="/login"
+              className="rounded-xl bg-yellow-400 px-6 py-3 font-black text-gray-950 hover:bg-yellow-300"
+            >
+              Sign In
+            </Link>
+
+            <Link
+              to="/register"
+              className="rounded-xl border-2 border-gray-900 px-6 py-3 font-black text-gray-950 hover:bg-gray-50"
+            >
+              Create Free Account
+            </Link>
+          </div>
+        </section>
+      </main>
+
+      <MathLanguageFooter />
+    </div>
+  );
+}
 
   if (gameState.status === "intro") {
     return (

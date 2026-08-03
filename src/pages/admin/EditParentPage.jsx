@@ -1,36 +1,159 @@
 import { ArrowLeft } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 import ParentForm from "../../components/admin/parents/ParentForm";
 
 import {
-  getAdminParentById,
-  updateAdminParent,
-} from "../../data/adminParents";
+  fetchAdminParentById,
+  updateAdminParentProfile,
+} from "../../services/adminParentsService";
+
+import {
+  mapSupabaseParentToAdminParent,
+} from "../../utils/adminParentMapper";
 
 export default function EditParentPage() {
   const { parentId } = useParams();
   const navigate = useNavigate();
 
-  const parent = getAdminParentById(parentId);
+  const [parent, setParent] =
+    useState(null);
 
-  async function handleSave(formData) {
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const [loadError, setLoadError] =
+    useState("");
+
+  const [isSaving, setIsSaving] =
+    useState(false);
+
+useEffect(() => {
+  let isMounted = true;
+
+  async function loadParent() {
     try {
-      updateAdminParent(parentId, formData);
+      setIsLoading(true);
+      setLoadError("");
 
-      navigate(`/admin/parents/${parentId}`);
+      const data =
+        await fetchAdminParentById(
+          parentId,
+        );
+
+      if (!isMounted) return;
+
+      setParent(
+        data
+          ? mapSupabaseParentToAdminParent(
+              data,
+            )
+          : null,
+      );
     } catch (error) {
       console.error(
-        "Unable to update parent:",
+        "Unable to load parent:",
         error,
       );
 
-      alert(
-        "Unable to update parent. Please try again.",
-      );
+      if (isMounted) {
+        setLoadError(
+          "The parent account could not be loaded.",
+        );
+      }
+    } finally {
+      if (isMounted) {
+        setIsLoading(false);
+      }
     }
   }
+
+  loadParent();
+
+  return () => {
+    isMounted = false;
+  };
+}, [parentId]);
+
+  async function handleSave(formData) {
+  try {
+    setIsSaving(true);
+
+    await updateAdminParentProfile(
+      parentId,
+      {
+        full_name:
+          formData.name?.trim() ||
+          `${formData.firstName || ""} ${
+            formData.lastName || ""
+          }`.trim(),
+
+        phone:
+          formData.phone?.trim() || null,
+
+        communication_preference:
+          formData.communicationPreference
+            ?.trim()
+            .toLowerCase() || null,
+
+        account_status:
+          formData.status
+            ?.trim()
+            .toLowerCase() || "active",
+      },
+    );
+
+    navigate(
+      `/admin/parents/${parentId}`,
+    );
+  } catch (error) {
+    console.error(
+      "Unable to update parent:",
+      error,
+    );
+
+    alert(
+      error.message ||
+        "Unable to update parent. Please try again.",
+    );
+  } finally {
+    setIsSaving(false);
+  }
+}
+
+if (isLoading) {
+  return (
+    <AdminLayout>
+      <section className="py-16 text-center">
+        <p className="font-bold text-slate-600">
+          Loading parent information...
+        </p>
+      </section>
+    </AdminLayout>
+  );
+}
+
+if (loadError) {
+  return (
+    <AdminLayout>
+      <section className="py-16 text-center">
+        <h1 className="text-2xl font-black text-red-700">
+          Unable to load parent
+        </h1>
+
+        <p className="mt-3 text-red-600">
+          {loadError}
+        </p>
+      </section>
+    </AdminLayout>
+  );
+}
 
   if (!parent) {
     return (
@@ -94,11 +217,11 @@ export default function EditParentPage() {
             mode="edit"
             initialData={parent}
             onSubmit={handleSave}
-            onCancel={() =>
+             onCancel={() =>
               navigate(`/admin/parents/${parentId}`)
             }
+             isSubmitting={isSaving}
           />
-
         </div>
 
       </section>

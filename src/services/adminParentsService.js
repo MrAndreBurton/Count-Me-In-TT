@@ -55,6 +55,32 @@ export async function fetchAdminParentById(parentId) {
   return data;
 }
 
+export async function updateAdminParentProfile(
+  parentId,
+  updates,
+) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(updates)
+    .eq("id", parentId)
+    .select(`
+      id,
+      full_name,
+      phone,
+      communication_preference,
+      account_status,
+      created_at
+    `)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+
 
 
 

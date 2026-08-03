@@ -18,21 +18,27 @@ import {
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 
 import {
-  getAdminParents,
-} from "../../data/adminParents";
+  fetchAdminParents,
+} from "../../services/adminParentsService";
 
 import {
-  getAdminStudentById,
-  updateAdminStudent,
-} from "../../data/adminStudents";
+  fetchAdminStudentById,
+  updateAdminStudentProfile,
+} from "../../services/adminStudentsService";
+
+import {
+  mapSupabaseStudentToAdminStudent,
+} from "../../utils/adminStudentMapper";
 
 export default function EditStudentPage() {
   const { studentId } = useParams();
   const navigate = useNavigate();
-  
-  const parents = getAdminParents();
 
-  const student = getAdminStudentById(studentId);
+  const [student, setStudent] =
+    useState(null);
+
+  const [parents, setParents] =
+    useState([]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -54,26 +60,67 @@ export default function EditStudentPage() {
   ) || null;
 
   useEffect(() => {
-    if (!student) {
-      return;
-    }
+  async function loadEditData() {
+    try {
+      const [
+        studentData,
+        parentData,
+      ] = await Promise.all([
+        fetchAdminStudentById(studentId),
+        fetchAdminParents(),
+      ]);
 
-    setFormData({
-  name: student.name || "",
-  displayName: student.displayName || "",
-  learningCategory:
-    student.learningCategory || "Primary",
-  level: student.level || "",
-  school: student.school || "",
-  membership: student.membership || "Free",
-  membershipStatus:
-    student.membershipStatus || "Active",
-  status: student.status || "Active",
-  membershipExpiry:
-    student.membershipExpiry || "",
-  parentId: student.parentId || "",
-});
-  }, [studentId]);
+      if (!studentData) return;
+
+      const mappedStudent =
+        mapSupabaseStudentToAdminStudent(
+          studentData,
+        );
+
+      const mappedParents =
+        parentData.map((parent) => ({
+          id: parent.id,
+          name:
+            parent.full_name ||
+            "Unnamed parent",
+          email: "",
+          phone:
+            parent.phone ||
+            "Not provided",
+          relationship: "Parent",
+        }));
+
+      setStudent(mappedStudent);
+      setParents(mappedParents);
+
+      setFormData({
+        name: mappedStudent.name,
+        displayName:
+          mappedStudent.displayName,
+        learningCategory:
+          mappedStudent.learningCategory,
+        level: mappedStudent.level,
+        school: mappedStudent.school,
+        membership:
+          mappedStudent.membership,
+        membershipStatus:
+          mappedStudent.membershipStatus,
+        status: mappedStudent.status,
+        membershipExpiry:
+          mappedStudent.membershipExpiry,
+        parentId:
+          mappedStudent.parentId || "",
+      });
+    } catch (error) {
+      console.error(
+        "Unable to load edit data:",
+        error,
+      );
+    }
+  }
+
+  loadEditData();
+}, [studentId]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -88,43 +135,50 @@ export default function EditStudentPage() {
   async function handleSubmit(event) {
   event.preventDefault();
 
+  if (!student) return;
+
   try {
-    updateAdminStudent(student.id, {
-      ...student,
+    const {
+      firstName,
+      lastName,
+    } = splitFullName(formData.name);
 
-      name: formData.name,
-      displayName: formData.displayName,
-      learningCategory:
-        formData.learningCategory,
-      level: formData.level,
-      school: formData.school,
+    await updateAdminStudentProfile(
+      student.id,
+      {
+        account_id:
+          formData.parentId || null,
 
-      membership: formData.membership,
-      membershipStatus:
-        formData.membershipStatus,
-      status: formData.status,
-      membershipExpiry:
-        formData.membershipExpiry,
+        first_name: firstName,
 
-      parentId: selectedParent?.id || null,
+        last_name: lastName,
 
-      parent: selectedParent
-        ? {
-            name: selectedParent.name,
-            email: selectedParent.email,
-            phone: selectedParent.phone,
-            relationship:
-              selectedParent.relationship,
-          }
-        : {
-            name: "No parent linked",
-            email: "",
-            phone: "",
-            relationship: "",
-          },
-    });
+        public_display_name:
+          formData.displayName.trim(),
 
-    navigate(`/admin/students/${student.id}`);
+        school_type:
+          toDatabaseLearningCategory(
+            formData.learningCategory,
+          ),
+
+        current_level:
+          formData.level.trim() || null,
+
+        current_school:
+          formData.learningCategory ===
+          "No School"
+            ? "No School"
+            : formData.school.trim() ||
+              null,
+
+        profile_status:
+          formData.status.toLowerCase(),
+      },
+    );
+
+    navigate(
+      `/admin/students/${student.id}`,
+    );
   } catch (error) {
     console.error(
       "Unable to update student:",
@@ -132,7 +186,8 @@ export default function EditStudentPage() {
     );
 
     alert(
-      "Unable to update student. Please try again.",
+      error.message ||
+        "Unable to update student. Please try again.",
     );
   }
 }
@@ -496,6 +551,55 @@ function SelectField({
       </select>
     </label>
   );
+}
+
+function splitFullName(fullName = "") {
+  const nameParts = fullName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (nameParts.length === 0) {
+    return {
+      firstName: "",
+      lastName: "",
+    };
+  }
+
+  if (nameParts.length === 1) {
+    return {
+      firstName: nameParts[0],
+      lastName: "",
+    };
+  }
+
+  return {
+    firstName: nameParts[0],
+    lastName: nameParts
+      .slice(1)
+      .join(" "),
+  };
+}
+
+function toDatabaseLearningCategory(
+  category,
+) {
+  if (category === "Primary") {
+    return "primary";
+  }
+
+  if (category === "Secondary") {
+    return "secondary";
+  }
+
+  if (category === "No School") {
+    return "no_school";
+  }
+
+  return category
+    ?.trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
 }
 
 

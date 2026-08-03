@@ -1,8 +1,6 @@
 import {
   ArrowLeft,
-  CheckCircle2,
   Save,
-  UserPlus,
 } from "lucide-react";
 
 import {
@@ -11,18 +9,23 @@ import {
 } from "react-router-dom";
 
 import {
+  useEffect,
   useState,
 } from "react";
 
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 
 import {
-  getAdminParents,
-} from "../../data/adminParents";
+  fetchAdminParents,
+} from "../../services/adminParentsService";
 
 import {
   createAdminStudent,
-} from "../../data/adminStudents";
+} from "../../services/adminStudentsService";
+
+import {
+  mapSupabaseParentToAdminParent,
+} from "../../utils/adminParentMapper";
 
 const initialFormData = {
   name: "",
@@ -40,13 +43,63 @@ const initialFormData = {
 export default function AddStudentPage() {
   const navigate = useNavigate();
 
-  const parents = getAdminParents();
+  const [parents, setParents] =
+    useState([]);
+
+  const [isLoadingParents, setIsLoadingParents] =
+    useState(true);
+
+  const [parentLoadError, setParentLoadError] =
+    useState("");
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
 
   const [formData, setFormData] =
     useState(initialFormData);
 
-  const [createdStudent, setCreatedStudent] =
-    useState(null);
+  useEffect(() => {
+  let isMounted = true;
+
+  async function loadParents() {
+    try {
+      setIsLoadingParents(true);
+      setParentLoadError("");
+
+      const data =
+        await fetchAdminParents();
+
+      if (!isMounted) return;
+
+      const mappedParents = data.map(
+        mapSupabaseParentToAdminParent,
+      );
+
+      setParents(mappedParents);
+    } catch (error) {
+      console.error(
+        "Unable to load parents:",
+        error,
+      );
+
+      if (isMounted) {
+        setParentLoadError(
+          "Parent accounts could not be loaded.",
+        );
+      }
+    } finally {
+      if (isMounted) {
+        setIsLoadingParents(false);
+      }
+    }
+  }
+
+  loadParents();
+
+  return () => {
+    isMounted = false;
+  };
+}, []);
 
     const selectedParent =
     parents.find(
@@ -63,154 +116,72 @@ export default function AddStudentPage() {
     }));
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
+  async function handleSubmit(event) {
+  event.preventDefault();
 
-    const studentId = `student-${Date.now()}`;
+  try {
+    setIsSubmitting(true);
 
-    const newStudent = {
-      id: studentId,
-      name: formData.name.trim(),
-      displayName:
-        formData.displayName.trim(),
-      initials: getInitials(formData.name),
-      learningCategory:
-        formData.learningCategory,
-      level: formData.level.trim(),
-      school:
-        formData.school.trim() || "No School",
-      membership: formData.membership,
-      membershipStatus:
-        formData.membershipStatus,
-      status: formData.status,
-      membershipExpiry:
-        formData.membershipExpiry,
-       parentId: selectedParent?.id || null,
+    const {
+      firstName,
+      lastName,
+    } = splitFullName(formData.name);
 
-       parent: selectedParent
-         ? {
-            name: selectedParent.name,
-            email: selectedParent.email,
-            phone: selectedParent.phone,
-            relationship:
-              selectedParent.relationship,
-          }
-        : {
-            name: "No parent linked",
-            email: "",
-            phone: "",
-            relationship: "",
-          },
+    const createdStudent =
+      await createAdminStudent({
+        profileData: {
+          account_id:
+            formData.parentId || null,
 
-      gamesPlayed: 0,
-      lastActive: "Not active yet",
-      joinedDate: new Date().toLocaleDateString(
-        "en-TT",
-        {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
+          first_name: firstName,
+          last_name: lastName,
+
+          public_display_name:
+            formData.displayName.trim(),
+
+          school_type:
+            toDatabaseLearningCategory(
+              formData.learningCategory,
+            ),
+
+          current_level:
+            formData.level.trim() || null,
+
+          current_school:
+            formData.learningCategory ===
+            "No School"
+              ? "No School"
+              : formData.school.trim() ||
+                null,
+
+          profile_status:
+            formData.status
+              .trim()
+              .toLowerCase(),
+
+          profile_type: "child",
+
+          login_enabled: false,
         },
-      ),
+      });
 
-      progress: [],
-      activity: [],
-
-      recommendation: {
-        title: "Complete first learning activity",
-        description:
-          "Assign the student a suitable starter activity based on their learning category and current level.",
-      },
-    };
-
-  const createdStudent =
-  createAdminStudent(newStudent);
-
-navigate(
-  `/admin/students/${createdStudent.id}`,
-);
-
-  }
-
-  function resetForm() {
-    setFormData(initialFormData);
-    setCreatedStudent(null);
-  }
-
-  if (createdStudent) {
-    return (
-      <AdminLayout>
-        <section className="mx-auto max-w-3xl py-12">
-          <div className="rounded-[2rem] border border-emerald-200 bg-white p-8 text-center shadow-sm lg:p-12">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-              <CheckCircle2 size={40} />
-            </div>
-
-            <p className="mt-6 text-sm font-bold uppercase tracking-[0.18em] text-emerald-600">
-              Student created
-            </p>
-
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
-              {createdStudent.name}
-            </h1>
-
-            <p className="mt-3 text-slate-500">
-              The student record was created
-              locally for testing.
-            </p>
-
-            <div className="mx-auto mt-8 grid max-w-xl gap-4 rounded-3xl bg-slate-50 p-6 text-left sm:grid-cols-2">
-              <SummaryItem
-                label="Display name"
-                value={createdStudent.displayName}
-              />
-
-              <SummaryItem
-                label="Learning category"
-                value={
-                  createdStudent.learningCategory
-                }
-              />
-
-              <SummaryItem
-                label="Current level"
-                value={
-                  createdStudent.level ||
-                  "Not provided"
-                }
-              />
-
-              <SummaryItem
-                label="Membership"
-                value={createdStudent.membership}
-              />
-            </div>
-
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-              >
-                <UserPlus size={18} />
-                Add another student
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  navigate("/admin/students")
-                }
-                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-yellow-400 hover:text-slate-950"
-              >
-                Return to students
-              </button>
-            </div>
-          </div>
-        </section>
-      </AdminLayout>
+    navigate(
+      `/admin/students/${createdStudent.id}`,
     );
+  } catch (error) {
+    console.error(
+      "Unable to create student:",
+      error,
+    );
+
+    alert(
+      error.message ||
+        "Unable to create student. Please try again.",
+    );
+  } finally {
+    setIsSubmitting(false);
   }
+}
 
   return (
     <AdminLayout>
@@ -375,6 +346,19 @@ navigate(
   />
 
   <div className="mt-7">
+
+    {isLoadingParents && (
+      <p className="mb-4 text-sm font-bold text-slate-500">
+        Loading parent accounts...
+      </p>
+    )}
+
+    {parentLoadError && (
+      <p className="mb-4 text-sm font-bold text-red-600">
+        {parentLoadError}
+      </p>
+    )}
+
     <SelectField
       label="Linked parent"
       name="parentId"
@@ -413,8 +397,6 @@ navigate(
   </div>
 </section>
 
-
-
           <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-500">
               Fields marked as required must be
@@ -435,26 +417,25 @@ navigate(
 
               <button
                 type="submit"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-yellow-300"
+                disabled={
+                  isSubmitting ||
+                  isLoadingParents ||
+                  Boolean(parentLoadError)
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-yellow-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Save size={18} />
-                Create student
-              </button>
+               <Save size={18} />
+
+               {isSubmitting
+                 ? "Creating..."
+                 : "Create student"}
+             </button>
             </div>
           </div>
         </form>
       </section>
     </AdminLayout>
   );
-}
-
-function getInitials(name) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("");
 }
 
 function SectionHeading({
@@ -570,5 +551,56 @@ function SelectField({
     </label>
   );
 }
+
+function splitFullName(fullName = "") {
+  const nameParts = fullName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (nameParts.length === 0) {
+    return {
+      firstName: "",
+      lastName: "",
+    };
+  }
+
+  if (nameParts.length === 1) {
+    return {
+      firstName: nameParts[0],
+      lastName: "",
+    };
+  }
+
+  return {
+    firstName: nameParts[0],
+    lastName: nameParts
+      .slice(1)
+      .join(" "),
+  };
+}
+
+function toDatabaseLearningCategory(
+  category,
+) {
+  if (category === "Primary") {
+    return "primary";
+  }
+
+  if (category === "Secondary") {
+    return "secondary";
+  }
+
+  if (category === "No School") {
+    return "no_school";
+  }
+
+  return category
+    ?.trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+}
+
+
 
 

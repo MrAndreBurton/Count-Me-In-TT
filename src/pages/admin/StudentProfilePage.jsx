@@ -15,13 +15,25 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { Link, useParams } from "react-router-dom";
+import {
+  Link,
+  useParams,
+} from "react-router-dom";
+
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 
 import {
-  getAdminStudentById,
-} from "../../data/adminStudents";
+  fetchAdminStudentById,
+} from "../../services/adminStudentsService";
+
+import {
+  mapSupabaseStudentToAdminStudent,
+} from "../../utils/adminStudentMapper";
 
 function StatCard({
   icon,
@@ -55,7 +67,97 @@ function StatCard({
 export default function StudentProfilePage() {
   const { studentId } = useParams();
 
-  const student = getAdminStudentById(studentId);
+  const [student, setStudent] =
+    useState(null);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const [loadError, setLoadError] =
+    useState("");
+
+useEffect(() => {
+  let isMounted = true;
+
+  async function loadStudent() {
+    try {
+      setIsLoading(true);
+      setLoadError("");
+
+      const data =
+        await fetchAdminStudentById(
+          studentId,
+        );
+
+      if (!isMounted) return;
+
+      if (!data) {
+        setStudent(null);
+        return;
+      }
+
+      setStudent(
+  mapSupabaseStudentToAdminStudent(data),
+);
+    } catch (error) {
+      console.error(
+        "Unable to load student profile:",
+        error,
+      );
+
+      if (isMounted) {
+        setLoadError(
+          "The student profile could not be loaded.",
+        );
+      }
+    } finally {
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    }
+  }
+
+  loadStudent();
+
+  return () => {
+    isMounted = false;
+  };
+}, [studentId]);
+
+if (isLoading) {
+  return (
+    <AdminLayout>
+      <section className="py-16 text-center">
+        <p className="font-bold text-slate-600">
+          Loading student profile...
+        </p>
+      </section>
+    </AdminLayout>
+  );
+}
+
+if (loadError) {
+  return (
+    <AdminLayout>
+      <section className="py-16 text-center">
+        <h1 className="text-2xl font-black text-red-700">
+          Unable to load student
+        </h1>
+
+        <p className="mt-3 text-red-600">
+          {loadError}
+        </p>
+
+        <Link
+          to="/admin/students"
+          className="mt-6 inline-flex rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+        >
+          Return to students
+        </Link>
+      </section>
+    </AdminLayout>
+  );
+}
 
   if (!student) {
     return (
@@ -421,5 +523,6 @@ export default function StudentProfilePage() {
     </AdminLayout>
   );
 }
+
 
 

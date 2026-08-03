@@ -1,9 +1,23 @@
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import { mathLanguageTerms } from "../data/mathLanguageTerms";
 import GameHeader from "../components/layout/GameHeader";
 import MathLanguageBrand from "../components/mathLanguage/MathLanguageBrand";
 import MathLanguageFooter from "../components/mathLanguage/MathLanguageFooter";
 import ScrollToTopButton from "../components/mathLanguage/ScrollToTopButton";
+
+import {
+  getPlayableProfileMembership,
+} from "../lib/membership";
+
+import {
+  canAccessFullDictionary,
+  getMembershipPlanName,
+} from "../lib/membershipAccess";
 
 
 export default function MathLanguageDictionary() {
@@ -11,26 +25,92 @@ export default function MathLanguageDictionary() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [openTermId, setOpenTermId] = useState(null);
 
+  const [membershipState, setMembershipState] =
+  useState({
+    loading: true,
+    guest: false,
+    profile: null,
+    membership: null,
+    error: "",
+  });
 
-  const freeTerms = useMemo(() => {
-  return mathLanguageTerms
-    .filter((term) => term.accessLevel === "Free")
-    .sort((a, b) => a.term.localeCompare(b.term));
+useEffect(() => {
+  let isMounted = true;
+
+  async function loadMembershipAccess() {
+    try {
+      const outcome =
+        await getPlayableProfileMembership();
+
+      if (!isMounted) return;
+
+      setMembershipState({
+        loading: false,
+        guest: outcome.guest,
+        profile: outcome.profile,
+        membership: outcome.membership,
+        error: "",
+      });
+    } catch (error) {
+      console.error(
+        "Math Language dictionary membership error:",
+        error,
+      );
+
+      if (!isMounted) return;
+
+      setMembershipState({
+        loading: false,
+        guest: false,
+        profile: null,
+        membership: null,
+        error:
+          error?.message ||
+          "Your dictionary access could not be loaded.",
+      });
+    }
+  }
+
+  loadMembershipAccess();
+
+  return () => {
+    isMounted = false;
+  };
 }, []);
 
+  const membership =
+  membershipState.membership;
+
+const hasFullDictionaryAccess =
+  canAccessFullDictionary(membership);
+
+const availableTerms = useMemo(() => {
+  const terms = hasFullDictionaryAccess
+    ? mathLanguageTerms
+    : mathLanguageTerms.filter(
+        (term) =>
+          String(term.accessLevel || "")
+            .trim()
+            .toLowerCase() === "free",
+      );
+
+  return [...terms].sort((a, b) =>
+    a.term.localeCompare(b.term),
+  );
+}, [hasFullDictionaryAccess]);
 
   const categories = useMemo(() => {
     const uniqueCategories = Array.from(
-      new Set(freeTerms.map((term) => term.category).filter(Boolean))
+      new Set(availableTerms.map((term) => term.category).filter(Boolean))
     );
 
     return ["All", ...uniqueCategories];
-  }, [freeTerms]);
+  }, [availableTerms]);
 
   const filteredTerms = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
 
-    return freeTerms.filter((term) => {
+    return availableTerms.filter((term) => {
       const matchesCategory =
         selectedCategory === "All" || term.category === selectedCategory;
 
@@ -49,7 +129,49 @@ export default function MathLanguageDictionary() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [freeTerms, searchQuery, selectedCategory]);
+  }, [availableTerms, searchQuery, selectedCategory]);
+
+if (membershipState.loading) {
+  return (
+    <div className="min-h-screen bg-white text-gray-950">
+      <GameHeader />
+
+      <main className="px-4 py-16">
+        <section className="mx-auto max-w-xl rounded-3xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-yellow-400" />
+
+          <p className="mt-5 font-black text-gray-700">
+            Checking dictionary access...
+          </p>
+        </section>
+      </main>
+
+      <MathLanguageFooter />
+    </div>
+  );
+}
+
+if (membershipState.error) {
+  return (
+    <div className="min-h-screen bg-white text-gray-950">
+      <GameHeader />
+
+      <main className="px-4 py-16">
+        <section className="mx-auto max-w-xl rounded-3xl border border-red-200 bg-red-50 p-8 text-center">
+          <h1 className="text-2xl font-black text-red-900">
+            Unable to load dictionary access
+          </h1>
+
+          <p className="mt-3 text-red-700">
+            {membershipState.error}
+          </p>
+        </section>
+      </main>
+
+      <MathLanguageFooter />
+    </div>
+  );
+}
 
   return (
   <div className="min-h-screen bg-white text-gray-950">
@@ -61,13 +183,25 @@ export default function MathLanguageDictionary() {
            <MathLanguageBrand />
 
           <h1 className="mb-3 text-3xl font-black text-gray-900">
-            Top 50 SEA Math Words
+            {hasFullDictionaryAccess
+              ? "Full 200-Word SEA Math Dictionary"
+              : "Top 50 SEA Math Words"}
           </h1>
 
           <p className="max-w-2xl text-gray-700">
             Learn the words that help you understand SEA math questions. Each
             word explains what the question may be asking you to do.
           </p>
+
+          <p className="mt-3 text-sm font-bold text-blue-700">
+            {membershipState.loading
+              ? "Checking access..."
+              : membershipState.guest
+              ? "Guest access"
+              : getMembershipPlanName(
+                  membership,
+                )}
+         </p>
 
           <div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto]">
             <input
@@ -82,7 +216,7 @@ export default function MathLanguageDictionary() {
               href="/math-language/play"
               className="rounded-xl bg-yellow-400 px-5 py-3 text-center font-bold text-gray-950 hover:bg-yellow-300"
             >
-              Start Free Challenge
+              Start Challenge
             </a>
           </div>
 
@@ -228,7 +362,8 @@ export default function MathLanguageDictionary() {
   </div>
 )}
 
-        <div className="mt-8 rounded-2xl border border-yellow-200 bg-yellow-50 p-6">
+       {!hasFullDictionaryAccess && (
+         <div className="mt-8 rounded-2xl border border-yellow-200 bg-yellow-50 p-6">
           <h2 className="mb-2 text-2xl font-black text-gray-900">
             Unlock the Full 200-Word SEA Math Language Game
           </h2>
@@ -239,13 +374,17 @@ export default function MathLanguageDictionary() {
             practice, category mastery, and boss levels.
           </p>
 
-          <button
-            disabled
-            className="rounded-xl bg-gray-200 px-5 py-3 font-bold text-gray-600"
-          >
-            Unlock Full Version — Coming Soon
-          </button>
-        </div>
+          <a
+  href="/membership"
+  className="inline-flex rounded-xl bg-yellow-400 px-5 py-3 font-bold text-gray-950 hover:bg-yellow-300"
+>
+  View Membership Options
+</a>
+
+</div>
+)}
+
+
       </section>
     </main>
 

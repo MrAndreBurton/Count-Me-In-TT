@@ -22,7 +22,7 @@ export default function AdminLayout({ children }) {
       />
 
       <div className="flex min-h-screen flex-col lg:pl-72">
-        <AdminTopbar onOpenSidebar={openSidebar} />
+        <AdminTopbar onMenuClick={openSidebar} />
 
         <main className="flex-1">
           <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">

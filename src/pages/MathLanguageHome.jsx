@@ -1,7 +1,24 @@
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import { Link } from "react-router-dom";
+
 import MathLanguageBrand from "../components/mathLanguage/MathLanguageBrand";
 import MathLanguageFooter from "../components/mathLanguage/MathLanguageFooter";
 import SiteHeader from "../components/layout/SiteHeader";
 import ScrollToTopButton from "../components/mathLanguage/ScrollToTopButton";
+
+import {
+  getPlayableProfileMembership,
+} from "../lib/membership";
+
+import {
+  canAccessFullDictionary,
+  canPlayMathLanguageLevel,
+  getMembershipPlanName,
+} from "../lib/membershipAccess";
 
 const skills = [
   {
@@ -47,6 +64,76 @@ const skills = [
 ];
 
 export default function MathLanguageHome() {
+
+  const [membershipState, setMembershipState] =
+  useState({
+    loading: true,
+    guest: false,
+    profile: null,
+    membership: null,
+    error: "",
+  });
+
+useEffect(() => {
+  let isMounted = true;
+
+  async function loadMembershipAccess() {
+    try {
+      const outcome =
+        await getPlayableProfileMembership();
+
+      if (!isMounted) return;
+
+      setMembershipState({
+        loading: false,
+        guest: outcome.guest,
+        profile: outcome.profile,
+        membership: outcome.membership,
+        error: "",
+      });
+    } catch (error) {
+      console.error(
+        "Math Language home membership error:",
+        error,
+      );
+
+      if (!isMounted) return;
+
+      setMembershipState({
+        loading: false,
+        guest: false,
+        profile: null,
+        membership: null,
+        error:
+          error?.message ||
+          "Your membership access could not be loaded.",
+      });
+    }
+  }
+
+  loadMembershipAccess();
+
+  return () => {
+    isMounted = false;
+  };
+}, []);
+
+const membership =
+  membershipState.membership;
+
+const hasFullAccess =
+  canAccessFullDictionary(
+    membership,
+  );
+
+const membershipPlanName =
+  membershipState.guest
+    ? "Guest Access"
+    : getMembershipPlanName(
+        membership,
+      );
+
+
   return (
   <div className="min-h-screen bg-white text-gray-950">
     <SiteHeader />
@@ -66,38 +153,53 @@ export default function MathLanguageHome() {
                   Learn the words. Decode the questions. Break the math barrier.
                 </p>
 
-                <p className="mb-6 max-w-2xl text-lg text-gray-700">
-                  The CountMeInTT Math Language Challenge helps SEA students
-                  understand the words, phrases, and instructions used in math
-                  questions. Start with the Top 50 must-know SEA math words and
-                  practise in a fun, simple challenge.
-                </p>
+
+<p className="mb-6 font-bold text-blue-700">
+  {membershipState.loading
+    ? "Checking your access..."
+    : hasFullAccess
+      ? "Your membership includes the full 200-word Math Language experience."
+      : "Start with the Top 50 must-know SEA math words."}
+</p>
+
+
 
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <a
-                    href="/math-language/play"
-                    className="rounded-xl bg-yellow-400 px-6 py-4 text-center text-lg font-black text-gray-950 hover:bg-yellow-300"
-                  >
-                    Start Free Challenge
-                  </a>
+  <Link
+    to="/math-language/play"
+    className="rounded-xl bg-yellow-400 px-6 py-4 text-center text-lg font-black text-gray-950 hover:bg-yellow-300"
+  >
+    {hasFullAccess
+      ? "Start Math Language Challenge"
+      : "Start Free Challenge"}
+  </Link>
 
-                  <a
-                    href="/math-language/dictionary"
-                    className="rounded-xl border border-gray-300 px-6 py-4 text-center text-lg font-bold text-gray-900 hover:bg-gray-50"
-                  >
-                    View Dictionary
-                  </a>
-                </div>
+  <Link
+    to="/math-language/dictionary"
+    className="rounded-xl border border-gray-300 px-6 py-4 text-center text-lg font-bold text-gray-900 hover:bg-gray-50"
+  >
+    View Dictionary
+  </Link>
+</div>
+
+
               </div>
 
               <div className="rounded-2xl bg-yellow-50 p-6">
                 <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-700">
-                  Free MVP
-                </p>
+  {membershipState.loading
+    ? "Checking Access"
+    : membershipPlanName}
+</p>
 
-                <h2 className="mb-3 text-2xl font-black text-gray-900">
-                  Top 50 SEA Math Words
-                </h2>
+<h2 className="mb-3 text-2xl font-black text-gray-900">
+  {hasFullAccess
+    ? "Full 200-Word Access"
+    : "Top 50 SEA Math Words"}
+</h2>
+
+
+
 
                 <p className="mb-5 text-gray-700">
                   Practise the words that help students understand what SEA math
@@ -106,11 +208,16 @@ export default function MathLanguageHome() {
 
                 <div className="space-y-3">
                   <div className="rounded-xl bg-white p-4 shadow-sm">
-                    <p className="font-bold text-gray-900">10-question round</p>
-                    <p className="text-sm text-gray-600">
-                      Short practice that feels manageable.
-                    </p>
-                  </div>
+  <p className="font-bold text-gray-900">
+    {hasFullAccess
+      ? "10, 25 and 40-word rounds"
+      : "10 and 25-word rounds"}
+  </p>
+
+  <p className="text-sm text-gray-600">
+    Choose a challenge level that matches your readiness.
+  </p>
+</div>
 
                   <div className="rounded-xl bg-white p-4 shadow-sm">
                     <p className="font-bold text-gray-900">Instant feedback</p>
@@ -182,67 +289,90 @@ export default function MathLanguageHome() {
           </section>
 
           <section className="grid gap-5 lg:grid-cols-2">
-            <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-600">
-                Free Version
-              </p>
+  <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-600">
+      Free Access
+    </p>
 
-              <h2 className="mb-3 text-2xl font-black text-gray-900">
-                Start with the Top 50
-              </h2>
+    <h2 className="mb-3 text-2xl font-black text-gray-900">
+      Start with the Top 50
+    </h2>
 
-              <p className="mb-5 text-gray-700">
-                The free version gives students a focused starting point with
-                the most important SEA math language words.
-              </p>
+    <p className="mb-5 text-gray-700">
+      Free membership gives students a focused
+      starting point with the most important SEA
+      math-language words.
+    </p>
 
-              <ul className="mb-6 space-y-2 text-gray-700">
-                <li>✓ Top 50 SEA math words</li>
-                <li>✓ Dictionary cards</li>
-                <li>✓ 10-question challenge</li>
-                <li>✓ Instant feedback</li>
-                <li>✓ Basic score and review</li>
-              </ul>
+    <ul className="mb-6 space-y-2 text-gray-700">
+      <li>✓ Top 50 SEA math words</li>
+      <li>✓ Dictionary cards</li>
+      <li>✓ 10-word challenge</li>
+      <li>✓ 25-word challenge</li>
+      <li>✓ Instant feedback</li>
+      <li>✓ Basic score and review</li>
+    </ul>
 
-              <a
-                href="/math-language/play"
-                className="inline-flex rounded-xl bg-yellow-400 px-5 py-3 font-black text-gray-950 hover:bg-yellow-300"
-              >
-                Start Free Challenge
-              </a>
-            </article>
+    <Link
+      to="/math-language/play"
+      className="inline-flex rounded-xl bg-yellow-400 px-5 py-3 font-black text-gray-950 hover:bg-yellow-300"
+    >
+      Start Free Challenge
+    </Link>
+  </article>
 
-            <article className="rounded-2xl border border-yellow-200 bg-yellow-50 p-6">
-              <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-700">
-                Coming Soon
-              </p>
+  <article className="rounded-2xl border border-yellow-200 bg-yellow-50 p-6">
+    <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-700">
+      {hasFullAccess
+        ? "Your Current Access"
+        : "Term and Annual Membership"}
+    </p>
 
-              <h2 className="mb-3 text-2xl font-black text-gray-900">
-                Full 200-Word Math Language Game
-              </h2>
+    <h2 className="mb-3 text-2xl font-black text-gray-900">
+      Full 200-Word Math Language Experience
+    </h2>
 
-              <p className="mb-5 text-gray-700">
-                The full version will unlock deeper practice, trap words, SEA
-                question decoding, category mastery, and boss levels.
-              </p>
+    <p className="mb-5 text-gray-700">
+      Full membership unlocks the complete
+      dictionary, larger rounds and access to
+      every Math Language term.
+    </p>
 
-              <ul className="mb-6 space-y-2 text-gray-700">
-                <li>✓ All 200 SEA math words</li>
-                <li>✓ Trap word challenges</li>
-                <li>✓ SEA question decoder practice</li>
-                <li>✓ Category mastery</li>
-                <li>✓ Boss levels</li>
-              </ul>
+    <ul className="mb-6 space-y-2 text-gray-700">
+      <li>✓ All 200 SEA math words</li>
+      <li>✓ 10-word challenge</li>
+      <li>✓ 25-word challenge</li>
+      <li>✓ 40-word mastery round</li>
+      <li>✓ Full dictionary access</li>
+      <li>✓ Complete word bank</li>
+    </ul>
 
-              <button
-                type="button"
-                disabled
-                className="rounded-xl bg-gray-200 px-5 py-3 font-black text-gray-600"
-              >
-                Unlock Full Version — Coming Soon
-              </button>
-            </article>
-          </section>
+    {hasFullAccess ? (
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link
+          to="/math-language/play"
+          className="inline-flex justify-center rounded-xl bg-yellow-400 px-5 py-3 font-black text-gray-950 hover:bg-yellow-300"
+        >
+          Start Full Challenge
+        </Link>
+
+        <Link
+          to="/math-language/dictionary"
+          className="inline-flex justify-center rounded-xl border border-yellow-400 bg-white px-5 py-3 font-black text-gray-900 hover:bg-yellow-100"
+        >
+          View All 200 Words
+        </Link>
+      </div>
+    ) : (
+      <Link
+        to="/membership"
+        className="inline-flex rounded-xl bg-slate-950 px-5 py-3 font-black text-white hover:bg-yellow-400 hover:text-slate-950"
+      >
+        View Membership Options
+      </Link>
+    )}
+  </article>
+</section>
         </section>
       </main>
 

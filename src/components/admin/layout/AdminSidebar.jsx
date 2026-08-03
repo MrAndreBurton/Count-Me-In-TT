@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  CreditCard,
   Gamepad2,
   GraduationCap,
   Home,
@@ -26,6 +27,11 @@ const navigation = [
     label: "Parents",
     to: "/admin/parents",
     icon: UsersRound,
+  },
+  {
+    label: "Memberships",
+    to: "/admin/memberships",
+    icon: CreditCard,
   },
   {
     label: "Schools",
@@ -70,18 +76,20 @@ export default function AdminSidebar({
       )}
 
       <aside
-        className={`
-          fixed inset-y-0 left-0 z-50 w-72
-          border-r border-slate-200 bg-white
-          transition-transform duration-200
-          lg:translate-x-0
-          ${
-            isOpen
-              ? "translate-x-0"
-              : "-translate-x-full"
-          }
-        `}
-      >
+  className={`
+    fixed inset-y-0 left-0 z-50 w-72
+    overflow-y-auto
+    overscroll-contain
+    border-r border-slate-200 bg-white
+    transition-transform duration-200
+    lg:translate-x-0
+    ${
+      isOpen
+        ? "translate-x-0"
+        : "-translate-x-full"
+    }
+  `}
+>
         <div className="flex h-full flex-col p-6">
           <div className="flex items-center justify-between">
             <div>

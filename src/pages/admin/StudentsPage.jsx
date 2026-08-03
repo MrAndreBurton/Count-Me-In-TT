@@ -19,6 +19,10 @@ import {
   fetchAdminStudents,
 } from "../../services/adminStudentsService";
 
+import {
+  mapSupabaseStudentToAdminStudent,
+} from "../../utils/adminStudentMapper";
+
 function getInitials(name = "") {
   return name
     .trim()
@@ -122,110 +126,13 @@ useEffect(() => {
 
       if (!isMounted) return;
 
-      const mappedStudents = data.map((student) => {
-  const fullName = [
-    student.first_name,
-    student.last_name,
-  ]
-    .filter(Boolean)
-    .join(" ");
+      const mappedStudents = data.map(
+       mapSupabaseStudentToAdminStudent,
+      );
 
-  const currentMembership =
-    student.student_memberships?.find(
-      (membership) =>
-        membership.is_current,
-    ) ||
-    student.student_memberships?.[0] ||
-    null;
+       setStudents(mappedStudents);
 
-  return {
-    id: student.id,
-    parentId: student.account_id,
 
-    name: fullName || "Unnamed student",
-    displayName:
-      student.public_display_name ||
-      fullName ||
-      "Unnamed student",
-
-    initials: getInitials(fullName),
-
-    learningCategory:
-      formatLearningCategory(
-        student.school_type,
-      ),
-
-    level:
-      student.current_level ||
-      "Level not provided",
-
-    school:
-      student.current_school ||
-      "No school selected",
-
-    membership:
-      currentMembership?.membership_plans
-        ?.name || "Free",
-
-    membershipStatus:
-      formatStatus(
-        currentMembership?.status,
-        "Inactive",
-      ),
-
-    membershipExpiry:
-      formatDate(
-        currentMembership?.expires_at,
-        "Not applicable",
-      ),
-
-    status: formatStatus(
-      student.profile_status,
-      "Pending",
-    ),
-
-    joinedDate: formatDate(
-      student.created_at,
-      "Not available",
-    ),
-
-    gamesPlayed: 0,
-    streak: 0,
-    badges: 0,
-    accuracy: 0,
-    lastActive: "Not available",
-
-    parent: student.profiles
-      ? {
-          id: student.profiles.id,
-          name:
-            student.profiles.full_name ||
-            "Parent account",
-          phone:
-            student.profiles.phone ||
-            "Not provided",
-          relationship: "Parent",
-          email: "",
-        }
-      : {
-          name: "No parent linked",
-          phone: "",
-          relationship: "",
-          email: "",
-        },
-
-    progress: [],
-    activity: [],
-
-    recommendation: {
-      title: "Complete first learning activity",
-      description:
-        "Assign the student a suitable starter activity based on their current level.",
-    },
-  };
-});
-
-setStudents(mappedStudents);
     } catch (error) {
       console.error(
         "Unable to load students:",
