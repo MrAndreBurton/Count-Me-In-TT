@@ -606,9 +606,23 @@ export default function Dashboard() {
 
   // 3. Student badges
   supabase
-    .from("student_badges")
-    .select("*")
-    .in("student_id", studentIds),
+  .from("student_badges")
+  .select(
+    `
+      id,
+      student_id,
+      badge_id,
+      earned_at,
+      badge_definitions (
+        id,
+        badge_key,
+        name,
+        description,
+        icon
+      )
+    `
+  )
+  .in("student_id", studentIds),
 
   // 4. Current memberships
   supabase

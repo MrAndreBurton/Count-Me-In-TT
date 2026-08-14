@@ -8,7 +8,6 @@ import {
   getStudentLoginAccount,
   normalizeStudentUsername,
   resetStudentPassword,
-  updateStudentLoginStatus,
   validateStudentUsername,
   validatePassword,
 } from "../lib/studentLogin";
@@ -134,23 +133,6 @@ export default function StudentLoginSetup() {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [resetPasswordError, setResetPasswordError] = useState("");
   const [resetPasswordSuccess, setResetPasswordSuccess] = useState("");
-
-const [
-  isUpdatingLoginStatus,
-  setIsUpdatingLoginStatus,
-] = useState(false);
-
-const [
-  loginStatusMessage,
-  setLoginStatusMessage,
-] = useState("");
-
-const [
-  loginStatusError,
-  setLoginStatusError,
-] = useState("");
-
-
 
   useEffect(() => {
     let active = true;
@@ -412,75 +394,6 @@ const [
     }
   }
 
-async function handleLoginStatusChange() {
-  if (
-    isUpdatingLoginStatus ||
-    !existingLogin
-  ) {
-    return;
-  }
-
-  const currentStatus =
-    existingLogin.login_status ||
-    existingLogin.loginStatus;
-
-  const isCurrentlyEnabled =
-    currentStatus !== "disabled";
-
-  const nextEnabled = !isCurrentlyEnabled;
-
-  const confirmationMessage =
-    nextEnabled
-      ? "Re-enable this student login?"
-      : "Disable this student login? The student will not be able to sign in until it is re-enabled.";
-
-  const confirmed =
-    window.confirm(confirmationMessage);
-
-  if (!confirmed) return;
-
-  setIsUpdatingLoginStatus(true);
-  setLoginStatusError("");
-  setLoginStatusMessage("");
-
-  try {
-    const outcome =
-      await updateStudentLoginStatus({
-        studentId,
-        enabled: nextEnabled,
-      });
-
-    setExistingLogin((current) => ({
-      ...current,
-      ...outcome.login,
-
-      login_status:
-        outcome.login?.login_status ||
-        outcome.login?.loginStatus,
-
-      loginStatus:
-        outcome.login?.loginStatus ||
-        outcome.login?.login_status,
-    }));
-
-    setLoginStatusMessage(
-      outcome.message
-    );
-  } catch (error) {
-    console.error(
-      "Student login status update error:",
-      error
-    );
-
-    setLoginStatusError(
-      error?.message ||
-        "The student login status could not be updated."
-    );
-  } finally {
-    setIsUpdatingLoginStatus(false);
-  }
-}
-
   if (isLoading) return <LoadingPage />;
 
   if (loadError || !student) {
@@ -676,59 +589,6 @@ async function handleLoginStatusChange() {
                       this username and the password you created.
                     </p>
                   </div>
-                 
-<div className="mt-7 border-t border-gray-200 pt-7">
-  <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-    Login Access
-  </p>
-
-  <h3 className="mt-2 text-2xl font-black text-gray-950">
-    Manage student access.
-  </h3>
-
-  <p className="mt-2 text-sm leading-6 text-gray-600">
-    Disable the login temporarily or re-enable it when the student
-    should regain access.
-  </p>
-
-  {loginStatusMessage && (
-    <div className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 font-bold text-green-800">
-      ✅ {loginStatusMessage}
-    </div>
-  )}
-
-  {loginStatusError && (
-    <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 font-bold text-red-800">
-      ⚠️ {loginStatusError}
-    </div>
-  )}
-
-  <button
-    type="button"
-    onClick={handleLoginStatusChange}
-    disabled={isUpdatingLoginStatus}
-    className={[
-      "mt-5 w-full rounded-xl px-5 py-3 font-black text-white shadow transition",
-      isUpdatingLoginStatus
-        ? "cursor-not-allowed bg-gray-400"
-        : (
-            existingLogin.login_status ||
-            existingLogin.loginStatus
-          ) === "disabled"
-          ? "bg-green-600 hover:bg-green-700"
-          : "bg-red-600 hover:bg-red-700",
-    ].join(" ")}
-  >
-    {isUpdatingLoginStatus
-      ? "Updating Login…"
-      : (
-          existingLogin.login_status ||
-          existingLogin.loginStatus
-        ) === "disabled"
-        ? "Re-enable Student Login"
-        : "Disable Student Login"}
-  </button>
-</div>
 
                   <div className="mt-7 border-t border-gray-200 pt-7">
                     <p className="text-sm font-black uppercase tracking-wider text-purple-700">

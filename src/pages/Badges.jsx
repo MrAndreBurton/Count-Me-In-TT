@@ -255,27 +255,57 @@ export default function Badges() {
         }
 
         const {
-          data: studentRow,
-          error: studentError,
-        } = await supabase
-          .from("student_profiles")
-          .select(
-            `
-              id,
-              account_id,
-              first_name,
-              last_name,
-              public_display_name,
-              current_school,
-              current_level,
-              academic_year,
-              profile_status
-            `
-          )
-          .eq("id", studentId)
-          .eq("account_id", user.id)
-          .eq("profile_status", "active")
-          .maybeSingle();
+  data: studentLink,
+  error: studentLinkError,
+} = await supabase
+  .from("account_student_links")
+  .select(
+    `
+      id,
+      account_id,
+      student_id,
+      relationship_role,
+      can_view
+    `
+  )
+  .eq("account_id", user.id)
+  .eq("student_id", studentId)
+  .eq("can_view", true)
+  .maybeSingle();
+
+if (studentLinkError) {
+  throw studentLinkError;
+}
+
+if (!studentLink) {
+  throw new Error(
+    "You do not have permission to view badges for this student."
+  );
+}
+
+        const {
+  data: studentRow,
+  error: studentError,
+} = await supabase
+  .from("student_profiles")
+  .select(
+    `
+      id,
+      account_id,
+      first_name,
+      last_name,
+      public_display_name,
+      current_school,
+      current_level,
+      academic_year,
+      profile_status
+    `
+  )
+  .eq("id", studentId)
+  .eq("profile_status", "active")
+  .maybeSingle();
+
+
 
         if (studentError) {
           throw studentError;
@@ -313,8 +343,8 @@ export default function Badges() {
                 is_active
               `
             )
-            .eq("category", "multiplication")
             .eq("is_active", true)
+            .order("category")
             .order("sort_order", {
               ascending: true,
             }),
@@ -342,7 +372,6 @@ export default function Badges() {
               `
             )
             .eq("student_id", studentId)
-            .eq("account_id", user.id)
             .order("earned_at", {
               ascending: false,
             }),
