@@ -261,6 +261,9 @@ export default function CoreGame({
   const [celebratedMap, setCelebratedMap] =
     useState({});
 
+  const [focusedCell, setFocusedCell] =
+    useState(null);
+
   const [rowSwept, setRowSwept] = useState(
     Array(rows).fill(false)
   );
@@ -462,6 +465,7 @@ if (!category) {
 
   useEffect(() => {
     setGrid(generateGrid(rows, cols));
+    setFocusedCell(null);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -657,6 +661,7 @@ if (!category) {
     setCompleted(false);
     setElapsed(0);
     setShowForm(false);
+    setFocusedCell(null);
 
     setProfileSaveStatus("idle");
     setProfileSaveMessage("");
@@ -1191,6 +1196,56 @@ if (!category) {
           z-index: 1;
         }
 
+        .cell-wrap {
+  position: relative;
+}
+
+.cell-wrap input {
+  position: relative;
+  z-index: 1;
+}
+
+.cell-wrap input::placeholder {
+  color: transparent;
+  opacity: 0;
+}
+
+/* Horizontal prompt on tablets and desktop */
+.cell-wrap input:focus::placeholder {
+  color: rgba(107, 114, 128, 0.65);
+  opacity: 1;
+  font-size: clamp(7px, 1.3vw, 12px);
+  font-weight: 500;
+}
+
+/* Hidden on tablets and desktop */
+.mobile-cell-prompt {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  /* Hide the horizontal placeholder on mobile */
+  .cell-wrap input:focus::placeholder {
+    color: transparent;
+    opacity: 0;
+  }
+
+  /* Show the vertical prompt on mobile */
+  .mobile-cell-prompt {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(107, 114, 128, 0.72);
+    font-size: 8px;
+    font-weight: 600;
+    line-height: 0.8;
+    pointer-events: none;
+  }
+}
         .row-header,
         .col-header {
           position: relative;
@@ -1492,6 +1547,15 @@ if (!category) {
                                 inputMode="numeric"
                                 pattern="[0-9]*"
                                 value={cell.value}
+                                placeholder={`${rowIndex + 1}×${columnIndex + 1}`}
+                                aria-label={`${rowIndex + 1} times ${columnIndex + 1}`}
+                                onFocus={() => setFocusedCell(cellKey)}
+                                onBlur={() =>
+                                  setFocusedCell((current) =>
+                                     current === cellKey ? null : current
+                                 )
+                               }
+
                                 onChange={(
                                   event
                                 ) => {
@@ -1727,6 +1791,18 @@ if (!category) {
                                     : "",
                                 ].join(" ")}
                               />
+{focusedCell === cellKey &&
+  cell.value === "" && (
+    <span
+      className="mobile-cell-prompt"
+      aria-hidden="true"
+    >
+      <span>{rowIndex + 1}</span>
+      <span>×</span>
+      <span>{columnIndex + 1}</span>
+    </span>
+  )}
+
                             </div>
                           );
                         }

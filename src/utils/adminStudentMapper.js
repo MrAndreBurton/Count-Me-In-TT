@@ -2,7 +2,9 @@ import {
   getCurrentMembership,
 } from "./accessControl";
 
-export function mapSupabaseStudentToAdminStudent(data) {
+export function mapSupabaseStudentToAdminStudent(
+  data,
+) {
   const fullName = [
     data.first_name,
     data.last_name,
@@ -11,23 +13,88 @@ export function mapSupabaseStudentToAdminStudent(data) {
     .join(" ");
 
   const currentMembership =
-  getCurrentMembership(
-    data.student_memberships,
-  );
+    getCurrentMembership(
+      data.student_memberships,
+    );
+
+  const results =
+    Array.isArray(data.game_results)
+      ? data.game_results
+      : [];
+
+  const gamesPlayed = results.length;
+
+  const validAccuracyResults =
+    results.filter(
+      (result) =>
+        result.accuracy_percent !== null &&
+        result.accuracy_percent !==
+          undefined &&
+        Number.isFinite(
+          Number(
+            result.accuracy_percent,
+          ),
+        ),
+    );
+
+  const accuracy =
+    validAccuracyResults.length > 0
+      ? Math.round(
+          validAccuracyResults.reduce(
+            (total, result) =>
+              total +
+              Number(
+                result.accuracy_percent,
+              ),
+            0,
+          ) /
+            validAccuracyResults.length,
+        )
+      : 0;
+
+  const activity = results
+    .slice(0, 10)
+    .map((result) => ({
+      id: result.id,
+
+      title:
+        result.mode_label ||
+        formatGameType(
+          result.game_type,
+        ),
+
+      detail:
+        buildActivityDetail(result),
+
+      date: formatDate(
+        result.played_at,
+        "Date unavailable",
+      ),
+
+      gameType:
+        result.game_type,
+
+      isPersonalBest:
+        Boolean(
+          result.is_personal_best,
+        ),
+    }));
 
   return {
     id: data.id,
     parentId: data.account_id,
 
     name:
-      fullName || "Unnamed student",
+      fullName ||
+      "Unnamed student",
 
     displayName:
       data.public_display_name ||
       fullName ||
       "Unnamed student",
 
-    initials: getInitials(fullName),
+    initials:
+      getInitials(fullName),
 
     learningCategory:
       formatLearningCategory(
@@ -59,54 +126,164 @@ export function mapSupabaseStudentToAdminStudent(data) {
         "Not applicable",
       ),
 
-    status: formatStatus(
-      data.profile_status,
-      "Pending",
-    ),
+    status:
+      formatStatus(
+        data.profile_status,
+        "Pending",
+      ),
 
-    joinedDate: formatDate(
-      data.created_at,
-      "Not available",
-    ),
+    joinedDate:
+      formatDate(
+        data.created_at,
+        "Not available",
+      ),
 
-    parent: data.profiles
+    account: data.profiles
       ? {
-          id: data.profiles.id,
+          id:
+            data.profiles.id,
+
           name:
             data.profiles.full_name ||
-            "Parent account",
+            "Account holder",
+
           email: "",
+
           phone:
             data.profiles.phone ||
             "Not provided",
-          relationship: "Parent",
         }
       : {
           id: null,
-          name: "No parent linked",
+          name:
+            "No linked account",
           email: "",
           phone: "",
-          relationship: "",
         },
 
-    gamesPlayed: 0,
-    streak: 0,
-    badges: 0,
-    accuracy: 0,
+    gamesPlayed,
 
-    progress: [],
-    activity: [],
+    accuracy,
 
-    recommendation: {
-      title:
-        "Complete first learning activity",
-      description:
-        "Assign the student a suitable starter activity based on their current level.",
-    },
+    badges:
+      Number(
+        data.badge_count || 0,
+      ),
+
+    activity,
   };
 }
 
-function getInitials(name = "") {
+function buildActivityDetail(
+  result,
+) {
+  if (
+    result.game_type ===
+    "multiplication"
+  ) {
+    const seconds =
+      result.duration_ms !== null &&
+      result.duration_ms !==
+        undefined
+        ? (
+            Number(
+              result.duration_ms,
+            ) / 1000
+          ).toFixed(2)
+        : null;
+
+    const accuracy =
+      result.accuracy_percent !==
+        null &&
+      result.accuracy_percent !==
+        undefined
+        ? `${Math.round(
+            Number(
+              result.accuracy_percent,
+            ),
+          )}% accuracy`
+        : null;
+
+    const correct =
+      result.correct_answers !==
+        null &&
+      result.correct_answers !==
+        undefined
+        ? `${result.correct_answers} correct`
+        : null;
+
+    return [
+      seconds
+        ? `Completed in ${seconds} seconds`
+        : null,
+
+      correct,
+
+      accuracy,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+
+  const score =
+    result.correct_answers !==
+      null &&
+    result.correct_answers !==
+      undefined &&
+    result.max_score !== null &&
+    result.max_score !==
+      undefined
+      ? `${result.correct_answers}/${result.max_score} correct`
+      : result.score !== null &&
+          result.score !==
+            undefined &&
+          result.max_score !==
+            null &&
+          result.max_score !==
+            undefined
+        ? `${result.score}/${result.max_score}`
+        : null;
+
+  const accuracy =
+    result.accuracy_percent !==
+      null &&
+    result.accuracy_percent !==
+      undefined
+      ? `${Math.round(
+          Number(
+            result.accuracy_percent,
+          ),
+        )}% accuracy`
+      : null;
+
+  return [
+    score,
+    accuracy,
+  ]
+    .filter(Boolean)
+    .join(" · ") ||
+    "Learning activity completed";
+}
+
+function formatGameType(
+  gameType,
+) {
+  if (!gameType) {
+    return "Learning activity";
+  }
+
+  return String(gameType)
+    .replace(/_/g, " ")
+    .replace(
+      /\b\w/g,
+      (character) =>
+        character.toUpperCase(),
+    );
+}
+
+function getInitials(
+  name = "",
+) {
   return name
     .trim()
     .split(/\s+/)
@@ -129,23 +306,33 @@ function formatStatus(
   );
 }
 
-function formatLearningCategory(category) {
-  if (!category) return "No School";
+function formatLearningCategory(
+  category,
+) {
+  if (!category) {
+    return "No School";
+  }
 
   const normalized =
     category.toLowerCase();
 
-  if (normalized === "primary") {
+  if (
+    normalized === "primary"
+  ) {
     return "Primary";
   }
 
-  if (normalized === "secondary") {
+  if (
+    normalized === "secondary"
+  ) {
     return "Secondary";
   }
 
   if (
-    normalized === "no_school" ||
-    normalized === "no school"
+    normalized ===
+      "no_school" ||
+    normalized ===
+      "no school"
   ) {
     return "No School";
   }
@@ -157,14 +344,20 @@ function formatDate(
   dateValue,
   fallback = "Not available",
 ) {
-  if (!dateValue) return fallback;
+  if (!dateValue) {
+    return fallback;
+  }
 
   return new Date(
     dateValue,
-  ).toLocaleDateString("en-TT", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  ).toLocaleDateString(
+    "en-TT",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    },
+  );
 }
+
 

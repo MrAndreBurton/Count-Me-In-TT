@@ -2,7 +2,6 @@ import {
   ArrowLeft,
   Award,
   CalendarDays,
-  Flame,
   Gamepad2,
   GraduationCap,
   Layers3,
@@ -332,133 +331,116 @@ if (loadError) {
 </div>
         </div>
 
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            icon={<Flame size={24} />}
-            value={`${student.streak} days`}
-            label="Current streak"
-            detail="Consecutive active days"
-          />
+        <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+  <StatCard
+    icon={<Gamepad2 size={24} />}
+    value={student.gamesPlayed}
+    label="Rounds played"
+    detail="Verified learning activities"
+  />
 
-          <StatCard
-            icon={<Gamepad2 size={24} />}
-            value={student.gamesPlayed}
-            label="Games played"
-            detail="Across all activities"
-          />
+  <StatCard
+    icon={<Target size={24} />}
+    value={`${student.accuracy}%`}
+    label="Average accuracy"
+    detail="Across verified rounds"
+  />
 
-          <StatCard
-            icon={<Target size={24} />}
-            value={`${student.accuracy}%`}
-            label="Average accuracy"
-            detail="Overall game performance"
-          />
+  <StatCard
+    icon={<Award size={24} />}
+    value={student.badges}
+    label="Badges earned"
+    detail="Achievements unlocked"
+  />
+</div>
 
-          <StatCard
-            icon={<Award size={24} />}
-            value={student.badges}
-            label="Badges earned"
-            detail="Achievements unlocked"
-          />
-        </div>
-
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
           <div className="space-y-6">
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-[0.18em] text-yellow-600">
-                  Learning Progress
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                  Skill development
-                </h2>
-              </div>
-
-              <div className="mt-7 space-y-6">
-                {student.progress.map((item) => (
-                  <div key={item.id}>
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="font-bold text-slate-800">
-                        {item.label}
-                      </p>
-
-                      <p className="text-sm font-black text-slate-600">
-                        {item.value}%
-                      </p>
-                    </div>
-
-                    <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full rounded-full bg-yellow-400 transition-all"
-                        style={{
-                          width: `${item.value}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            
 
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+  <div>
+    <p className="text-sm font-bold uppercase tracking-[0.18em] text-yellow-600">
+      Recent Activity
+    </p>
+
+    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+      Learning journey
+    </h2>
+  </div>
+
+  <div className="mt-7">
+    {student.activity.length === 0 ? (
+      <div className="rounded-2xl bg-slate-50 px-5 py-8 text-center">
+        <Gamepad2
+          size={28}
+          className="mx-auto text-slate-300"
+        />
+
+        <p className="mt-3 font-bold text-slate-700">
+          No learning activity yet
+        </p>
+
+        <p className="mt-1 text-sm text-slate-500">
+          Verified game rounds will appear here once this student begins playing.
+        </p>
+      </div>
+    ) : (
+      <div className="space-y-1">
+        {student.activity.map(
+          (activity, index) => (
+            <div
+              key={activity.id}
+              className="relative flex gap-4 pb-7 last:pb-0"
+            >
+              {index !==
+                student.activity.length - 1 && (
+                <div className="absolute left-[19px] top-10 h-[calc(100%-2rem)] w-px bg-slate-200" />
+              )}
+
+              <div className="relative z-10 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700">
+                <Gamepad2 size={18} />
+              </div>
+
               <div>
-                <p className="text-sm font-bold uppercase tracking-[0.18em] text-yellow-600">
-                  Recent Activity
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-bold text-slate-800">
+                    {activity.title}
+                  </p>
+
+                  {activity.isPersonalBest && (
+                    <span className="rounded-full bg-yellow-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-yellow-700">
+                      Personal best
+                    </span>
+                  )}
+                </div>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  {activity.detail}
                 </p>
 
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                  Learning journey
-                </h2>
+                <p className="mt-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+                  {activity.date}
+                </p>
               </div>
-
-              <div className="mt-7 space-y-1">
-                {student.activity.map((activity, index) => (
-                  <div
-                    key={activity.id}
-                    className="relative flex gap-4 pb-7 last:pb-0"
-                  >
-                    {index !==
-                      student.activity.length - 1 && (
-                      <div className="absolute left-[19px] top-10 h-[calc(100%-2rem)] w-px bg-slate-200" />
-                    )}
-
-                    <div className="relative z-10 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700">
-                      <Gamepad2 size={18} />
-                    </div>
-
-                    <div>
-                      <p className="font-bold text-slate-800">
-                        {activity.title}
-                      </p>
-
-                      <p className="mt-1 text-sm text-slate-500">
-                        {activity.detail}
-                      </p>
-
-                      <p className="mt-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                        {activity.date}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            </div>
+          ),
+        )}
+      </div>
+    )}
+  </div>
+</section>
           </div>
 
           <div className="space-y-6">
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-sm font-bold uppercase tracking-[0.18em] text-yellow-600">
-                Parent Information
+                Account Information
               </p>
 
               <h2 className="mt-2 text-xl font-black text-slate-950">
-                {student.parent.name}
+                {student.account.name}
               </h2>
-
-              <p className="mt-1 text-sm text-slate-500">
-                {student.parent.relationship}
-              </p>
 
               <div className="mt-6 space-y-4">
                 <div className="flex items-start gap-3">
@@ -473,7 +455,8 @@ if (loadError) {
                     </p>
 
                     <p className="mt-1 break-all text-sm font-semibold text-slate-700">
-                      {student.parent.email}
+                      {student.account.email ||
+                        "Not available"}
                     </p>
                   </div>
                 </div>
@@ -490,32 +473,12 @@ if (loadError) {
                     </p>
 
                     <p className="mt-1 text-sm font-semibold text-slate-700">
-                      {student.parent.phone}
+                      {student.account.phone ||
+                        "Not provided"}
                     </p>
                   </div>
                 </div>
               </div>
-            </section>
-
-            <section className="rounded-3xl bg-slate-950 p-6 text-white shadow-sm">
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-yellow-400">
-                Recommended Focus
-              </p>
-
-              <h2 className="mt-3 text-xl font-black">
-                {student.recommendation.title}
-              </h2>
-
-              <p className="mt-3 text-sm leading-6 text-slate-300">
-                {student.recommendation.description}
-              </p>
-
-              <button
-                type="button"
-                className="mt-6 w-full rounded-2xl bg-yellow-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-yellow-300"
-              >
-                Assign practice
-              </button>
             </section>
           </div>
         </div>
