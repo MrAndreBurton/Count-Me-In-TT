@@ -1214,7 +1214,7 @@ if (!category) {
 .cell-wrap input:focus::placeholder {
   color: rgba(107, 114, 128, 0.65);
   opacity: 1;
-  font-size: clamp(7px, 1.3vw, 12px);
+  font-size: clamp(9px, 1.5vw, 12px);
   font-weight: 500;
 }
 
@@ -1223,11 +1223,36 @@ if (!category) {
   display: none;
 }
 
+ /* Hide the normal vertical cursor */
+  .mobile-hide-native-caret:focus {
+    caret-color: transparent;
+  }
+
+/* Horizontal cursor for tablets and desktop */
+.desktop-horizontal-caret {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  z-index: 2;
+  display: block;
+  width: 10px;
+  height: 1.5px;
+  background-color: rgba(75, 85, 99, 0.9);
+  transform: translateX(-50%);
+  animation: mobileCaretBlink 1s step-end infinite;
+  pointer-events: none;
+}
+
 @media (max-width: 640px) {
   /* Hide the horizontal placeholder on mobile */
   .cell-wrap input:focus::placeholder {
     color: transparent;
     opacity: 0;
+  }
+
+  /* Hide the desktop cursor on mobile */
+  .desktop-horizontal-caret {
+    display: none;
   }
 
   /* Show the vertical prompt on mobile */
@@ -1244,6 +1269,28 @@ if (!category) {
     font-weight: 600;
     line-height: 0.8;
     pointer-events: none;
+  }
+
+  /* Custom horizontal blinking cursor */
+  .mobile-horizontal-caret {
+    display: block;
+    width: 8px;
+    height: 1.5px;
+    margin-top: 2px;
+    background-color: rgba(75, 85, 99, 0.9);
+    animation: mobileCaretBlink 1s step-end infinite;
+  }
+}
+
+@keyframes mobileCaretBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
   }
 }
         .row-header,
@@ -1547,7 +1594,7 @@ if (!category) {
                                 inputMode="numeric"
                                 pattern="[0-9]*"
                                 value={cell.value}
-                                placeholder={`${rowIndex + 1}×${columnIndex + 1}`}
+                                placeholder={`${rowIndex + 1} × ${columnIndex + 1}`}
                                 aria-label={`${rowIndex + 1} times ${columnIndex + 1}`}
                                 onFocus={() => setFocusedCell(cellKey)}
                                 onBlur={() =>
@@ -1789,8 +1836,22 @@ if (!category) {
                                   celebrated
                                     ? "pop-once font-bold text-yellow-700 ring-2 ring-yellow-400"
                                     : "",
+                                  focusedCell === cellKey &&
+                                  cell.value === ""
+                                    ? "mobile-hide-native-caret"
+                                    : "",
                                 ].join(" ")}
                               />
+{/* Desktop and tablet horizontal cursor */}
+{focusedCell === cellKey &&
+  cell.value === "" && (
+    <span
+      className="desktop-horizontal-caret"
+      aria-hidden="true"
+    />
+  )}
+
+{/* Mobile vertical prompt and cursor */}
 {focusedCell === cellKey &&
   cell.value === "" && (
     <span
@@ -1800,6 +1861,7 @@ if (!category) {
       <span>{rowIndex + 1}</span>
       <span>×</span>
       <span>{columnIndex + 1}</span>
+      <span className="mobile-horizontal-caret" />
     </span>
   )}
 
