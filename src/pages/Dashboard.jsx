@@ -136,6 +136,20 @@ function formatMembershipDate(value) {
   }).format(date);
 }
 
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) {
+    return "Good morning";
+  }
+
+  if (hour < 18) {
+    return "Good afternoon";
+  }
+
+  return "Good evening";
+}
+
 function createProfileSummary(
   link,
   studentRow,
@@ -822,6 +836,8 @@ setLinkedProfiles(summaries);
       ?.trim()
       .split(/\s+/)[0] || "there";
 
+  const greeting = getGreeting();
+
   if (isLoading) {
     return <LoadingDashboard />;
   }
@@ -843,9 +859,7 @@ setLinkedProfiles(summaries);
               </p>
 
               <h1 className="mt-2 text-4xl font-black leading-tight sm:text-5xl">
-                {isParentAccount
-                  ? `Good evening, ${accountFirstName}`
-                  : `Welcome back, ${accountFirstName}`}{" "}
+                {greeting}, {accountFirstName}{" "}
                 <span aria-hidden="true">👋</span>
               </h1>
 

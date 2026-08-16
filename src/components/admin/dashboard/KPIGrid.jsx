@@ -1,5 +1,5 @@
 import {
-  Activity,
+  Award,
   Gamepad2,
   GraduationCap,
   UsersRound,
@@ -7,42 +7,86 @@ import {
 
 import KPICard from "./KPICard";
 
-const kpis = [
-  {
-    id: "students",
-    label: "Students",
-    value: "1,248",
-    detail: "+18 today",
-    detailLabel: "New learner profiles",
-    icon: <GraduationCap size={24} />,
-  },
-  {
-    id: "games",
-    label: "Games Played",
-    value: "2,714",
-    detail: "Today",
-    detailLabel: "Across all game modes",
-    icon: <Gamepad2 size={24} />,
-  },
-  {
-    id: "memberships",
-    label: "Active Memberships",
-    value: "486",
-    detail: "92% renewal rate",
-    detailLabel: "Current paid access",
-    icon: <UsersRound size={24} />,
-  },
-  {
-    id: "platform",
-    label: "Platform Status",
-    value: "Operational",
-    detail: "99.98% uptime",
-    detailLabel: "All systems functioning",
-    icon: <Activity size={24} />,
-  },
-];
+export default function KPIGrid({
+  stats,
+  isLoading = false,
+}) {
+  const kpis = [
+    {
+      id: "students",
 
-export default function KPIGrid() {
+      label: "Students",
+
+      value: isLoading
+        ? "—"
+        : stats.students.toLocaleString(),
+
+      detail: "Learner profiles",
+
+      detailLabel:
+        "Registered on CountMeInTT",
+
+      icon: (
+        <GraduationCap size={24} />
+      ),
+    },
+
+    {
+      id: "rounds",
+
+      label: "Verified Rounds",
+
+      value: isLoading
+        ? "—"
+        : stats.verifiedRounds.toLocaleString(),
+
+      detail: "Learning activity",
+
+      detailLabel:
+        "Across all verified game modes",
+
+      icon: (
+        <Gamepad2 size={24} />
+      ),
+    },
+
+    {
+      id: "memberships",
+
+      label: "Current Memberships",
+
+      value: isLoading
+        ? "—"
+        : stats.activeMemberships.toLocaleString(),
+
+      detail: "Current access",
+
+      detailLabel:
+        "Current student memberships",
+
+      icon: (
+        <UsersRound size={24} />
+      ),
+    },
+
+    {
+      id: "badges",
+
+      label: "Badges Awarded",
+
+      value: isLoading
+        ? "—"
+        : stats.badgesAwarded.toLocaleString(),
+
+      detail: "Achievements earned",
+
+      detailLabel:
+        "Across all learning activities",
+
+      icon: <Award size={24} />,
+    },
+  ];
+
   return (
     <section className="mb-10">
       <div className="mb-5">
@@ -63,11 +107,14 @@ export default function KPIGrid() {
             label={kpi.label}
             value={kpi.value}
             detail={kpi.detail}
-            detailLabel={kpi.detailLabel}
+            detailLabel={
+              kpi.detailLabel
+            }
           />
         ))}
       </div>
     </section>
   );
 }
+
 
