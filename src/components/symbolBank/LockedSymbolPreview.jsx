@@ -1,0 +1,5 @@
+import { Link } from "react-router-dom";
+import SymbolRenderer from "./SymbolRenderer";
+export default function LockedSymbolPreview({ record }) {
+  return <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg"><div className="flex min-h-64 items-center justify-center border-b border-slate-100 bg-slate-50 p-8"><SymbolRenderer record={record} large /></div><div className="p-6 sm:p-8"><p className="text-sm font-black uppercase tracking-wide text-blue-600">Level {record.level} · Member Vault</p><h1 className="mt-3 text-3xl font-black">{record.canonical_name}</h1><p className="mt-4 max-w-2xl text-slate-600">This record remains visible in the canonical catalogue. Meaning, readings, variants and learning detail are locked for member access.</p><div className="mt-6 flex flex-col gap-3 sm:flex-row"><Link to="/membership" className="rounded-xl bg-blue-600 px-5 py-3 text-center font-black text-white">View Membership</Link><Link to="/symbol-bank/vault" className="rounded-xl border border-slate-300 px-5 py-3 text-center font-black">Back to Vault</Link></div></div></article>;
+}

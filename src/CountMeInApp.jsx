@@ -17,6 +17,10 @@ import BocasHallOfFame from "./BocasHallOfFame";
 import BocasCouvaChallenge from "./pages/BocasCouvaChallenge";
 import BocasCouvaLeaderboard from "./pages/BocasCouvaLeaderboard";
 
+import BocasArimaChallenge from "./pages/BocasArimaChallenge";
+import BocasArimaLeaderboard from "./pages/BocasArimaLeaderboard";
+
+
 import YouthopiaChallenge from "./pages/YouthopiaChallenge";
 import YouthopiaLeaderboard from "./pages/YouthopiaLeaderboard";
 import YouthopiaHallOfFame from "./pages/YouthopiaHallOfFame";
@@ -24,9 +28,16 @@ import StylesChallenge from "./pages/StylesChallenge";
 import StylesLeaderboard from "./pages/StylesLeaderboard";
 import StylesHallOfFame from "./pages/StylesHallOfFame";
 import StylesRules from "./pages/StylesRules";
+
 import MathLanguagePlay from "./pages/MathLanguagePlay";
 import MathLanguageDictionary from "./pages/MathLanguageDictionary";
 import MathLanguageHome from "./pages/MathLanguageHome";
+import MathLanguageLevel1Home from "./pages/MathLanguageLevel1Home";
+
+import SymbolBankHome from "./pages/SymbolBankHome";
+import SymbolBankVault from "./pages/SymbolBankVault";
+import SymbolBankSymbol from "./pages/SymbolBankSymbol";
+
 import Home from "./pages/Home";
 import Games from "./pages/Games";
 import Membership from "./pages/Membership";
@@ -64,6 +75,9 @@ import MembershipsPage from "./pages/admin/MembershipsPage";
 import MembershipProfilePage from "./pages/admin/MembershipProfilePage";
 import MembershipRequestsPage from "./pages/admin/MembershipRequestsPage";
 import MembershipRequestProfilePage from "./pages/admin/MembershipRequestProfilePage";
+
+import MathLanguageLevel2Play from "./pages/MathLanguageLevel2Play";
+import MathLanguageLevel3Play from "./pages/MathLanguageLevel3Play";
 
 import CoreGame from "./components/multiplication/CoreGame";
 import ScrollToTop from "./components/ScrollToTop";
@@ -561,6 +575,16 @@ export default function CountMeInApp() {
           element={<BocasHallOfFame />}
         />
 
+<Route
+  path="/bocas-arima-challenge"
+  element={<BocasArimaChallenge />}
+/>
+
+<Route
+  path="/bocas-arima-leaderboard"
+  element={<BocasArimaLeaderboard />}
+/>
+
         <Route
           path="/youthopia-hall-of-fame"
           element={<YouthopiaHallOfFame />}
@@ -586,20 +610,86 @@ export default function CountMeInApp() {
           element={<StylesRules />}
         />
 
-        <Route
-          path="/math-language/play"
-          element={<MathLanguagePlay />}
-        />
+       {/* Math Language — Unified Level Architecture */}
 
-        <Route
-          path="/math-language/dictionary"
-          element={<MathLanguageDictionary />}
-        />
+<Route
+  path="/math-language"
+  element={<MathLanguageHome />}
+/>
 
-        <Route
-          path="/math-language"
-          element={<MathLanguageHome />}
-        />
+<Route
+  path="/math-language/level-1"
+  element={<MathLanguageLevel1Home />}
+/>
+
+<Route
+  path="/math-language/level-1/play"
+  element={<MathLanguagePlay />}
+/>
+
+<Route
+  path="/math-language/level-1/dictionary"
+  element={<MathLanguageDictionary />}
+/>
+
+<Route
+  path="/math-language/level-2"
+  element={<MathLanguageLevel2Play />}
+/>
+
+<Route
+  path="/math-language/level-3"
+  element={<MathLanguageLevel3Play />}
+/>
+
+{/* Legacy Math Language routes */}
+
+<Route
+  path="/math-language/play"
+  element={
+    <Navigate
+      to="/math-language/level-1/play"
+      replace
+    />
+  }
+/>
+
+<Route
+  path="/math-language/dictionary"
+  element={
+    <Navigate
+      to="/math-language/level-1/dictionary"
+      replace
+    />
+  }
+/>
+
+{/* Previous Level 2 / Level 3 development URLs */}
+
+<Route
+  path="/development/math-language-level2"
+  element={
+    <Navigate
+      to="/math-language/level-2"
+      replace
+    />
+  }
+/>
+
+<Route
+  path="/development/math-language-level3"
+  element={
+    <Navigate
+      to="/math-language/level-3"
+      replace
+    />
+  }
+/>
+
+<Route path="/symbol-bank" element={<SymbolBankHome />} />
+<Route path="/symbol-bank/vault" element={<SymbolBankVault />} />
+<Route path="/symbol-bank/vault/:symbolId" element={<SymbolBankSymbol />} />
+
       </Routes>
     </Router>
   );

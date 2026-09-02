@@ -1,8 +1,3 @@
-import {
-  useEffect,
-  useState,
-} from "react";
-
 import { Link } from "react-router-dom";
 
 import MathLanguageBrand from "../components/mathLanguage/MathLanguageBrand";
@@ -10,369 +5,182 @@ import MathLanguageFooter from "../components/mathLanguage/MathLanguageFooter";
 import SiteHeader from "../components/layout/SiteHeader";
 import ScrollToTopButton from "../components/mathLanguage/ScrollToTopButton";
 
-import {
-  getPlayableProfileMembership,
-} from "../lib/membership";
-
-import {
-  canAccessFullDictionary,
-  canPlayMathLanguageLevel,
-  getMembershipPlanName,
-} from "../lib/membershipAccess";
-
-const skills = [
+const levels = [
   {
-    name: "Operation Words",
-    description: "Words that tell you to add, subtract, multiply, or divide.",
-    icon: "+ − × ÷",
+    id: "level-1",
+    level: "Level 1",
+    title: "Foundation Mathematics Language",
+    audience: "SEA / Primary",
+    description:
+      "Build the core mathematics vocabulary needed to understand Primary and SEA questions.",
+    details:
+      "Practise essential words, meanings, instructions and common mathematical language.",
+    path: "/math-language/level-1",
+    accent:
+      "border-yellow-300 bg-yellow-50 hover:border-yellow-400",
+    badge:
+      "border-yellow-300 bg-yellow-100 text-yellow-800",
+    action: "Open Level 1",
   },
   {
-    name: "Place Value Words",
-    description: "Words about digits, value, rounding, and number position.",
-    icon: "123",
+    id: "level-2",
+    level: "Level 2",
+    title: "Secondary Mathematics Language",
+    audience: "Forms 1–3",
+    description:
+      "Strengthen the mathematical language students meet as they move into secondary school.",
+    details:
+      "Practise terminology, examples, distinctions and connections across four Level 2 modes.",
+    path: "/math-language/level-2",
+    accent:
+      "border-blue-300 bg-blue-50 hover:border-blue-400",
+    badge:
+      "border-blue-300 bg-blue-100 text-blue-800",
+    action: "Open Level 2",
   },
   {
-    name: "Fraction Words",
-    description: "Words that help with parts, wholes, and equal groups.",
-    icon: "½",
-  },
-  {
-    name: "Measurement Words",
-    description: "Words about length, mass, capacity, time, and units.",
-    icon: "cm",
-  },
-  {
-    name: "Geometry Words",
-    description: "Words about shapes, angles, lines, and space.",
-    icon: "△",
-  },
-  {
-    name: "Data Words",
-    description: "Words used in tables, charts, graphs, and averages.",
-    icon: "▥",
-  },
-  {
-    name: "Exam Instruction Words",
-    description: "Words like find, calculate, estimate, explain, and compare.",
-    icon: "✓",
-  },
-  {
-    name: "Trap Words",
-    description: "Words that students often misread or misunderstand.",
-    icon: "!",
+    id: "level-3",
+    level: "Level 3",
+    title: "CSEC Mathematics Language",
+    audience: "CSEC Mathematics",
+    description:
+      "Develop the vocabulary and conceptual discrimination needed for CSEC Mathematics.",
+    details:
+      "Practise CSEC-level mathematical language through the full Level 3 challenge architecture.",
+    path: "/math-language/level-3",
+    accent:
+      "border-purple-300 bg-purple-50 hover:border-purple-400",
+    badge:
+      "border-purple-300 bg-purple-100 text-purple-800",
+    action: "Open Level 3",
   },
 ];
 
 export default function MathLanguageHome() {
-
-  const [membershipState, setMembershipState] =
-  useState({
-    loading: true,
-    guest: false,
-    profile: null,
-    membership: null,
-    error: "",
-  });
-
-useEffect(() => {
-  let isMounted = true;
-
-  async function loadMembershipAccess() {
-    try {
-      const outcome =
-        await getPlayableProfileMembership();
-
-      if (!isMounted) return;
-
-      setMembershipState({
-        loading: false,
-        guest: outcome.guest,
-        profile: outcome.profile,
-        membership: outcome.membership,
-        error: "",
-      });
-    } catch (error) {
-      console.error(
-        "Math Language home membership error:",
-        error,
-      );
-
-      if (!isMounted) return;
-
-      setMembershipState({
-        loading: false,
-        guest: false,
-        profile: null,
-        membership: null,
-        error:
-          error?.message ||
-          "Your membership access could not be loaded.",
-      });
-    }
-  }
-
-  loadMembershipAccess();
-
-  return () => {
-    isMounted = false;
-  };
-}, []);
-
-const membership =
-  membershipState.membership;
-
-const hasFullAccess =
-  canAccessFullDictionary(
-    membership,
-  );
-
-const membershipPlanName =
-  membershipState.guest
-    ? "Guest Access"
-    : getMembershipPlanName(
-        membership,
-      );
-
-
   return (
-  <div className="min-h-screen bg-white text-gray-950">
-    <SiteHeader />
+    <div className="min-h-screen bg-white text-gray-950">
+      <SiteHeader />
 
       <main className="min-h-screen bg-white px-4 py-8">
         <section className="mx-auto max-w-6xl">
-          <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
             <MathLanguageBrand />
 
-            <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-              <div>
-                <h1 className="mb-4 text-4xl font-black leading-tight text-gray-900 sm:text-5xl">
-                  Math is a language.
-                </h1>
+            <div className="mt-8 max-w-4xl">
+              <p className="text-sm font-black uppercase tracking-wider text-blue-700">
+                CountMeInTT Mathematics Language
+              </p>
 
-                <p className="mb-4 text-2xl font-bold leading-snug text-gray-900">
-                  Learn the words. Decode the questions. Break the math barrier.
-                </p>
+              <h1 className="mt-3 text-4xl font-black leading-tight text-gray-950 sm:text-5xl">
+                Math is a language.
+              </h1>
 
+              <p className="mt-4 text-2xl font-bold leading-snug text-gray-900">
+                Learn the words. Decode the questions. Break the math barrier.
+              </p>
 
-<p className="mb-6 font-bold text-blue-700">
-  {membershipState.loading
-    ? "Checking your access..."
-    : hasFullAccess
-      ? "Your membership includes the full 200-word Math Language experience."
-      : "Start with the Top 50 must-know SEA math words."}
-</p>
-
-
-
-                <div className="flex flex-col gap-3 sm:flex-row">
-  <Link
-    to="/math-language/play"
-    className="rounded-xl bg-yellow-400 px-6 py-4 text-center text-lg font-black text-gray-950 hover:bg-yellow-300"
-  >
-    {hasFullAccess
-      ? "Start Math Language Challenge"
-      : "Start Free Challenge"}
-  </Link>
-
-  <Link
-    to="/math-language/dictionary"
-    className="rounded-xl border border-gray-300 px-6 py-4 text-center text-lg font-bold text-gray-900 hover:bg-gray-50"
-  >
-    View Dictionary
-  </Link>
-</div>
-
-
-              </div>
-
-              <div className="rounded-2xl bg-yellow-50 p-6">
-                <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-700">
-  {membershipState.loading
-    ? "Checking Access"
-    : membershipPlanName}
-</p>
-
-<h2 className="mb-3 text-2xl font-black text-gray-900">
-  {hasFullAccess
-    ? "Full 200-Word Access"
-    : "Top 50 SEA Math Words"}
-</h2>
-
-
-
-
-                <p className="mb-5 text-gray-700">
-                  Practise the words that help students understand what SEA math
-                  questions are really asking.
-                </p>
-
-                <div className="space-y-3">
-                  <div className="rounded-xl bg-white p-4 shadow-sm">
-  <p className="font-bold text-gray-900">
-    {hasFullAccess
-      ? "10, 25 and 40-word rounds"
-      : "10 and 25-word rounds"}
-  </p>
-
-  <p className="text-sm text-gray-600">
-    Choose a challenge level that matches your readiness.
-  </p>
-</div>
-
-                  <div className="rounded-xl bg-white p-4 shadow-sm">
-                    <p className="font-bold text-gray-900">Instant feedback</p>
-                    <p className="text-sm text-gray-600">
-                      Every wrong answer teaches the correct meaning.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-white p-4 shadow-sm">
-                    <p className="font-bold text-gray-900">
-                      Review missed words
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Students know exactly what to practise next.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <p className="mt-5 max-w-3xl text-lg leading-8 text-gray-700">
+                Mathematics becomes easier to understand when students can read,
+                recognise and use its language. Choose the level that best
+                matches your current stage of mathematics.
+              </p>
             </div>
           </div>
 
-          <section className="mb-8">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-black uppercase tracking-wide text-yellow-600">
-                  Choose a Skill
-                </p>
+          <section className="mt-8">
+            <div className="mb-5">
+              <p className="text-sm font-black uppercase tracking-wide text-gray-500">
+                Choose Your Level
+              </p>
 
-                <h2 className="text-3xl font-black text-gray-900">
-                  Practise by word type
-                </h2>
-              </div>
+              <h2 className="mt-1 text-3xl font-black text-gray-950">
+                Mathematics Language Levels
+              </h2>
 
-              <a
-                href="/math-language/dictionary"
-                className="text-sm font-bold text-gray-600 hover:text-gray-900"
-              >
-                See all words →
-              </a>
+              <p className="mt-3 max-w-3xl leading-7 text-gray-600">
+                The levels are organised by mathematical stage, but they are not
+                locked prerequisites. Students can return to earlier vocabulary
+                whenever they need stronger foundations.
+              </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {skills.map((skill) => (
+            <div className="grid gap-5 lg:grid-cols-3">
+              {levels.map((level) => (
                 <article
-                  key={skill.name}
-                  className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-yellow-300 hover:bg-yellow-50"
+                  key={level.id}
+                  className={`flex h-full flex-col rounded-3xl border-2 p-6 shadow-sm transition ${level.accent}`}
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-100 text-lg font-black text-gray-950">
-                    {skill.icon}
+                  <div>
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wide ${level.badge}`}
+                    >
+                      {level.level}
+                    </span>
+
+                    <p className="mt-4 text-sm font-black uppercase tracking-wide text-gray-500">
+                      {level.audience}
+                    </p>
+
+                    <h3 className="mt-2 text-2xl font-black leading-tight text-gray-950">
+                      {level.title}
+                    </h3>
+
+                    <p className="mt-4 leading-7 text-gray-700">
+                      {level.description}
+                    </p>
+
+                    <p className="mt-3 text-sm leading-6 text-gray-600">
+                      {level.details}
+                    </p>
                   </div>
 
-                  <h3 className="mb-2 text-lg font-black text-gray-900">
-                    {skill.name}
-                  </h3>
-
-                  <p className="mb-4 text-sm text-gray-700">
-                    {skill.description}
-                  </p>
-
-                  <a
-                    href="/math-language/dictionary"
-                    className="inline-flex rounded-xl border border-yellow-300 px-4 py-2 text-sm font-bold text-gray-900 hover:bg-white"
-                  >
-                    View Words
-                  </a>
+                  <div className="mt-auto pt-6">
+                    <Link
+                      to={level.path}
+                      className="inline-flex w-full justify-center rounded-2xl bg-slate-950 px-5 py-3 font-black text-white transition hover:bg-yellow-400 hover:text-slate-950"
+                    >
+                      {level.action}
+                    </Link>
+                  </div>
                 </article>
               ))}
             </div>
           </section>
 
-          <section className="grid gap-5 lg:grid-cols-2">
-  <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-    <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-600">
-      Free Access
-    </p>
+          <section className="mt-8 grid gap-5 lg:grid-cols-2">
+            <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+              <p className="text-sm font-black uppercase tracking-wide text-blue-700">
+                One Mathematics Language System
+              </p>
 
-    <h2 className="mb-3 text-2xl font-black text-gray-900">
-      Start with the Top 50
-    </h2>
+              <h2 className="mt-2 text-2xl font-black text-gray-950">
+                Different levels. One learning journey.
+              </h2>
 
-    <p className="mb-5 text-gray-700">
-      Free membership gives students a focused
-      starting point with the most important SEA
-      math-language words.
-    </p>
+              <p className="mt-4 leading-7 text-gray-700">
+                Each level keeps its own question and game architecture. Level 1
+                focuses on foundational Primary and SEA vocabulary, Level 2
+                develops secondary mathematics language, and Level 3 strengthens
+                CSEC-level conceptual language.
+              </p>
+            </article>
 
-    <ul className="mb-6 space-y-2 text-gray-700">
-      <li>✓ Top 50 SEA math words</li>
-      <li>✓ Dictionary cards</li>
-      <li>✓ 10-word challenge</li>
-      <li>✓ 25-word challenge</li>
-      <li>✓ Instant feedback</li>
-      <li>✓ Basic score and review</li>
-    </ul>
+            <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+              <p className="text-sm font-black uppercase tracking-wide text-purple-700">
+                Build Up or Revisit
+              </p>
 
-    <Link
-      to="/math-language/play"
-      className="inline-flex rounded-xl bg-yellow-400 px-5 py-3 font-black text-gray-950 hover:bg-yellow-300"
-    >
-      Start Free Challenge
-    </Link>
-  </article>
+              <h2 className="mt-2 text-2xl font-black text-gray-950">
+                Move forward without losing the foundations.
+              </h2>
 
-  <article className="rounded-2xl border border-yellow-200 bg-yellow-50 p-6">
-    <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-700">
-      {hasFullAccess
-        ? "Your Current Access"
-        : "Term and Annual Membership"}
-    </p>
-
-    <h2 className="mb-3 text-2xl font-black text-gray-900">
-      Full 200-Word Math Language Experience
-    </h2>
-
-    <p className="mb-5 text-gray-700">
-      Full membership unlocks the complete
-      dictionary, larger rounds and access to
-      every Math Language term.
-    </p>
-
-    <ul className="mb-6 space-y-2 text-gray-700">
-      <li>✓ All 200 SEA math words</li>
-      <li>✓ 10-word challenge</li>
-      <li>✓ 25-word challenge</li>
-      <li>✓ 40-word mastery round</li>
-      <li>✓ Full dictionary access</li>
-      <li>✓ Complete word bank</li>
-    </ul>
-
-    {hasFullAccess ? (
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Link
-          to="/math-language/play"
-          className="inline-flex justify-center rounded-xl bg-yellow-400 px-5 py-3 font-black text-gray-950 hover:bg-yellow-300"
-        >
-          Start Full Challenge
-        </Link>
-
-        <Link
-          to="/math-language/dictionary"
-          className="inline-flex justify-center rounded-xl border border-yellow-400 bg-white px-5 py-3 font-black text-gray-900 hover:bg-yellow-100"
-        >
-          View All 200 Words
-        </Link>
-      </div>
-    ) : (
-      <Link
-        to="/membership"
-        className="inline-flex rounded-xl bg-slate-950 px-5 py-3 font-black text-white hover:bg-yellow-400 hover:text-slate-950"
-      >
-        View Membership Options
-      </Link>
-    )}
-  </article>
-</section>
+              <p className="mt-4 leading-7 text-gray-700">
+                Moving to a higher level does not replace earlier vocabulary.
+                Students can revisit any available level when they need to
+                strengthen a word, meaning or mathematical idea.
+              </p>
+            </article>
+          </section>
         </section>
       </main>
 
@@ -381,4 +189,5 @@ const membershipPlanName =
     </div>
   );
 }
+
 
