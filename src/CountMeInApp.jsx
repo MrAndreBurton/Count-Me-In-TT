@@ -14,6 +14,13 @@ import BocasChallenge from "./BocasChallenge";
 import BocasLitFestLeaderboard from "./BocasLitFestLeaderboard";
 import BocasHallOfFame from "./BocasHallOfFame";
 
+import BocasCouvaChallenge from "./pages/BocasCouvaChallenge";
+import BocasCouvaLeaderboard from "./pages/BocasCouvaLeaderboard";
+
+import BocasArimaChallenge from "./pages/BocasArimaChallenge";
+import BocasArimaLeaderboard from "./pages/BocasArimaLeaderboard";
+
+
 import YouthopiaChallenge from "./pages/YouthopiaChallenge";
 import YouthopiaLeaderboard from "./pages/YouthopiaLeaderboard";
 import YouthopiaHallOfFame from "./pages/YouthopiaHallOfFame";
@@ -21,9 +28,16 @@ import StylesChallenge from "./pages/StylesChallenge";
 import StylesLeaderboard from "./pages/StylesLeaderboard";
 import StylesHallOfFame from "./pages/StylesHallOfFame";
 import StylesRules from "./pages/StylesRules";
+
 import MathLanguagePlay from "./pages/MathLanguagePlay";
 import MathLanguageDictionary from "./pages/MathLanguageDictionary";
 import MathLanguageHome from "./pages/MathLanguageHome";
+import MathLanguageLevel1Home from "./pages/MathLanguageLevel1Home";
+
+import SymbolBankHome from "./pages/SymbolBankHome";
+import SymbolBankVault from "./pages/SymbolBankVault";
+import SymbolBankSymbol from "./pages/SymbolBankSymbol";
+
 import Home from "./pages/Home";
 import Games from "./pages/Games";
 import Membership from "./pages/Membership";
@@ -42,6 +56,28 @@ import ResetPassword from "./pages/ResetPassword";
 import AddStudent from "./pages/AddStudent";
 import Supporters from "./pages/Supporters";
 import ResultTest from "./pages/ResultTest";
+
+import AdminRoute from "./components/admin/AdminRoute";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import WorkspaceSelector from "./pages/WorkspaceSelector";
+
+import StudentsPage from "./pages/admin/StudentsPage";
+import StudentProfilePage from "./pages/admin/StudentProfilePage";
+import EditStudentPage from "./pages/admin/EditStudentPage";
+import AddStudentPage from "./pages/admin/AddStudentPage";
+
+import ParentsPage from "./pages/admin/ParentsPage";
+import ParentProfilePage from "./pages/admin/ParentProfilePage";
+import AddParentPage from "./pages/admin/AddParentPage";
+import EditParentPage from "./pages/admin/EditParentPage";
+
+import MembershipsPage from "./pages/admin/MembershipsPage";
+import MembershipProfilePage from "./pages/admin/MembershipProfilePage";
+import MembershipRequestsPage from "./pages/admin/MembershipRequestsPage";
+import MembershipRequestProfilePage from "./pages/admin/MembershipRequestProfilePage";
+
+import MathLanguageLevel2Play from "./pages/MathLanguageLevel2Play";
+import MathLanguageLevel3Play from "./pages/MathLanguageLevel3Play";
 
 import CoreGame from "./components/multiplication/CoreGame";
 import ScrollToTop from "./components/ScrollToTop";
@@ -132,6 +168,120 @@ export default function CountMeInApp() {
           path="/development/result-test"
           element={<ResultTest />}
         />
+
+        <Route
+          path="/admin"
+          element={
+           <AdminRoute>
+             <AdminDashboard />
+            </AdminRoute>
+           }
+         />
+
+        <Route
+          path="/workspace"
+          element={<WorkspaceSelector />}
+        />
+
+        <Route
+          path="/admin/students"
+          element={
+           <AdminRoute>
+            <StudentsPage />
+           </AdminRoute>
+          }
+         />
+      
+        <Route
+         path="/admin/students/new"
+         element={
+           <AdminRoute>
+             <AddStudentPage />
+          </AdminRoute>
+         }
+       />
+
+        <Route
+          path="/admin/students/:studentId"
+          element={
+           <AdminRoute>
+             <StudentProfilePage />
+           </AdminRoute>
+          }
+         />
+
+       <Route
+         path="/admin/students/:studentId/edit"
+         element={
+           <AdminRoute>
+             <EditStudentPage />
+           </AdminRoute>
+         }
+       />
+
+       <Route
+          path="/admin/parents"
+          element={
+           <AdminRoute>
+             <ParentsPage />
+           </AdminRoute>
+         }
+       />
+
+       <Route
+         path="/admin/parents/new"
+         element={
+           <AdminRoute>
+             <AddParentPage />
+            </AdminRoute>
+         }
+       />
+
+       <Route
+         path="/admin/parents/:parentId/edit"
+         element={
+           <AdminRoute>
+             <EditParentPage />
+           </AdminRoute>
+         }
+       />
+
+       <Route
+         path="/admin/parents/:parentId"
+         element={
+           <AdminRoute>
+             <ParentProfilePage />
+           </AdminRoute>
+         }
+       />
+
+       <Route
+         path="/admin/memberships"
+         element={
+           <AdminRoute>
+             <MembershipsPage />
+           </AdminRoute>
+         }
+        />
+
+       <Route
+         path="/admin/memberships/requests"
+         element={<MembershipRequestsPage />}
+       />
+
+       <Route
+         path="/admin/memberships/requests/:requestId"
+         element={<MembershipRequestProfilePage />}
+       />
+
+       <Route
+         path="/admin/memberships/:membershipId"
+         element={
+           <AdminRoute>
+             <MembershipProfilePage />
+           </AdminRoute>
+         }
+       />
 
         <Route
           path="/games/multiplication"
@@ -396,6 +546,16 @@ export default function CountMeInApp() {
         />
 
         <Route
+          path="/bocas-couva-challenge"
+          element={<BocasCouvaChallenge />}
+        />
+
+        <Route
+          path="/bocas-couva-leaderboard"
+          element={<BocasCouvaLeaderboard />}
+        />
+
+        <Route
           path="/youthopia-2"
           element={<YouthopiaChallenge />}
         />
@@ -414,6 +574,16 @@ export default function CountMeInApp() {
           path="/bocas-hall-of-fame"
           element={<BocasHallOfFame />}
         />
+
+<Route
+  path="/bocas-arima-challenge"
+  element={<BocasArimaChallenge />}
+/>
+
+<Route
+  path="/bocas-arima-leaderboard"
+  element={<BocasArimaLeaderboard />}
+/>
 
         <Route
           path="/youthopia-hall-of-fame"
@@ -440,20 +610,86 @@ export default function CountMeInApp() {
           element={<StylesRules />}
         />
 
-        <Route
-          path="/math-language/play"
-          element={<MathLanguagePlay />}
-        />
+       {/* Math Language — Unified Level Architecture */}
 
-        <Route
-          path="/math-language/dictionary"
-          element={<MathLanguageDictionary />}
-        />
+<Route
+  path="/math-language"
+  element={<MathLanguageHome />}
+/>
 
-        <Route
-          path="/math-language"
-          element={<MathLanguageHome />}
-        />
+<Route
+  path="/math-language/level-1"
+  element={<MathLanguageLevel1Home />}
+/>
+
+<Route
+  path="/math-language/level-1/play"
+  element={<MathLanguagePlay />}
+/>
+
+<Route
+  path="/math-language/level-1/dictionary"
+  element={<MathLanguageDictionary />}
+/>
+
+<Route
+  path="/math-language/level-2"
+  element={<MathLanguageLevel2Play />}
+/>
+
+<Route
+  path="/math-language/level-3"
+  element={<MathLanguageLevel3Play />}
+/>
+
+{/* Legacy Math Language routes */}
+
+<Route
+  path="/math-language/play"
+  element={
+    <Navigate
+      to="/math-language/level-1/play"
+      replace
+    />
+  }
+/>
+
+<Route
+  path="/math-language/dictionary"
+  element={
+    <Navigate
+      to="/math-language/level-1/dictionary"
+      replace
+    />
+  }
+/>
+
+{/* Previous Level 2 / Level 3 development URLs */}
+
+<Route
+  path="/development/math-language-level2"
+  element={
+    <Navigate
+      to="/math-language/level-2"
+      replace
+    />
+  }
+/>
+
+<Route
+  path="/development/math-language-level3"
+  element={
+    <Navigate
+      to="/math-language/level-3"
+      replace
+    />
+  }
+/>
+
+<Route path="/symbol-bank" element={<SymbolBankHome />} />
+<Route path="/symbol-bank/vault" element={<SymbolBankVault />} />
+<Route path="/symbol-bank/vault/:symbolId" element={<SymbolBankSymbol />} />
+
       </Routes>
     </Router>
   );

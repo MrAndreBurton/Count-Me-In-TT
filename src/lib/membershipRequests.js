@@ -33,79 +33,65 @@ async function getCurrentUser() {
 export async function getEligibleMembershipStudents() {
   const user = await getCurrentUser();
 
-  const eligibleStudents = new Map();
-
-  /*
-   * Parent-linked students
-   */
   const {
-    data: parentLinks,
-    error: parentLinksError,
+    data: links,
+    error: linksError,
   } = await supabase
     .from("account_student_links")
     .select(`
       student_id,
+      relationship_role,
       can_manage_membership,
+      can_play,
       student_profiles:student_id (
         id,
         first_name,
         last_name,
         public_display_name,
         profile_status,
-        login_enabled
+        login_enabled,
+        profile_type
       )
     `)
-    .eq("account_id", user.id)
-    .eq("can_manage_membership", true);
+    .eq("account_id", user.id);
 
-  if (parentLinksError) {
-    throw parentLinksError;
+  if (linksError) {
+    throw linksError;
   }
 
-  for (const link of parentLinks || []) {
+  const eligibleStudents = new Map();
+
+  for (const link of links || []) {
     const student = link.student_profiles;
 
     if (
-      student?.id &&
-      student.profile_status !== "inactive"
+      !student?.id ||
+      student.profile_status === "inactive"
     ) {
-      eligibleStudents.set(student.id, student);
+      continue;
     }
-  }
 
-  /*
-   * Student account's own profile
-   */
-  const {
-    data: ownStudentProfiles,
-    error: ownStudentError,
-  } = await supabase
-    .from("student_profiles")
-    .select(`
-      id,
-      first_name,
-      last_name,
-      public_display_name,
-      profile_status,
-      login_enabled
-    `)
-    .eq("student_account_id", user.id)
-    .eq("login_enabled", true);
+    const isParentManagedStudent =
+      link.can_manage_membership === true;
 
-  if (ownStudentError) {
-    throw ownStudentError;
-  }
+    const isIndependentStudent =
+      link.relationship_role === "student" &&
+      link.can_play === true;
 
-  for (const student of ownStudentProfiles || []) {
     if (
-      student?.id &&
-      student.profile_status !== "inactive"
+      isParentManagedStudent ||
+      isIndependentStudent
     ) {
-      eligibleStudents.set(student.id, student);
+      eligibleStudents.set(
+        student.id,
+        student
+      );
     }
   }
 
-  return Array.from(eligibleStudents.values());
+  return Array.from(
+    eligibleStudents.values()
+  );
 }
 
 /**

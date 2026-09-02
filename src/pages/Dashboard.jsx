@@ -136,6 +136,20 @@ function formatMembershipDate(value) {
   }).format(date);
 }
 
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) {
+    return "Good morning";
+  }
+
+  if (hour < 18) {
+    return "Good afternoon";
+  }
+
+  return "Good evening";
+}
+
 function createProfileSummary(
   link,
   studentRow,
@@ -606,9 +620,23 @@ export default function Dashboard() {
 
   // 3. Student badges
   supabase
-    .from("student_badges")
-    .select("*")
-    .in("student_id", studentIds),
+  .from("student_badges")
+  .select(
+    `
+      id,
+      student_id,
+      badge_id,
+      earned_at,
+      badge_definitions (
+        id,
+        badge_key,
+        name,
+        description,
+        icon
+      )
+    `
+  )
+  .in("student_id", studentIds),
 
   // 4. Current memberships
   supabase
@@ -808,6 +836,8 @@ setLinkedProfiles(summaries);
       ?.trim()
       .split(/\s+/)[0] || "there";
 
+  const greeting = getGreeting();
+
   if (isLoading) {
     return <LoadingDashboard />;
   }
@@ -829,9 +859,7 @@ setLinkedProfiles(summaries);
               </p>
 
               <h1 className="mt-2 text-4xl font-black leading-tight sm:text-5xl">
-                {isParentAccount
-                  ? `Good evening, ${accountFirstName}`
-                  : `Welcome back, ${accountFirstName}`}{" "}
+                {greeting}, {accountFirstName}{" "}
                 <span aria-hidden="true">👋</span>
               </h1>
 

@@ -1,3 +1,8 @@
+import {
+  getEntitlement,
+  hasEntitlement,
+} from "../utils/accessControl";
+
 const DEFAULT_ENTITLEMENTS = {
   multiplication_game: true,
   public_leaderboard: true,
@@ -35,40 +40,6 @@ const DEFAULT_ENTITLEMENTS = {
   downloadable_reports: false,
   premium_games: false,
 };
-
-function getEntitlements(membership) {
-  return {
-    ...DEFAULT_ENTITLEMENTS,
-    ...(membership?.entitlements || {}),
-    ...(membership?.plan?.entitlements || {}),
-  };
-}
-
-export function hasEntitlement(membership, entitlementKey) {
-  if (!entitlementKey) {
-    return false;
-  }
-
-  const entitlements = getEntitlements(membership);
-
-  return entitlements[entitlementKey] === true;
-}
-
-export function getEntitlementValue(
-  membership,
-  entitlementKey,
-  fallbackValue = null
-) {
-  if (!entitlementKey) {
-    return fallbackValue;
-  }
-
-  const entitlements = getEntitlements(membership);
-
-  const value = entitlements[entitlementKey];
-
-  return value === undefined ? fallbackValue : value;
-}
 
 export function isPaidMembership(membership) {
   return Boolean(
@@ -122,7 +93,7 @@ export function canSavePersonalBest(membership) {
 }
 
 export function getStoredResultsLimit(membership) {
-  const value = getEntitlementValue(
+  const value = getEntitlement(
     membership,
     "stored_results_limit",
     10
@@ -152,7 +123,7 @@ export function hasUnlimitedResultHistory(membership) {
 }
 
 export function getResultFilterAccess(membership) {
-  return getEntitlementValue(
+  return getEntitlement(
     membership,
     "result_filters",
     "basic"
@@ -162,7 +133,7 @@ export function getResultFilterAccess(membership) {
 export function getMultiplicationBadgeAccess(
   membership
 ) {
-  return getEntitlementValue(
+  return getEntitlement(
     membership,
     "multiplication_badges",
     "basic"
@@ -195,7 +166,7 @@ export function getMathLanguageWordBank(
     return "top_50";
   }
 
-  return getEntitlementValue(
+  return getEntitlement(
     membership,
     `math_language_${count}_word_bank`,
     "top_50"
@@ -215,7 +186,7 @@ export function hasFullMathLanguageAccess(
 }
 
 export function getDictionaryAccess(membership) {
-  return getEntitlementValue(
+  return getEntitlement(
     membership,
     "dictionary_access",
     "top_50"
@@ -232,7 +203,7 @@ export function canAccessFullDictionary(membership) {
 export function getMissedWordReviewAccess(
   membership
 ) {
-  return getEntitlementValue(
+  return getEntitlement(
     membership,
     "missed_word_review",
     "basic"
@@ -242,7 +213,7 @@ export function getMissedWordReviewAccess(
 export function getProgressReportAccess(
   membership
 ) {
-  return getEntitlementValue(
+  return getEntitlement(
     membership,
     "progress_reports",
     "basic"
@@ -257,7 +228,7 @@ export function canUseStudentLogin(membership) {
 }
 
 export function getChildProfileLimit(membership) {
-  const value = getEntitlementValue(
+  const value = getEntitlement(
     membership,
     "child_profile_limit",
     5
@@ -275,7 +246,7 @@ export function getChildProfileLimit(membership) {
 export function getAcademicHistoryAccess(
   membership
 ) {
-  return getEntitlementValue(
+  return getEntitlement(
     membership,
     "academic_history",
     "current"
@@ -285,7 +256,7 @@ export function getAcademicHistoryAccess(
 export function getSymbolsFactoryAccess(
   membership
 ) {
-  return getEntitlementValue(
+  return getEntitlement(
     membership,
     "symbols_factory",
     "limited"
@@ -304,7 +275,7 @@ export function canAccessFullSymbolsFactory(
 export function getMathThesaurusAccess(
   membership
 ) {
-  return getEntitlementValue(
+  return getEntitlement(
     membership,
     "math_thesaurus",
     "limited"
@@ -323,7 +294,7 @@ export function canAccessFullMathThesaurus(
 export function getRulesAndLawsAccess(
   membership
 ) {
-  return getEntitlementValue(
+  return getEntitlement(
     membership,
     "rules_and_laws",
     "limited"

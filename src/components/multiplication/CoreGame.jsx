@@ -18,6 +18,11 @@ import {
   saveMultiplicationResult,
 } from "../../lib/gameResults";
 
+import {
+  getLeaderboardCategory,
+  getLearningCategoryLabel,
+} from "../../lib/learningCategory";
+
 function createAntiCheat(gridId) {
   const perfNow = () =>
     typeof performance !== "undefined"
@@ -256,6 +261,9 @@ export default function CoreGame({
   const [celebratedMap, setCelebratedMap] =
     useState({});
 
+  const [focusedCell, setFocusedCell] =
+    useState(null);
+
   const [rowSwept, setRowSwept] = useState(
     Array(rows).fill(false)
   );
@@ -395,13 +403,17 @@ export default function CoreGame({
           profile.profile_type === "account_holder" ||
           link.relationship_role === "self";
 
-        const category = isParentProfile
-          ? "NoSchool"
-          : profile.school_type === "secondary"
-            ? "Secondary"
-            : profile.school_type === "not_enrolled"
-              ? "NoSchool"
-              : "Primary";
+     const category = isParentProfile
+  ? "NoSchool"
+  : getLeaderboardCategory(profile);
+
+if (!category) {
+  throw new Error(
+    `Unsupported learning category: ${
+      profile?.school_type || "missing"
+    }`
+  );
+}
 
         const playerData = {
           userId: user.id,
@@ -421,7 +433,7 @@ export default function CoreGame({
         };
 
         setLoggedInPlayer(playerData);
-
+    
         setFormData((current) => ({
           ...current,
           name: playerData.name,
@@ -453,6 +465,7 @@ export default function CoreGame({
 
   useEffect(() => {
     setGrid(generateGrid(rows, cols));
+    setFocusedCell(null);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -648,6 +661,7 @@ export default function CoreGame({
     setCompleted(false);
     setElapsed(0);
     setShowForm(false);
+    setFocusedCell(null);
 
     setProfileSaveStatus("idle");
     setProfileSaveMessage("");
@@ -1013,12 +1027,10 @@ export default function CoreGame({
           formData.school.trim() ||
           "N/A";
 
-    const submissionClass =
-      submissionCategory === "NoSchool"
-        ? "N/A"
-        : loggedInPlayer?.classLevel ||
-          formData.classLevel.trim() ||
-          "N/A";
+     const submissionClass =
+       loggedInPlayer?.classLevel ||
+       formData.classLevel.trim() ||
+       "N/A";
 
     const submissionEmail =
       loggedInPlayer?.email ||
@@ -1184,6 +1196,103 @@ export default function CoreGame({
           z-index: 1;
         }
 
+        .cell-wrap {
+  position: relative;
+}
+
+.cell-wrap input {
+  position: relative;
+  z-index: 1;
+}
+
+.cell-wrap input::placeholder {
+  color: transparent;
+  opacity: 0;
+}
+
+/* Horizontal prompt on tablets and desktop */
+.cell-wrap input:focus::placeholder {
+  color: rgba(107, 114, 128, 0.65);
+  opacity: 1;
+  font-size: clamp(9px, 1.5vw, 12px);
+  font-weight: 500;
+}
+
+/* Hidden on tablets and desktop */
+.mobile-cell-prompt {
+  display: none;
+}
+
+ /* Hide the normal vertical cursor */
+  .mobile-hide-native-caret:focus {
+    caret-color: transparent;
+  }
+
+/* Horizontal cursor for tablets and desktop */
+.desktop-horizontal-caret {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  z-index: 2;
+  display: block;
+  width: 10px;
+  height: 1.5px;
+  background-color: rgba(75, 85, 99, 0.9);
+  transform: translateX(-50%);
+  animation: mobileCaretBlink 1s step-end infinite;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  /* Hide the horizontal placeholder on mobile */
+  .cell-wrap input:focus::placeholder {
+    color: transparent;
+    opacity: 0;
+  }
+
+  /* Hide the desktop cursor on mobile */
+  .desktop-horizontal-caret {
+    display: none;
+  }
+
+  /* Show the vertical prompt on mobile */
+  .mobile-cell-prompt {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(107, 114, 128, 0.72);
+    font-size: 8px;
+    font-weight: 600;
+    line-height: 0.8;
+    pointer-events: none;
+  }
+
+  /* Custom horizontal blinking cursor */
+  .mobile-horizontal-caret {
+    display: block;
+    width: 8px;
+    height: 1.5px;
+    margin-top: 2px;
+    background-color: rgba(75, 85, 99, 0.9);
+    animation: mobileCaretBlink 1s step-end infinite;
+  }
+}
+
+@keyframes mobileCaretBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
         .row-header,
         .col-header {
           position: relative;
@@ -1396,9 +1505,7 @@ export default function CoreGame({
                       className="rounded bg-blue-100 px-4 py-2 shadow"
                     >
                       <strong>
-                        {category === "NoSchool"
-                          ? "No School"
-                          : category}
+                        {getLearningCategoryLabel(category)}
                         :
                       </strong>{" "}
                       {topPlayers[category]?.Name ||
@@ -1487,6 +1594,15 @@ export default function CoreGame({
                                 inputMode="numeric"
                                 pattern="[0-9]*"
                                 value={cell.value}
+                                placeholder={`${rowIndex + 1} × ${columnIndex + 1}`}
+                                aria-label={`${rowIndex + 1} times ${columnIndex + 1}`}
+                                onFocus={() => setFocusedCell(cellKey)}
+                                onBlur={() =>
+                                  setFocusedCell((current) =>
+                                     current === cellKey ? null : current
+                                 )
+                               }
+
                                 onChange={(
                                   event
                                 ) => {
@@ -1720,8 +1836,35 @@ export default function CoreGame({
                                   celebrated
                                     ? "pop-once font-bold text-yellow-700 ring-2 ring-yellow-400"
                                     : "",
+                                  focusedCell === cellKey &&
+                                  cell.value === ""
+                                    ? "mobile-hide-native-caret"
+                                    : "",
                                 ].join(" ")}
                               />
+{/* Desktop and tablet horizontal cursor */}
+{focusedCell === cellKey &&
+  cell.value === "" && (
+    <span
+      className="desktop-horizontal-caret"
+      aria-hidden="true"
+    />
+  )}
+
+{/* Mobile vertical prompt and cursor */}
+{focusedCell === cellKey &&
+  cell.value === "" && (
+    <span
+      className="mobile-cell-prompt"
+      aria-hidden="true"
+    >
+      <span>{rowIndex + 1}</span>
+      <span>×</span>
+      <span>{columnIndex + 1}</span>
+      <span className="mobile-horizontal-caret" />
+    </span>
+  )}
+
                             </div>
                           );
                         }
@@ -1830,10 +1973,9 @@ export default function CoreGame({
                         Category
                       </dt>
                       <dd className="font-bold">
-                        {loggedInPlayer.category ===
-                        "NoSchool"
-                          ? "No School"
-                          : loggedInPlayer.category}
+                        {getLearningCategoryLabel(
+                          loggedInPlayer.category
+                        )}
                       </dd>
                     </div>
 

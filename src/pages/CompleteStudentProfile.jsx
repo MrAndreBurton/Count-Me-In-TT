@@ -27,6 +27,11 @@ const SECONDARY_LEVELS = [
   "Upper Six (Grade 13)",
 ];
 
+const NO_SCHOOL_LEVELS = [
+  ...PRIMARY_LEVELS,
+  ...SECONDARY_LEVELS,
+];
+
 const ACADEMIC_YEARS = [
   "2026–2027",
   "2027–2028",
@@ -34,7 +39,7 @@ const ACADEMIC_YEARS = [
 ];
 
 const INITIAL_FORM = {
-  schoolType: "primary",
+  schoolType: "",
   school: "",
   customSchool: "",
   schoolLevel: "",
@@ -121,9 +126,13 @@ export default function CompleteStudentProfile() {
   const [saveError, setSaveError] = useState("");
 
   const levelOptions =
-    formData.schoolType === "secondary"
+    formData.schoolType === "primary"
+      ? PRIMARY_LEVELS
+      : formData.schoolType === "secondary"
       ? SECONDARY_LEVELS
-      : PRIMARY_LEVELS;
+      : NO_SCHOOL_LEVELS;
+
+  const isNoSchool = formData.schoolType === "no_school";
 
   const studentInitials = useMemo(
     () =>
@@ -271,6 +280,8 @@ export default function CompleteStudentProfile() {
           schoolType:
             studentData.school_type === "secondary"
               ? "secondary"
+              : studentData.school_type === "no_school"
+              ? "no_school"
               : "primary",
           school: studentData.current_school || "",
           schoolLevel: studentData.current_level || "",
@@ -386,11 +397,12 @@ export default function CompleteStudentProfile() {
     setSaveError("");
   };
 
-  const updateSchoolType = (schoolType) => {
+  const updateLearningCategory = (schoolType) => {
     setFormData((current) => ({
       ...current,
       schoolType,
-      school: "",
+      school:
+        schoolType === "no_school" ? "No School" : "",
       customSchool: "",
       schoolLevel: "",
     }));
@@ -399,24 +411,20 @@ export default function CompleteStudentProfile() {
   };
 
   const getSelectedSchoolName = () => {
-    if (formData.school === "Other") {
-      return formData.customSchool.trim();
-    }
+  if (formData.schoolType === "no_school") {
+    return "No School";
+  }
 
-    return formData.school.trim();
-  };
+  if (formData.school === "Other") {
+    return formData.customSchool.trim();
+  }
+
+  return formData.school.trim();
+};
 
   const getDatabaseSchoolType = () => {
-    if (formData.school === "Homeschool") {
-      return "homeschool";
-    }
-
-    if (formData.school === "Not currently enrolled") {
-      return "not_enrolled";
-    }
-
-    return formData.schoolType;
-  };
+  return formData.schoolType;
+};
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -427,12 +435,12 @@ export default function CompleteStudentProfile() {
 
     const selectedSchool = getSelectedSchoolName();
 
-    if (!selectedSchool) {
-      setSaveError(
-        "Please select or enter your current school."
-      );
-      return;
-    }
+if (!isNoSchool && !selectedSchool) {
+  setSaveError(
+    "Please select or enter your current school."
+  );
+  return;
+}
 
     if (!formData.schoolLevel) {
       setSaveError("Please select your current level.");
@@ -589,11 +597,11 @@ export default function CompleteStudentProfile() {
               className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8"
             >
               <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                School Information
+                Learning Information
               </p>
 
               <h2 className="mt-2 text-3xl font-black">
-                Where are you currently studying?
+                Tell us about your learning.
               </h2>
 
               <p className="mt-3 leading-7 text-gray-600">
@@ -603,14 +611,14 @@ export default function CompleteStudentProfile() {
 
               <div className="mt-8">
                 <p className="mb-3 text-sm font-black text-gray-800">
-                  School type
+                  Learning Category
                 </p>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <button
                     type="button"
                     disabled={isSaving}
-                    onClick={() => updateSchoolType("primary")}
+                    onClick={() => updateLearningCategory("primary")}
                     className={[
                       "rounded-xl p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-60",
                       formData.schoolType === "primary"
@@ -628,7 +636,7 @@ export default function CompleteStudentProfile() {
                   <button
                     type="button"
                     disabled={isSaving}
-                    onClick={() => updateSchoolType("secondary")}
+                    onClick={() => updateLearningCategory("secondary")}
                     className={[
                       "rounded-xl p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-60",
                       formData.schoolType === "secondary"
@@ -642,11 +650,32 @@ export default function CompleteStudentProfile() {
                       Form and Sixth Form levels
                     </p>
                   </button>
+
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    onClick={() => updateLearningCategory("no_school")}
+                    className={[
+                      "rounded-xl p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-60",
+                      formData.schoolType === "no_school"
+                        ? "border-2 border-blue-600 bg-blue-50"
+                        : "border border-gray-200 bg-white hover:border-blue-300",
+                    ].join(" ")}
+                  >
+                    <p className="font-black">
+                      No School
+                    </p>
+
+                    <p className="mt-1 text-sm text-gray-600">
+                      Adult / Independent learner
+                    </p>
+                  </button>
                 </div>
               </div>
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                <div>
+               {!isNoSchool && (
+                 <div>
                   <label
                     htmlFor="school"
                     className="mb-2 block text-sm font-black text-gray-800"
@@ -691,14 +720,15 @@ export default function CompleteStudentProfile() {
                       {schoolLoadError}
                     </p>
                   )}
-                </div>
+                      </div>
+                    )}
 
                 <div>
                   <label
                     htmlFor="schoolLevel"
                     className="mb-2 block text-sm font-black text-gray-800"
                   >
-                    Current level
+                    {isNoSchool ? "Learning Level" : "Current Level"}
                   </label>
 
                   <select
@@ -710,7 +740,11 @@ export default function CompleteStudentProfile() {
                     onChange={handleChange}
                     className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-100"
                   >
-                    <option value="">Select your level</option>
+                    <option value="">
+                      {isNoSchool
+                        ? "Select your learning level"
+                        : "Select your level"}
+                    </option>
 
                     {levelOptions.map((level) => (
                       <option key={level} value={level}>

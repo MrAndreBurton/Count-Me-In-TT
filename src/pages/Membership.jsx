@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
+import { getPlayableProfileMembership } from "../lib/membership";
+import { getMembershipPlanName } from "../lib/membershipAccess";
+
 
 const plans = [
   {
+    id: "free",
     name: "Free Account",
     price: "TT$0",
     duration: "Ongoing",
@@ -23,6 +27,7 @@ const plans = [
     link: "/register",
   },
   {
+    id: "term",
     name: "Term Membership",
     price: "TT$40",
     duration: "120 days",
@@ -41,6 +46,7 @@ const plans = [
     link: "/membership/request?plan=term",
   },
   {
+    id: "annual",
     name: "Annual Membership",
     price: "TT$100",
     duration: "365 days",
@@ -83,7 +89,18 @@ const faqs = [
   },
 ];
 
-function PlanCard({ plan }) {
+function PlanCard({
+  plan,
+  disabled = false,
+  disabledMessage = "",
+  isLoading = false,
+}) {
+  const buttonLabel = isLoading
+    ? "Checking Account..."
+    : disabled
+      ? disabledMessage
+      : plan.action;
+
   return (
     <article
       className={[
@@ -111,15 +128,25 @@ function PlanCard({ plan }) {
       </p>
 
       <div className="mt-5">
-        <p className="text-4xl font-black text-gray-950">{plan.price}</p>
-        <p className="mt-1 font-bold text-gray-500">{plan.duration}</p>
+        <p className="text-4xl font-black text-gray-950">
+          {plan.price}
+        </p>
+
+        <p className="mt-1 font-bold text-gray-500">
+          {plan.duration}
+        </p>
       </div>
 
-      <p className="mt-5 leading-7 text-gray-600">{plan.description}</p>
+      <p className="mt-5 leading-7 text-gray-600">
+        {plan.description}
+      </p>
 
       <ul className="mt-6 grid gap-3">
         {plan.features.map((feature) => (
-          <li key={feature} className="flex items-start gap-3">
+          <li
+            key={feature}
+            className="flex items-start gap-3"
+          >
             <span
               aria-hidden="true"
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-yellow-200 text-sm font-black text-gray-950"
@@ -127,27 +154,39 @@ function PlanCard({ plan }) {
               ✓
             </span>
 
-            <span className="font-semibold text-gray-700">{feature}</span>
+            <span className="font-semibold text-gray-700">
+              {feature}
+            </span>
           </li>
         ))}
       </ul>
 
-       <div className="mt-auto pt-7">
-         <Link
-           to={plan.link}
-           className={[
-             "block w-full rounded-xl border px-5 py-3 text-center font-black transition",
-             "hover:-translate-y-0.5 hover:shadow-md",
-             plan.name === "Free Account"
-               ? "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-               : plan.featured
-               ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
-               : "border-yellow-400 bg-yellow-400 text-gray-900 hover:bg-yellow-500",
-           ].join(" ")}
-         >
-           {plan.action}
-         </Link>
-       </div>
+      <div className="mt-auto pt-7">
+        {disabled || isLoading ? (
+          <button
+            type="button"
+            disabled
+            className="block w-full cursor-not-allowed rounded-xl border border-gray-200 bg-gray-100 px-5 py-3 text-center font-black text-gray-500"
+          >
+            {buttonLabel}
+          </button>
+        ) : (
+          <Link
+            to={plan.link}
+            className={[
+              "block w-full rounded-xl border px-5 py-3 text-center font-black transition",
+              "hover:-translate-y-0.5 hover:shadow-md",
+              plan.id === "free"
+                ? "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                : plan.featured
+                  ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+                  : "border-yellow-400 bg-yellow-400 text-gray-900 hover:bg-yellow-500",
+            ].join(" ")}
+          >
+            {plan.action}
+          </Link>
+        )}
+      </div>
     </article>
   );
 }
@@ -183,6 +222,133 @@ function FaqItem({ question, answer }) {
 }
 
 export default function Membership() {
+  const [accessState, setAccessState] = useState({
+    loading: true,
+    loggedIn: false,
+    membership: null,
+    error: "",
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadMembershipState() {
+      try {
+        const outcome =
+          await getPlayableProfileMembership();
+
+        if (!active) return;
+
+        setAccessState({
+          loading: false,
+          loggedIn: !outcome.guest,
+          membership: outcome.membership || null,
+          error: "",
+        });
+      } catch (error) {
+        console.error(
+          "Membership page access error:",
+          error
+        );
+
+        if (!active) return;
+
+        setAccessState({
+          loading: false,
+          loggedIn: false,
+          membership: null,
+          error:
+            error?.message ||
+            "Your account status could not be checked.",
+        });
+      }
+    }
+
+    loadMembershipState();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const membershipPlanName = getMembershipPlanName(
+    accessState.membership
+  );
+
+  const normalizedPlanName = String(
+    membershipPlanName || ""
+  )
+    .trim()
+    .toLowerCase();
+
+  const membershipStatus = String(
+    accessState.membership?.status || ""
+  )
+    .trim()
+    .toLowerCase();
+
+  const hasActiveMembership =
+    membershipStatus === "active";
+
+  const hasActiveTermMembership =
+    hasActiveMembership &&
+    normalizedPlanName.includes("term");
+
+  const hasActiveAnnualMembership =
+    hasActiveMembership &&
+    normalizedPlanName.includes("annual");
+
+  const getPlanButtonState = (planId) => {
+    if (accessState.loading) {
+      return {
+        disabled: true,
+        message: "Checking Account...",
+      };
+    }
+
+    if (!accessState.loggedIn) {
+      return {
+        disabled: false,
+        message: "",
+      };
+    }
+
+    if (planId === "free") {
+      return {
+        disabled: true,
+        message: "Free Account Already Created",
+      };
+    }
+
+    if (
+      planId === "term" &&
+      (hasActiveTermMembership ||
+        hasActiveAnnualMembership)
+    ) {
+      return {
+        disabled: true,
+        message: hasActiveAnnualMembership
+          ? "Included in Annual Membership"
+          : "Term Membership Active",
+      };
+    }
+
+    if (
+      planId === "annual" &&
+      hasActiveAnnualMembership
+    ) {
+      return {
+        disabled: true,
+        message: "Annual Membership Active",
+      };
+    }
+
+    return {
+      disabled: false,
+      message: "",
+    };
+  };
+
   return (
     <div className="platform-page-bg min-h-screen text-gray-950">
       <SiteHeader />
@@ -233,9 +399,20 @@ export default function Membership() {
             </div>
 
             <div className="mt-9 grid gap-6 lg:grid-cols-3">
-              {plans.map((plan) => (
-                <PlanCard key={plan.name} plan={plan} />
-              ))}
+             {plans.map((plan) => {
+  const buttonState =
+    getPlanButtonState(plan.id);
+
+  return (
+    <PlanCard
+      key={plan.id}
+      plan={plan}
+      disabled={buttonState.disabled}
+      disabledMessage={buttonState.message}
+      isLoading={accessState.loading}
+    />
+  );
+})}
             </div>
 
             <div className="mt-8 grid gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:grid-cols-3">
@@ -312,99 +489,63 @@ export default function Membership() {
           </div>
         </section>
 
-        <section className="px-5 py-14 sm:py-16">
-          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.95fr_1.05fr]">
-            <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
-              <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                Important rules
-              </p>
-
-              <h2 className="mt-2 text-3xl font-black">
-                Clear from the beginning.
-              </h2>
-
-              <ul className="mt-6 grid gap-4">
-                {[
-                  "Membership belongs to the selected student profile.",
-                  "One parent can manage multiple children.",
-                  "Membership cannot be paused or transferred.",
-                  "Renewing early extends from the current expiry date.",
-                  "Expired members can view previous records for 30 days.",
-                  "Payments are not automatically renewed.",
-                ].map((rule) => (
-                  <li key={rule} className="flex items-start gap-3">
-                    <span
-                      aria-hidden="true"
-                      className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-yellow-400"
-                    />
-
-                    <span className="leading-7 text-gray-700">{rule}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <span className="mt-6 inline-block font-black text-blue-600">
-                Become a Term or Annual Member.
-              </span>
-            </div>
-
-            <div>
-              <p className="text-sm font-black uppercase tracking-wider text-blue-600">
-                Frequently asked questions
-              </p>
-
-              <h2 className="mt-2 text-3xl font-black">
-                Quick answers for parents.
-              </h2>
-
-              <div className="mt-6 grid gap-4">
-                {faqs.map((faq) => (
-                  <FaqItem
-                    key={faq.question}
-                    question={faq.question}
-                    answer={faq.answer}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
         <section className="px-5 pb-14 sm:pb-16">
   <div className="mx-auto max-w-7xl rounded-3xl bg-blue-600 px-6 py-10 text-center text-white shadow-xl sm:px-10">
     <p className="text-sm font-black uppercase tracking-wider text-yellow-300">
-      Start free
+      {accessState.loggedIn
+        ? "Your CountMeInTT account"
+        : "Start free"}
     </p>
 
     <h2 className="mt-2 text-3xl font-black sm:text-4xl">
-      Create your free CountMeInTT account.
+      {accessState.loggedIn
+        ? hasActiveAnnualMembership
+          ? "Your Annual Membership is active."
+          : hasActiveTermMembership
+            ? "Your Term Membership is active."
+            : "Your free account is ready."
+        : "Create your free CountMeInTT account."}
     </h2>
 
     <p className="mx-auto mt-4 max-w-2xl leading-7 text-blue-100">
-      Create a student profile, save progress and upgrade to Term or Annual
-      Membership whenever you are ready.
+      {accessState.loggedIn
+        ? hasActiveMembership
+          ? "Continue learning, saving progress and using the features included with your membership."
+          : "You can continue with free access or request a Term or Annual Membership whenever you are ready."
+        : "Create a student profile, save progress and upgrade to Term or Annual Membership whenever you are ready."}
     </p>
 
     <div className="mt-7 flex flex-col items-center justify-center gap-3">
-      <Link
-        to="/register"
-        className="w-full rounded-xl bg-yellow-300 px-6 py-3 font-black text-gray-950 transition hover:bg-yellow-200 sm:w-auto"
-      >
-        Create Free Account
-      </Link>
+      {accessState.loggedIn ? (
+        <Link
+          to="/dashboard"
+          className="w-full rounded-xl bg-yellow-300 px-6 py-3 font-black text-gray-950 transition hover:bg-yellow-200 sm:w-auto"
+        >
+          Go to Dashboard
+        </Link>
+      ) : (
+        <>
+          <Link
+            to="/register"
+            className="w-full rounded-xl bg-yellow-300 px-6 py-3 font-black text-gray-950 transition hover:bg-yellow-200 sm:w-auto"
+          >
+            Create Free Account
+          </Link>
 
-      <Link
-        to="/login"
-        className="w-full rounded-xl border-2 border-white/70 bg-white/10 px-6 py-3 font-black text-white transition hover:bg-white/20 sm:w-auto"
-      >
-        Sign In
-      </Link>
+          <Link
+            to="/login"
+            className="w-full rounded-xl border-2 border-white/70 bg-white/10 px-6 py-3 font-black text-white transition hover:bg-white/20 sm:w-auto"
+          >
+            Sign In
+          </Link>
+        </>
+      )}
 
       <Link
         to="/games/multiplication"
         className="mt-1 text-sm font-bold text-blue-100 underline decoration-blue-200 underline-offset-4 transition hover:text-white"
       >
-        Continue as Guest
+        Play Multiplication
       </Link>
     </div>
   </div>

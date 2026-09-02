@@ -1,246 +1,184 @@
+import { Link } from "react-router-dom";
+
 import MathLanguageBrand from "../components/mathLanguage/MathLanguageBrand";
 import MathLanguageFooter from "../components/mathLanguage/MathLanguageFooter";
 import SiteHeader from "../components/layout/SiteHeader";
 import ScrollToTopButton from "../components/mathLanguage/ScrollToTopButton";
 
-const skills = [
+const levels = [
   {
-    name: "Operation Words",
-    description: "Words that tell you to add, subtract, multiply, or divide.",
-    icon: "+ − × ÷",
+    id: "level-1",
+    level: "Level 1",
+    title: "Foundation Mathematics Language",
+    audience: "SEA / Primary",
+    description:
+      "Build the core mathematics vocabulary needed to understand Primary and SEA questions.",
+    details:
+      "Practise essential words, meanings, instructions and common mathematical language.",
+    path: "/math-language/level-1",
+    accent:
+      "border-yellow-300 bg-yellow-50 hover:border-yellow-400",
+    badge:
+      "border-yellow-300 bg-yellow-100 text-yellow-800",
+    action: "Open Level 1",
   },
   {
-    name: "Place Value Words",
-    description: "Words about digits, value, rounding, and number position.",
-    icon: "123",
+    id: "level-2",
+    level: "Level 2",
+    title: "Secondary Mathematics Language",
+    audience: "Forms 1–3",
+    description:
+      "Strengthen the mathematical language students meet as they move into secondary school.",
+    details:
+      "Practise terminology, examples, distinctions and connections across four Level 2 modes.",
+    path: "/math-language/level-2",
+    accent:
+      "border-blue-300 bg-blue-50 hover:border-blue-400",
+    badge:
+      "border-blue-300 bg-blue-100 text-blue-800",
+    action: "Open Level 2",
   },
   {
-    name: "Fraction Words",
-    description: "Words that help with parts, wholes, and equal groups.",
-    icon: "½",
-  },
-  {
-    name: "Measurement Words",
-    description: "Words about length, mass, capacity, time, and units.",
-    icon: "cm",
-  },
-  {
-    name: "Geometry Words",
-    description: "Words about shapes, angles, lines, and space.",
-    icon: "△",
-  },
-  {
-    name: "Data Words",
-    description: "Words used in tables, charts, graphs, and averages.",
-    icon: "▥",
-  },
-  {
-    name: "Exam Instruction Words",
-    description: "Words like find, calculate, estimate, explain, and compare.",
-    icon: "✓",
-  },
-  {
-    name: "Trap Words",
-    description: "Words that students often misread or misunderstand.",
-    icon: "!",
+    id: "level-3",
+    level: "Level 3",
+    title: "CSEC Mathematics Language",
+    audience: "CSEC Mathematics",
+    description:
+      "Develop the vocabulary and conceptual discrimination needed for CSEC Mathematics.",
+    details:
+      "Practise CSEC-level mathematical language through the full Level 3 challenge architecture.",
+    path: "/math-language/level-3",
+    accent:
+      "border-purple-300 bg-purple-50 hover:border-purple-400",
+    badge:
+      "border-purple-300 bg-purple-100 text-purple-800",
+    action: "Open Level 3",
   },
 ];
 
 export default function MathLanguageHome() {
   return (
-  <div className="min-h-screen bg-white text-gray-950">
-    <SiteHeader />
+    <div className="min-h-screen bg-white text-gray-950">
+      <SiteHeader />
 
       <main className="min-h-screen bg-white px-4 py-8">
         <section className="mx-auto max-w-6xl">
-          <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
             <MathLanguageBrand />
 
-            <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-              <div>
-                <h1 className="mb-4 text-4xl font-black leading-tight text-gray-900 sm:text-5xl">
-                  Math is a language.
-                </h1>
+            <div className="mt-8 max-w-4xl">
+              <p className="text-sm font-black uppercase tracking-wider text-blue-700">
+                CountMeInTT Mathematics Language
+              </p>
 
-                <p className="mb-4 text-2xl font-bold leading-snug text-gray-900">
-                  Learn the words. Decode the questions. Break the math barrier.
-                </p>
+              <h1 className="mt-3 text-4xl font-black leading-tight text-gray-950 sm:text-5xl">
+                Math is a language.
+              </h1>
 
-                <p className="mb-6 max-w-2xl text-lg text-gray-700">
-                  The CountMeInTT Math Language Challenge helps SEA students
-                  understand the words, phrases, and instructions used in math
-                  questions. Start with the Top 50 must-know SEA math words and
-                  practise in a fun, simple challenge.
-                </p>
+              <p className="mt-4 text-2xl font-bold leading-snug text-gray-900">
+                Learn the words. Decode the questions. Break the math barrier.
+              </p>
 
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <a
-                    href="/math-language/play"
-                    className="rounded-xl bg-yellow-400 px-6 py-4 text-center text-lg font-black text-gray-950 hover:bg-yellow-300"
-                  >
-                    Start Free Challenge
-                  </a>
-
-                  <a
-                    href="/math-language/dictionary"
-                    className="rounded-xl border border-gray-300 px-6 py-4 text-center text-lg font-bold text-gray-900 hover:bg-gray-50"
-                  >
-                    View Dictionary
-                  </a>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-yellow-50 p-6">
-                <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-700">
-                  Free MVP
-                </p>
-
-                <h2 className="mb-3 text-2xl font-black text-gray-900">
-                  Top 50 SEA Math Words
-                </h2>
-
-                <p className="mb-5 text-gray-700">
-                  Practise the words that help students understand what SEA math
-                  questions are really asking.
-                </p>
-
-                <div className="space-y-3">
-                  <div className="rounded-xl bg-white p-4 shadow-sm">
-                    <p className="font-bold text-gray-900">10-question round</p>
-                    <p className="text-sm text-gray-600">
-                      Short practice that feels manageable.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-white p-4 shadow-sm">
-                    <p className="font-bold text-gray-900">Instant feedback</p>
-                    <p className="text-sm text-gray-600">
-                      Every wrong answer teaches the correct meaning.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-white p-4 shadow-sm">
-                    <p className="font-bold text-gray-900">
-                      Review missed words
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Students know exactly what to practise next.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <p className="mt-5 max-w-3xl text-lg leading-8 text-gray-700">
+                Mathematics becomes easier to understand when students can read,
+                recognise and use its language. Choose the level that best
+                matches your current stage of mathematics.
+              </p>
             </div>
           </div>
 
-          <section className="mb-8">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-black uppercase tracking-wide text-yellow-600">
-                  Choose a Skill
-                </p>
+          <section className="mt-8">
+            <div className="mb-5">
+              <p className="text-sm font-black uppercase tracking-wide text-gray-500">
+                Choose Your Level
+              </p>
 
-                <h2 className="text-3xl font-black text-gray-900">
-                  Practise by word type
-                </h2>
-              </div>
+              <h2 className="mt-1 text-3xl font-black text-gray-950">
+                Mathematics Language Levels
+              </h2>
 
-              <a
-                href="/math-language/dictionary"
-                className="text-sm font-bold text-gray-600 hover:text-gray-900"
-              >
-                See all words →
-              </a>
+              <p className="mt-3 max-w-3xl leading-7 text-gray-600">
+                The levels are organised by mathematical stage, but they are not
+                locked prerequisites. Students can return to earlier vocabulary
+                whenever they need stronger foundations.
+              </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {skills.map((skill) => (
+            <div className="grid gap-5 lg:grid-cols-3">
+              {levels.map((level) => (
                 <article
-                  key={skill.name}
-                  className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-yellow-300 hover:bg-yellow-50"
+                  key={level.id}
+                  className={`flex h-full flex-col rounded-3xl border-2 p-6 shadow-sm transition ${level.accent}`}
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-100 text-lg font-black text-gray-950">
-                    {skill.icon}
+                  <div>
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wide ${level.badge}`}
+                    >
+                      {level.level}
+                    </span>
+
+                    <p className="mt-4 text-sm font-black uppercase tracking-wide text-gray-500">
+                      {level.audience}
+                    </p>
+
+                    <h3 className="mt-2 text-2xl font-black leading-tight text-gray-950">
+                      {level.title}
+                    </h3>
+
+                    <p className="mt-4 leading-7 text-gray-700">
+                      {level.description}
+                    </p>
+
+                    <p className="mt-3 text-sm leading-6 text-gray-600">
+                      {level.details}
+                    </p>
                   </div>
 
-                  <h3 className="mb-2 text-lg font-black text-gray-900">
-                    {skill.name}
-                  </h3>
-
-                  <p className="mb-4 text-sm text-gray-700">
-                    {skill.description}
-                  </p>
-
-                  <a
-                    href="/math-language/dictionary"
-                    className="inline-flex rounded-xl border border-yellow-300 px-4 py-2 text-sm font-bold text-gray-900 hover:bg-white"
-                  >
-                    View Words
-                  </a>
+                  <div className="mt-auto pt-6">
+                    <Link
+                      to={level.path}
+                      className="inline-flex w-full justify-center rounded-2xl bg-slate-950 px-5 py-3 font-black text-white transition hover:bg-yellow-400 hover:text-slate-950"
+                    >
+                      {level.action}
+                    </Link>
+                  </div>
                 </article>
               ))}
             </div>
           </section>
 
-          <section className="grid gap-5 lg:grid-cols-2">
-            <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-600">
-                Free Version
+          <section className="mt-8 grid gap-5 lg:grid-cols-2">
+            <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+              <p className="text-sm font-black uppercase tracking-wide text-blue-700">
+                One Mathematics Language System
               </p>
 
-              <h2 className="mb-3 text-2xl font-black text-gray-900">
-                Start with the Top 50
+              <h2 className="mt-2 text-2xl font-black text-gray-950">
+                Different levels. One learning journey.
               </h2>
 
-              <p className="mb-5 text-gray-700">
-                The free version gives students a focused starting point with
-                the most important SEA math language words.
+              <p className="mt-4 leading-7 text-gray-700">
+                Each level keeps its own question and game architecture. Level 1
+                focuses on foundational Primary and SEA vocabulary, Level 2
+                develops secondary mathematics language, and Level 3 strengthens
+                CSEC-level conceptual language.
               </p>
-
-              <ul className="mb-6 space-y-2 text-gray-700">
-                <li>✓ Top 50 SEA math words</li>
-                <li>✓ Dictionary cards</li>
-                <li>✓ 10-question challenge</li>
-                <li>✓ Instant feedback</li>
-                <li>✓ Basic score and review</li>
-              </ul>
-
-              <a
-                href="/math-language/play"
-                className="inline-flex rounded-xl bg-yellow-400 px-5 py-3 font-black text-gray-950 hover:bg-yellow-300"
-              >
-                Start Free Challenge
-              </a>
             </article>
 
-            <article className="rounded-2xl border border-yellow-200 bg-yellow-50 p-6">
-              <p className="mb-2 text-sm font-black uppercase tracking-wide text-yellow-700">
-                Coming Soon
+            <article className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+              <p className="text-sm font-black uppercase tracking-wide text-purple-700">
+                Build Up or Revisit
               </p>
 
-              <h2 className="mb-3 text-2xl font-black text-gray-900">
-                Full 200-Word Math Language Game
+              <h2 className="mt-2 text-2xl font-black text-gray-950">
+                Move forward without losing the foundations.
               </h2>
 
-              <p className="mb-5 text-gray-700">
-                The full version will unlock deeper practice, trap words, SEA
-                question decoding, category mastery, and boss levels.
+              <p className="mt-4 leading-7 text-gray-700">
+                Moving to a higher level does not replace earlier vocabulary.
+                Students can revisit any available level when they need to
+                strengthen a word, meaning or mathematical idea.
               </p>
-
-              <ul className="mb-6 space-y-2 text-gray-700">
-                <li>✓ All 200 SEA math words</li>
-                <li>✓ Trap word challenges</li>
-                <li>✓ SEA question decoder practice</li>
-                <li>✓ Category mastery</li>
-                <li>✓ Boss levels</li>
-              </ul>
-
-              <button
-                type="button"
-                disabled
-                className="rounded-xl bg-gray-200 px-5 py-3 font-black text-gray-600"
-              >
-                Unlock Full Version — Coming Soon
-              </button>
             </article>
           </section>
         </section>
@@ -251,4 +189,5 @@ export default function MathLanguageHome() {
     </div>
   );
 }
+
 

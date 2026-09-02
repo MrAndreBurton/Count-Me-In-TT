@@ -74,12 +74,25 @@ function calculateAccuracy(correctAnswers, incorrectAnswers) {
  */
 export async function getCurrentAuthenticatedUser() {
   const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  if (!session) {
+    return null;
+  }
+
+  const {
     data: { user },
-    error,
+    error: userError,
   } = await supabase.auth.getUser();
 
-  if (error) {
-    throw error;
+  if (userError) {
+    throw userError;
   }
 
   return user || null;
@@ -140,6 +153,7 @@ export async function getPlayableProfile() {
         avatar_key,
         profile_type,
         profile_status,
+        school_type,
         current_school,
         current_level,
         academic_year,

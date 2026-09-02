@@ -1,0 +1,11 @@
+export function getCurrentMembership(
+  memberships = [],
+) {
+  return (
+    memberships.find(
+      (membership) =>
+        membership.is_current === true,
+    ) || null
+  );
+}
+
