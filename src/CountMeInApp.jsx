@@ -20,7 +20,6 @@ import BocasCouvaLeaderboard from "./pages/BocasCouvaLeaderboard";
 import BocasArimaChallenge from "./pages/BocasArimaChallenge";
 import BocasArimaLeaderboard from "./pages/BocasArimaLeaderboard";
 
-
 import YouthopiaChallenge from "./pages/YouthopiaChallenge";
 import YouthopiaLeaderboard from "./pages/YouthopiaLeaderboard";
 import YouthopiaHallOfFame from "./pages/YouthopiaHallOfFame";
@@ -76,8 +75,15 @@ import MembershipProfilePage from "./pages/admin/MembershipProfilePage";
 import MembershipRequestsPage from "./pages/admin/MembershipRequestsPage";
 import MembershipRequestProfilePage from "./pages/admin/MembershipRequestProfilePage";
 
+import MathLanguageLevel2Home from "./pages/MathLanguageLevel2Home";
+import MathLanguageLevel2Dictionary from "./pages/MathLanguageLevel2Dictionary";
 import MathLanguageLevel2Play from "./pages/MathLanguageLevel2Play";
+
+import MathLanguageLevel3Home from "./pages/MathLanguageLevel3Home";
+import MathLanguageLevel3Dictionary from "./pages/MathLanguageLevel3Dictionary";
 import MathLanguageLevel3Play from "./pages/MathLanguageLevel3Play";
+
+import SymbolBankMyVault from "./pages/SymbolBankMyVault";
 
 import CoreGame from "./components/multiplication/CoreGame";
 import ScrollToTop from "./components/ScrollToTop";
@@ -100,8 +106,8 @@ export default function CountMeInApp() {
         <Route
           path="/membership/request"
           element={<MembershipRequest />}
-         />
-        
+        />
+
         <Route path="/login" element={<Login />} />
 
         <Route
@@ -172,11 +178,11 @@ export default function CountMeInApp() {
         <Route
           path="/admin"
           element={
-           <AdminRoute>
-             <AdminDashboard />
+            <AdminRoute>
+              <AdminDashboard />
             </AdminRoute>
-           }
-         />
+          }
+        />
 
         <Route
           path="/workspace"
@@ -186,108 +192,106 @@ export default function CountMeInApp() {
         <Route
           path="/admin/students"
           element={
-           <AdminRoute>
-            <StudentsPage />
-           </AdminRoute>
+            <AdminRoute>
+              <StudentsPage />
+            </AdminRoute>
           }
-         />
-      
+        />
+
         <Route
-         path="/admin/students/new"
-         element={
-           <AdminRoute>
-             <AddStudentPage />
-          </AdminRoute>
-         }
-       />
+          path="/admin/students/new"
+          element={
+            <AdminRoute>
+              <AddStudentPage />
+            </AdminRoute>
+          }
+        />
 
         <Route
           path="/admin/students/:studentId"
           element={
-           <AdminRoute>
-             <StudentProfilePage />
-           </AdminRoute>
-          }
-         />
-
-       <Route
-         path="/admin/students/:studentId/edit"
-         element={
-           <AdminRoute>
-             <EditStudentPage />
-           </AdminRoute>
-         }
-       />
-
-       <Route
-          path="/admin/parents"
-          element={
-           <AdminRoute>
-             <ParentsPage />
-           </AdminRoute>
-         }
-       />
-
-       <Route
-         path="/admin/parents/new"
-         element={
-           <AdminRoute>
-             <AddParentPage />
+            <AdminRoute>
+              <StudentProfilePage />
             </AdminRoute>
-         }
-       />
-
-       <Route
-         path="/admin/parents/:parentId/edit"
-         element={
-           <AdminRoute>
-             <EditParentPage />
-           </AdminRoute>
-         }
-       />
-
-       <Route
-         path="/admin/parents/:parentId"
-         element={
-           <AdminRoute>
-             <ParentProfilePage />
-           </AdminRoute>
-         }
-       />
-
-       <Route
-         path="/admin/memberships"
-         element={
-           <AdminRoute>
-             <MembershipsPage />
-           </AdminRoute>
-         }
+          }
         />
 
-       <Route
-         path="/admin/memberships/requests"
-         element={<MembershipRequestsPage />}
-       />
+        <Route
+          path="/admin/students/:studentId/edit"
+          element={
+            <AdminRoute>
+              <EditStudentPage />
+            </AdminRoute>
+          }
+        />
 
-       <Route
-         path="/admin/memberships/requests/:requestId"
-         element={<MembershipRequestProfilePage />}
-       />
+        <Route
+          path="/admin/parents"
+          element={
+            <AdminRoute>
+              <ParentsPage />
+            </AdminRoute>
+          }
+        />
 
-       <Route
-         path="/admin/memberships/:membershipId"
-         element={
-           <AdminRoute>
-             <MembershipProfilePage />
-           </AdminRoute>
-         }
-       />
+        <Route
+          path="/admin/parents/new"
+          element={
+            <AdminRoute>
+              <AddParentPage />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/parents/:parentId/edit"
+          element={
+            <AdminRoute>
+              <EditParentPage />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/parents/:parentId"
+          element={
+            <AdminRoute>
+              <ParentProfilePage />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/memberships"
+          element={
+            <AdminRoute>
+              <MembershipsPage />
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/memberships/requests"
+          element={<MembershipRequestsPage />}
+        />
+
+        <Route
+          path="/admin/memberships/requests/:requestId"
+          element={<MembershipRequestProfilePage />}
+        />
+
+        <Route
+          path="/admin/memberships/:membershipId"
+          element={
+            <AdminRoute>
+              <MembershipProfilePage />
+            </AdminRoute>
+          }
+        />
 
         <Route
           path="/games/multiplication"
-          element={
-            <CoreGame initialPreset="12x12" />
-          }
+          element={<CoreGame initialPreset="12x12" />}
         />
 
         <Route
@@ -575,15 +579,15 @@ export default function CountMeInApp() {
           element={<BocasHallOfFame />}
         />
 
-<Route
-  path="/bocas-arima-challenge"
-  element={<BocasArimaChallenge />}
-/>
+        <Route
+          path="/bocas-arima-challenge"
+          element={<BocasArimaChallenge />}
+        />
 
-<Route
-  path="/bocas-arima-leaderboard"
-  element={<BocasArimaLeaderboard />}
-/>
+        <Route
+          path="/bocas-arima-leaderboard"
+          element={<BocasArimaLeaderboard />}
+        />
 
         <Route
           path="/youthopia-hall-of-fame"
@@ -610,86 +614,121 @@ export default function CountMeInApp() {
           element={<StylesRules />}
         />
 
-       {/* Math Language — Unified Level Architecture */}
+        {/* Math Language — Unified Level Architecture */}
 
-<Route
-  path="/math-language"
-  element={<MathLanguageHome />}
-/>
+        <Route
+          path="/math-language"
+          element={<MathLanguageHome />}
+        />
 
-<Route
-  path="/math-language/level-1"
-  element={<MathLanguageLevel1Home />}
-/>
+        <Route
+          path="/math-language/level-1"
+          element={<MathLanguageLevel1Home />}
+        />
 
-<Route
-  path="/math-language/level-1/play"
-  element={<MathLanguagePlay />}
-/>
+        <Route
+          path="/math-language/level-1/play"
+          element={<MathLanguagePlay />}
+        />
 
-<Route
-  path="/math-language/level-1/dictionary"
-  element={<MathLanguageDictionary />}
-/>
+        <Route
+          path="/math-language/level-1/dictionary"
+          element={<MathLanguageDictionary />}
+        />
 
-<Route
-  path="/math-language/level-2"
-  element={<MathLanguageLevel2Play />}
-/>
+        <Route
+          path="/math-language/level-2"
+          element={<MathLanguageLevel2Home />}
+        />
 
-<Route
-  path="/math-language/level-3"
-  element={<MathLanguageLevel3Play />}
-/>
+        <Route
+          path="/math-language/level-2/dictionary"
+          element={<MathLanguageLevel2Dictionary />}
+        />
 
-{/* Legacy Math Language routes */}
+        <Route
+          path="/math-language/level-2/play"
+          element={<MathLanguageLevel2Play />}
+        />
 
-<Route
-  path="/math-language/play"
-  element={
-    <Navigate
-      to="/math-language/level-1/play"
-      replace
-    />
-  }
-/>
+        <Route
+          path="/math-language/level-3"
+          element={<MathLanguageLevel3Home />}
+        />
 
-<Route
-  path="/math-language/dictionary"
-  element={
-    <Navigate
-      to="/math-language/level-1/dictionary"
-      replace
-    />
-  }
-/>
+        <Route
+          path="/math-language/level-3/dictionary"
+          element={<MathLanguageLevel3Dictionary />}
+        />
 
-{/* Previous Level 2 / Level 3 development URLs */}
+        <Route
+          path="/math-language/level-3/play"
+          element={<MathLanguageLevel3Play />}
+        />
 
-<Route
-  path="/development/math-language-level2"
-  element={
-    <Navigate
-      to="/math-language/level-2"
-      replace
-    />
-  }
-/>
+        {/* Legacy Math Language routes */}
 
-<Route
-  path="/development/math-language-level3"
-  element={
-    <Navigate
-      to="/math-language/level-3"
-      replace
-    />
-  }
-/>
+        <Route
+          path="/math-language/play"
+          element={
+            <Navigate
+              to="/math-language/level-1/play"
+              replace
+            />
+          }
+        />
 
-<Route path="/symbol-bank" element={<SymbolBankHome />} />
-<Route path="/symbol-bank/vault" element={<SymbolBankVault />} />
-<Route path="/symbol-bank/vault/:symbolId" element={<SymbolBankSymbol />} />
+        <Route
+          path="/math-language/dictionary"
+          element={
+            <Navigate
+              to="/math-language/level-1/dictionary"
+              replace
+            />
+          }
+        />
 
+        {/* Previous Level 2 / Level 3 development URLs */}
+
+        <Route
+          path="/development/math-language-level2"
+          element={
+            <Navigate
+              to="/math-language/level-2/play"
+              replace
+            />
+          }
+        />
+
+        <Route
+          path="/development/math-language-level3"
+          element={
+            <Navigate
+              to="/math-language/level-3/play"
+              replace
+            />
+          }
+        />
+
+        <Route
+          path="/symbol-bank"
+          element={<SymbolBankHome />}
+        />
+
+        <Route
+          path="/symbol-bank/vault"
+          element={<SymbolBankVault />}
+        />
+
+        <Route
+          path="/symbol-bank/vault/:symbolId"
+          element={<SymbolBankSymbol />}
+        />
+
+        <Route
+          path="/symbol-bank/my-vault"
+          element={<SymbolBankMyVault />}
+        />
       </Routes>
     </Router>
   );
