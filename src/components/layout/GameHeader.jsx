@@ -1,4 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Link,
   useLocation,
@@ -16,8 +20,8 @@ const gameLinks = [
     to: "/games/multiplication",
   },
   {
-    label: "Math Language",
-    to: "/math-language",
+    label: "Challenges",
+    to: "/challenges",
   },
   {
     label: "Leaderboard",
@@ -46,7 +50,9 @@ function getInitials(fullName = "") {
   }
 
   if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase();
+    return words[0]
+      .charAt(0)
+      .toUpperCase();
   }
 
   return `${words[0].charAt(0)}${words[
@@ -54,23 +60,50 @@ function getInitials(fullName = "") {
   ].charAt(0)}`.toUpperCase();
 }
 
-function isCurrentPath(pathname, destination) {
+function isCurrentPath(
+  pathname,
+  destination
+) {
   if (destination === "/games") {
     return pathname === "/games";
   }
 
-  if (destination === "/math-language") {
-    return pathname.startsWith("/math-language");
-  }
-
-  if (destination === "/games/multiplication") {
+  if (
+    destination ===
+    "/games/multiplication"
+  ) {
     return (
-      pathname === "/games/multiplication" ||
+      pathname ===
+        "/games/multiplication" ||
       pathname === "/play" ||
       pathname === "/5x5grid" ||
       pathname === "/5x12grid" ||
       pathname === "/12x12grid" ||
       pathname === "/15x15grid"
+    );
+  }
+
+  if (
+    destination === "/challenges"
+  ) {
+    return pathname.startsWith(
+      "/challenges"
+    );
+  }
+
+  if (
+    destination === "/leaderboard"
+  ) {
+    return pathname.startsWith(
+      "/leaderboard"
+    );
+  }
+
+  if (
+    destination === "/hall-of-fame"
+  ) {
+    return pathname.startsWith(
+      "/hall-of-fame"
     );
   }
 
@@ -83,7 +116,9 @@ export default function GameHeader() {
 
   const accountMenuRef = useRef(null);
 
-  const [user, setUser] = useState(null);
+  const [user, setUser] =
+    useState(null);
+
   const [accountProfile, setAccountProfile] =
     useState(null);
 
@@ -96,7 +131,9 @@ export default function GameHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState(false);
 
-  const [logoutError, setLogoutError] = useState("");
+  const [logoutError, setLogoutError] =
+    useState("");
+
   const [isLoggingOut, setIsLoggingOut] =
     useState(false);
 
@@ -117,18 +154,22 @@ export default function GameHeader() {
 
       setUser(authenticatedUser);
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(
-          `
-            id,
-            full_name,
-            account_type,
-            account_status
-          `
-        )
-        .eq("id", authenticatedUser.id)
-        .maybeSingle();
+      const { data, error } =
+        await supabase
+          .from("profiles")
+          .select(
+            `
+              id,
+              full_name,
+              account_type,
+              account_status
+            `
+          )
+          .eq(
+            "id",
+            authenticatedUser.id
+          )
+          .maybeSingle();
 
       if (!active) return;
 
@@ -141,12 +182,13 @@ export default function GameHeader() {
         setAccountProfile({
           id: authenticatedUser.id,
           full_name:
-            authenticatedUser.user_metadata
-              ?.full_name ||
+            authenticatedUser
+              .user_metadata?.full_name ||
             authenticatedUser.email ||
             "Player",
           account_type:
-            authenticatedUser.user_metadata
+            authenticatedUser
+              .user_metadata
               ?.account_type || null,
           account_status: null,
         });
@@ -155,12 +197,14 @@ export default function GameHeader() {
           data || {
             id: authenticatedUser.id,
             full_name:
-              authenticatedUser.user_metadata
+              authenticatedUser
+                .user_metadata
                 ?.full_name ||
               authenticatedUser.email ||
               "Player",
             account_type:
-              authenticatedUser.user_metadata
+              authenticatedUser
+                .user_metadata
                 ?.account_type || null,
             account_status: null,
           }
@@ -178,14 +222,34 @@ export default function GameHeader() {
         error,
       } = await supabase.auth.getUser();
 
-      if (error) {
+      const errorMessage = String(
+        error?.message || ""
+      ).toLowerCase();
+
+      const isMissingSession =
+        errorMessage.includes(
+          "auth session missing"
+        ) ||
+        errorMessage.includes(
+          "session missing"
+        );
+
+      if (
+        error &&
+        !isMissingSession
+      ) {
         console.error(
           "Game header authentication error:",
           error
         );
       }
 
-      await loadAccount(currentUser || null);
+      if (!currentUser) {
+        await loadAccount(null);
+        return;
+      }
+
+      await loadAccount(currentUser);
     }
 
     initialiseAccount();
@@ -194,7 +258,9 @@ export default function GameHeader() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        loadAccount(session?.user || null);
+        loadAccount(
+          session?.user || null
+        );
       }
     );
 
@@ -205,7 +271,9 @@ export default function GameHeader() {
   }, []);
 
   useEffect(() => {
-    const handlePointerDown = (event) => {
+    const handlePointerDown = (
+      event
+    ) => {
       if (
         accountMenuRef.current &&
         !accountMenuRef.current.contains(
@@ -240,8 +308,11 @@ export default function GameHeader() {
     user?.email ||
     "Player";
 
-  const firstName = getFirstName(fullName);
-  const initials = getInitials(fullName);
+  const firstName =
+    getFirstName(fullName);
+
+  const initials =
+    getInitials(fullName);
 
   const accountType =
     accountProfile?.account_type ||
@@ -284,25 +355,25 @@ export default function GameHeader() {
   };
 
   return (
-   <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         <Link
           to="/games"
           className="flex shrink-0 items-center gap-3"
-          aria-label="CountMeInTT home"
+          aria-label="CountMeInTT games"
         >
           <img
-  src="/CountmeIn Logo No bg.png"
-  alt="CountMeInTT"
-  className="h-11 w-auto object-contain"
-/>
+            src="/CountmeIn Logo No bg.png"
+            alt="CountMeInTT"
+            className="h-11 w-auto object-contain"
+          />
 
-          <div className="leading-tight">
+          <div className="hidden leading-tight sm:block">
             <p className="text-lg font-black text-gray-950">
               CountMeInTT
             </p>
 
-            <p className="hidden text-xs font-bold text-gray-500 sm:block">
+            <p className="text-xs font-bold text-gray-500">
               Play. Practise. Improve.
             </p>
           </div>
@@ -313,10 +384,11 @@ export default function GameHeader() {
           aria-label="Game navigation"
         >
           {gameLinks.map((link) => {
-            const active = isCurrentPath(
-              location.pathname,
-              link.to
-            );
+            const active =
+              isCurrentPath(
+                location.pathname,
+                link.to
+              );
 
             return (
               <Link
@@ -350,7 +422,9 @@ export default function GameHeader() {
                     (current) => !current
                   )
                 }
-                aria-expanded={accountMenuOpen}
+                aria-expanded={
+                  accountMenuOpen
+                }
                 aria-haspopup="menu"
                 className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-2.5 py-2 text-left transition hover:border-blue-300 hover:bg-blue-50"
               >
@@ -364,7 +438,8 @@ export default function GameHeader() {
                   </span>
 
                   <span className="block text-xs font-semibold capitalize text-gray-500">
-                    {accountType || "Account"}
+                    {accountType ||
+                      "Account"}
                   </span>
                 </span>
 
@@ -396,9 +471,11 @@ export default function GameHeader() {
                     </p>
 
                     <span className="mt-3 inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">
-                      {accountType === "parent"
+                      {accountType ===
+                      "parent"
                         ? "Parent Account"
-                        : accountType === "student"
+                        : accountType ===
+                            "student"
                           ? "Student Account"
                           : "CountMeInTT Account"}
                     </span>
@@ -475,11 +552,15 @@ export default function GameHeader() {
                 (current) => !current
               )
             }
-            aria-expanded={mobileMenuOpen}
+            aria-expanded={
+              mobileMenuOpen
+            }
             aria-label="Open game navigation"
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-xl font-black text-gray-800 transition hover:bg-gray-100 lg:hidden"
           >
-            {mobileMenuOpen ? "×" : "☰"}
+            {mobileMenuOpen
+              ? "×"
+              : "☰"}
           </button>
         </div>
       </div>
@@ -491,10 +572,11 @@ export default function GameHeader() {
             aria-label="Mobile game navigation"
           >
             {gameLinks.map((link) => {
-              const active = isCurrentPath(
-                location.pathname,
-                link.to
-              );
+              const active =
+                isCurrentPath(
+                  location.pathname,
+                  link.to
+                );
 
               return (
                 <Link
@@ -512,10 +594,33 @@ export default function GameHeader() {
               );
             })}
 
+            <div className="my-1 border-t border-gray-200" />
+
+            <Link
+              to="/"
+              className="rounded-xl bg-gray-50 px-4 py-3 font-black text-gray-800 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+              CountMeInTT Home
+            </Link>
+
+            <Link
+              to="/math-language"
+              className="rounded-xl bg-gray-50 px-4 py-3 font-black text-gray-800 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+              Math Language
+            </Link>
+
+            <Link
+              to="/symbol-bank"
+              className="rounded-xl bg-gray-50 px-4 py-3 font-black text-gray-800 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+              Symbol Bank
+            </Link>
+
             {user ? (
               <Link
                 to="/dashboard"
-                className="rounded-xl bg-blue-600 px-4 py-3 text-center font-black text-white"
+                className="mt-2 rounded-xl bg-blue-600 px-4 py-3 text-center font-black text-white"
               >
                 My Dashboard
               </Link>
@@ -542,4 +647,5 @@ export default function GameHeader() {
     </header>
   );
 }
+
 

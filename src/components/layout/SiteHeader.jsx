@@ -36,7 +36,9 @@ function getInitials(fullName = "") {
   }
 
   if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase();
+    return words[0]
+      .charAt(0)
+      .toUpperCase();
   }
 
   return `${words[0].charAt(0)}${words[
@@ -51,11 +53,14 @@ export default function SiteHeader() {
   const desktopAccountMenuRef = useRef(null);
   const mobileAccountMenuRef = useRef(null);
 
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] =
+    useState(false);
+
   const [accountMenuOpen, setAccountMenuOpen] =
     useState(false);
 
   const [user, setUser] = useState(null);
+
   const [accountProfile, setAccountProfile] =
     useState(null);
 
@@ -143,35 +148,39 @@ export default function SiteHeader() {
     }
 
     async function initialiseAccount() {
-  setIsLoadingAccount(true);
+      setIsLoadingAccount(true);
 
-  const {
-    data: { user: currentUser },
-    error,
-  } = await supabase.auth.getUser();
+      const {
+        data: { user: currentUser },
+        error,
+      } = await supabase.auth.getUser();
 
-  const errorMessage = String(
-    error?.message || ""
-  ).toLowerCase();
+      const errorMessage = String(
+        error?.message || ""
+      ).toLowerCase();
 
-  const isMissingSession =
-    errorMessage.includes("auth session missing") ||
-    errorMessage.includes("session missing");
+      const isMissingSession =
+        errorMessage.includes(
+          "auth session missing"
+        ) ||
+        errorMessage.includes(
+          "session missing"
+        );
 
-  if (error && !isMissingSession) {
-    console.error(
-      "Site header authentication error:",
-      error
-    );
-  }
+      if (error && !isMissingSession) {
+        console.error(
+          "Site header authentication error:",
+          error
+        );
+      }
 
-  if (!currentUser) {
-    await loadAccount(null);
-    return;
-  }
+      if (!currentUser) {
+        await loadAccount(null);
+        return;
+      }
 
-  await loadAccount(currentUser);
-}
+      await loadAccount(currentUser);
+    }
 
     initialiseAccount();
 
@@ -179,7 +188,9 @@ export default function SiteHeader() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        loadAccount(session?.user || null);
+        loadAccount(
+          session?.user || null
+        );
       }
     );
 
@@ -190,37 +201,37 @@ export default function SiteHeader() {
   }, []);
 
   useEffect(() => {
-  const handlePointerDown = (event) => {
-    const clickedInsideDesktop =
-      desktopAccountMenuRef.current?.contains(
-        event.target
-      );
+    const handlePointerDown = (event) => {
+      const clickedInsideDesktop =
+        desktopAccountMenuRef.current?.contains(
+          event.target
+        );
 
-    const clickedInsideMobile =
-      mobileAccountMenuRef.current?.contains(
-        event.target
-      );
+      const clickedInsideMobile =
+        mobileAccountMenuRef.current?.contains(
+          event.target
+        );
 
-    if (
-      !clickedInsideDesktop &&
-      !clickedInsideMobile
-    ) {
-      setAccountMenuOpen(false);
-    }
-  };
+      if (
+        !clickedInsideDesktop &&
+        !clickedInsideMobile
+      ) {
+        setAccountMenuOpen(false);
+      }
+    };
 
-  document.addEventListener(
-    "mousedown",
-    handlePointerDown
-  );
-
-  return () => {
-    document.removeEventListener(
+    document.addEventListener(
       "mousedown",
       handlePointerDown
     );
-  };
-}, []);
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handlePointerDown
+      );
+    };
+  }, []);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -233,8 +244,11 @@ export default function SiteHeader() {
     user?.email ||
     "Player";
 
-  const firstName = getFirstName(fullName);
-  const initials = getInitials(fullName);
+  const firstName =
+    getFirstName(fullName);
+
+  const initials =
+    getInitials(fullName);
 
   const accountType =
     accountProfile?.account_type ||
@@ -282,20 +296,21 @@ export default function SiteHeader() {
         <Link
           to="/"
           onClick={closeMenu}
-          className="flex items-center gap-3"
+          className="flex shrink-0 items-center gap-3"
+          aria-label="CountMeInTT home"
         >
           <img
-            src="/as-online-logo.svg"
-            alt="A's Online"
-            className="h-10 w-auto rounded-md ring-1 ring-black/10 sm:h-11"
+            src="/CountmeIn Logo No bg.png"
+            alt="CountMeInTT"
+            className="h-11 w-auto object-contain sm:h-12"
           />
 
-          <div>
-            <p className="text-lg font-black leading-tight text-blue-600 sm:text-xl">
-              Count Me In TT!
+          <div className="hidden leading-tight sm:block">
+            <p className="text-lg font-black text-gray-950">
+              CountMeInTT
             </p>
 
-            <p className="text-[11px] font-semibold text-gray-600">
+            <p className="text-[11px] font-semibold text-gray-500">
               Powered by A&apos;s Online
             </p>
           </div>
@@ -325,6 +340,13 @@ export default function SiteHeader() {
           </NavLink>
 
           <NavLink
+            to="/symbol-bank"
+            className={navLinkClass}
+          >
+            Symbol Bank
+          </NavLink>
+
+          <NavLink
             to="/challenges"
             className={navLinkClass}
           >
@@ -345,20 +367,13 @@ export default function SiteHeader() {
             Membership
           </NavLink>
 
-          <Link
-            to="/games/multiplication"
-            className="ml-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-black text-white shadow transition hover:bg-blue-700"
-          >
-            Play Now
-          </Link>
-
           {isLoadingAccount ? (
             <div className="ml-1 h-10 w-24 animate-pulse rounded-lg bg-gray-100" />
           ) : user ? (
             <div
-  ref={desktopAccountMenuRef}
-  className="relative ml-1"
->
+              ref={desktopAccountMenuRef}
+              className="relative ml-1"
+            >
               <button
                 type="button"
                 onClick={() =>
@@ -366,7 +381,9 @@ export default function SiteHeader() {
                     (current) => !current
                   )
                 }
-                aria-expanded={accountMenuOpen}
+                aria-expanded={
+                  accountMenuOpen
+                }
                 aria-haspopup="menu"
                 className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-left transition hover:border-blue-300 hover:bg-blue-50"
               >
@@ -380,7 +397,8 @@ export default function SiteHeader() {
                   </span>
 
                   <span className="block text-[11px] font-semibold capitalize text-gray-500">
-                    {accountType || "Account"}
+                    {accountType ||
+                      "Account"}
                   </span>
                 </span>
 
@@ -412,9 +430,11 @@ export default function SiteHeader() {
                     </p>
 
                     <span className="mt-3 inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">
-                      {accountType === "parent"
+                      {accountType ===
+                      "parent"
                         ? "Parent Account"
-                        : accountType === "student"
+                        : accountType ===
+                            "student"
                           ? "Student Account"
                           : "CountMeInTT Account"}
                     </span>
@@ -435,6 +455,14 @@ export default function SiteHeader() {
                       className="rounded-lg px-3 py-2.5 text-sm font-black text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
                     >
                       All Games
+                    </Link>
+
+                    <Link
+                      role="menuitem"
+                      to="/symbol-bank/my-vault"
+                      className="rounded-lg px-3 py-2.5 text-sm font-black text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      My Symbol Vault
                     </Link>
 
                     <Link
@@ -467,21 +495,30 @@ export default function SiteHeader() {
               )}
             </div>
           ) : (
-            <Link
-              to="/login"
-              className="ml-1 rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-black text-blue-600 transition hover:bg-blue-50"
-            >
-              Log In
-            </Link>
+            <div className="ml-1 flex items-center gap-2">
+              <Link
+                to="/login"
+                className="rounded-lg border border-blue-600 bg-white px-4 py-2 text-sm font-black text-blue-600 transition hover:bg-blue-50"
+              >
+                Log In
+              </Link>
+
+              <Link
+                to="/register"
+                className="hidden rounded-lg bg-blue-600 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-700 xl:inline-flex"
+              >
+                Join
+              </Link>
+            </div>
           )}
         </nav>
 
         <div className="flex items-center gap-2 lg:hidden">
           {!isLoadingAccount && user && (
             <div
-  ref={mobileAccountMenuRef}
-  className="relative"
->
+              ref={mobileAccountMenuRef}
+              className="relative"
+            >
               <button
                 type="button"
                 onClick={() =>
@@ -491,6 +528,9 @@ export default function SiteHeader() {
                 }
                 className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-100 text-sm font-black text-blue-700"
                 aria-label="Open account menu"
+                aria-expanded={
+                  accountMenuOpen
+                }
               >
                 {initials}
               </button>
@@ -522,17 +562,37 @@ export default function SiteHeader() {
                       All Games
                     </Link>
 
+                    <Link
+                      to="/symbol-bank/my-vault"
+                      className="rounded-lg px-3 py-2.5 text-sm font-black text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      My Symbol Vault
+                    </Link>
+
+                    <Link
+                      to="/membership"
+                      className="rounded-lg px-3 py-2.5 text-sm font-black text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      Membership
+                    </Link>
+
                     <button
                       type="button"
                       disabled={isLoggingOut}
                       onClick={handleLogout}
-                      className="rounded-lg px-3 py-2.5 text-left text-sm font-black text-red-600 hover:bg-red-50"
+                      className="rounded-lg px-3 py-2.5 text-left text-sm font-black text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isLoggingOut
                         ? "Logging Out..."
                         : "Log Out"}
                     </button>
                   </div>
+
+                  {logoutError && (
+                    <p className="border-t border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                      {logoutError}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -549,7 +609,9 @@ export default function SiteHeader() {
             aria-label="Open navigation menu"
             className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-black text-black"
           >
-            {menuOpen ? "Close" : "Menu"}
+            {menuOpen
+              ? "Close"
+              : "Menu"}
           </button>
         </div>
       </div>
@@ -583,6 +645,14 @@ export default function SiteHeader() {
             </NavLink>
 
             <NavLink
+              to="/symbol-bank"
+              className={navLinkClass}
+              onClick={closeMenu}
+            >
+              Symbol Bank
+            </NavLink>
+
+            <NavLink
               to="/challenges"
               className={navLinkClass}
               onClick={closeMenu}
@@ -606,14 +676,6 @@ export default function SiteHeader() {
               Membership
             </NavLink>
 
-            <Link
-              to="/games/multiplication"
-              onClick={closeMenu}
-              className="rounded-lg bg-blue-600 px-4 py-3 text-center font-black text-white"
-            >
-              Play Now
-            </Link>
-
             {user ? (
               <Link
                 to="/dashboard"
@@ -623,13 +685,23 @@ export default function SiteHeader() {
                 My Dashboard
               </Link>
             ) : (
-              <Link
-                to="/login"
-                onClick={closeMenu}
-                className="rounded-lg border border-blue-600 bg-white px-4 py-3 text-center font-black text-blue-600"
-              >
-                Log In
-              </Link>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <Link
+                  to="/login"
+                  onClick={closeMenu}
+                  className="rounded-lg border border-blue-600 bg-white px-4 py-3 text-center font-black text-blue-600"
+                >
+                  Log In
+                </Link>
+
+                <Link
+                  to="/register"
+                  onClick={closeMenu}
+                  className="rounded-lg bg-blue-600 px-4 py-3 text-center font-black text-white"
+                >
+                  Join
+                </Link>
+              </div>
             )}
           </div>
         </nav>
@@ -637,4 +709,5 @@ export default function SiteHeader() {
     </header>
   );
 }
+
 
