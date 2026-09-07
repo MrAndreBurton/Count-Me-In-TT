@@ -1,40 +1,38 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import SymbolBankShell from "../components/symbolBank/SymbolBankShell";
-import SymbolGrid from "../components/symbolBank/SymbolGrid";
-import { getActiveSymbolBankRecords } from "../lib/symbolBank";
-import { getPlayableProfileMembership } from "../lib/membership";
-import { isPaidMembership } from "../lib/membershipAccess";
+import MyVaultGrid from "../components/symbolBank/MyVaultGrid";
+import MyVaultSummary from "../components/symbolBank/MyVaultSummary";
+import {
+  getMyVaultData,
+  VAULT_STATES,
+} from "../lib/symbolVault";
 
-export default function SymbolBankVault() {
-  const [release, setRelease] = useState(null);
-  const [records, setRecords] = useState([]);
+export default function SymbolBankMyVault() {
+  const [data, setData] = useState(null);
   const [query, setQuery] = useState("");
   const [level, setLevel] = useState("all");
-  const [accessFilter, setAccessFilter] = useState("all");
-  const [sortOrder, setSortOrder] = useState("alphabetical");
-  const [memberAccess, setMemberAccess] = useState(false);
+  const [accessFilter, setAccessFilter] =
+    useState("all");
+  const [state, setState] = useState("all");
+  const [sortOrder, setSortOrder] =
+    useState("alphabetical");
   const [error, setError] = useState("");
 
   useEffect(() => {
     let live = true;
 
-    Promise.all([
-      getActiveSymbolBankRecords(),
-      getPlayableProfileMembership(),
-    ])
-      .then(([bank, access]) => {
-        if (!live) return;
-
-        setRelease(bank.release);
-        setRecords(bank.records);
-        setMemberAccess(
-          isPaidMembership(access.membership)
-        );
+    getMyVaultData()
+      .then((result) => {
+        if (live) {
+          setData(result);
+        }
       })
       .catch((err) => {
         if (live) {
           setError(
-            err?.message || "Could not load vault."
+            err?.message ||
+              "Could not load My Vault."
           );
         }
       });
@@ -43,6 +41,8 @@ export default function SymbolBankVault() {
       live = false;
     };
   }, []);
+
+  const records = data?.records || [];
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -58,6 +58,13 @@ export default function SymbolBankVault() {
       if (
         accessFilter !== "all" &&
         record.access_tier !== accessFilter
+      ) {
+        return false;
+      }
+
+      if (
+        state !== "all" &&
+        record.vaultState !== state
       ) {
         return false;
       }
@@ -104,27 +111,104 @@ export default function SymbolBankVault() {
     query,
     level,
     accessFilter,
+    state,
     sortOrder,
   ]);
+
+  if (error) {
+    return (
+      <SymbolBankShell>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-red-800">
+          {error}
+        </div>
+      </SymbolBankShell>
+    );
+  }
+
+  if (!data) {
+    return (
+      <SymbolBankShell>
+        <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          Opening My Vault…
+        </div>
+      </SymbolBankShell>
+    );
+  }
+
+  if (data.guest) {
+    return (
+      <SymbolBankShell>
+        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+          <p className="text-xs font-black uppercase tracking-[.2em] text-blue-600">
+            My Vault
+          </p>
+
+          <h1 className="mt-2 text-3xl font-black sm:text-4xl">
+            Your mathematics knowledge account
+          </h1>
+
+          <p className="mt-4 max-w-2xl text-slate-600">
+            Sign in to track the symbols you
+            discover and, later, the symbols you
+            secure through the Mathematics Symbol
+            Challenge.
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              to="/login"
+              className="rounded-xl bg-blue-600 px-5 py-3 font-black text-white"
+            >
+              Sign in
+            </Link>
+
+            <Link
+              to="/symbol-bank/vault"
+              className="rounded-xl border border-slate-200 bg-white px-5 py-3 font-black text-slate-800"
+            >
+              Browse the Vault
+            </Link>
+          </div>
+        </section>
+      </SymbolBankShell>
+    );
+  }
+
+  const displayName =
+    data.profile?.public_display_name ||
+    data.profile?.first_name ||
+    "Student";
 
   return (
     <SymbolBankShell>
       <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <p className="text-xs font-black uppercase tracking-[.2em] text-blue-600">
-          The Vault
+          My Vault
         </p>
 
         <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-          Mathematics Symbol Bank
+          {displayName}&apos;s Mathematics Vault
         </h1>
 
         <p className="mt-3 text-slate-600">
-          {release
-            ? `${records.length} published records · active release ${release.symbol_bank_version}`
-            : "Loading active release…"}
+          {data.release
+            ? `${data.summary.total} symbols · active release ${data.release.symbol_bank_version}`
+            : "No active Symbol Bank release."}
         </p>
 
-        <div className="mt-6 grid gap-4">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+          Symbol Balance counts only symbols that
+          have reached SECURE through verified
+          learning evidence. Browsing a symbol can
+          mark it DISCOVERED, but it does not create
+          mastery.
+        </p>
+      </section>
+
+      <MyVaultSummary summary={data.summary} />
+
+      <section className="my-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid gap-4">
           <input
             type="search"
             value={query}
@@ -182,16 +266,39 @@ export default function SymbolBankVault() {
             </div>
 
             <select
+              value={state}
+              onChange={(event) =>
+                setState(event.target.value)
+              }
+              className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-700"
+              aria-label="Filter by My Vault state"
+            >
+              <option value="all">
+                All states
+              </option>
+
+              {VAULT_STATES.map((vaultState) => (
+                <option
+                  key={vaultState}
+                  value={vaultState}
+                >
+                  {vaultState}
+                </option>
+              ))}
+            </select>
+
+            <select
               value={sortOrder}
               onChange={(event) =>
                 setSortOrder(event.target.value)
               }
               className="rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-700"
-              aria-label="Sort Symbol Bank"
+              aria-label="Sort My Vault"
             >
               <option value="alphabetical">
                 A–Z
               </option>
+
               <option value="level">
                 Level → A–Z
               </option>
@@ -200,26 +307,15 @@ export default function SymbolBankVault() {
         </div>
       </section>
 
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-red-800">
-          {error}
-        </div>
-      ) : (
-        <>
-          <p className="mb-4 text-sm font-bold text-slate-600">
-            Showing {filtered.length} of{" "}
-            {records.length} ·{" "}
-            {memberAccess
-              ? "Member Vault open"
-              : "30 free · 62 member"}
-          </p>
+      <p className="mb-4 text-sm font-bold text-slate-600">
+        Showing {filtered.length} of{" "}
+        {records.length}
+        {data.memberAccess
+          ? " · Member Vault open"
+          : " · Free access"}
+      </p>
 
-          <SymbolGrid
-            records={filtered}
-            memberAccess={memberAccess}
-          />
-        </>
-      )}
+      <MyVaultGrid records={filtered} />
     </SymbolBankShell>
   );
 }
