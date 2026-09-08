@@ -7,21 +7,41 @@ import {
 
 import { shuffleSeeded } from "./seededRandom";
 
+const QB05 = "QB-05";
+
 function getConfusionGroups(record) {
   return Array.isArray(record?.confusion_group_ids)
     ? record.confusion_group_ids.map(String)
     : [];
 }
 
-function sharesConfusionGroup(target, candidate) {
+function getSharedConfusionGroupIds(
+  target,
+  candidate
+) {
   const targetGroups = new Set(
     getConfusionGroups(target)
   );
 
-  if (!targetGroups.size) return false;
+  if (!targetGroups.size) {
+    return [];
+  }
 
-  return getConfusionGroups(candidate).some((groupId) =>
-    targetGroups.has(groupId)
+  return getConfusionGroups(candidate).filter(
+    (groupId) =>
+      targetGroups.has(groupId)
+  );
+}
+
+function sharesConfusionGroup(
+  target,
+  candidate
+) {
+  return (
+    getSharedConfusionGroupIds(
+      target,
+      candidate
+    ).length > 0
   );
 }
 
@@ -33,25 +53,35 @@ function rankCandidates(target, records) {
   const fallback = [];
 
   for (const record of records) {
-    if (record.symbol_id === target.symbol_id) {
+    if (
+      record.symbol_id ===
+      target.symbol_id
+    ) {
       continue;
     }
 
-    if (sharesConfusionGroup(target, record)) {
+    if (
+      sharesConfusionGroup(
+        target,
+        record
+      )
+    ) {
       sharedConfusion.push(record);
       continue;
     }
 
     if (
       target.symbol_class &&
-      record.symbol_class === target.symbol_class
+      record.symbol_class ===
+        target.symbol_class
     ) {
       sameClass.push(record);
       continue;
     }
 
     if (
-      Number(record.level) === Number(target.level)
+      Number(record.level) ===
+      Number(target.level)
     ) {
       sameLevel.push(record);
       continue;
@@ -59,7 +89,8 @@ function rankCandidates(target, records) {
 
     if (
       Math.abs(
-        Number(record.level) - Number(target.level)
+        Number(record.level) -
+          Number(target.level)
       ) === 1
     ) {
       adjacentLevel.push(record);
@@ -69,19 +100,25 @@ function rankCandidates(target, records) {
     fallback.push(record);
   }
 
-  return [
+  return {
     sharedConfusion,
-    sameClass,
-    sameLevel,
-    adjacentLevel,
-    fallback,
-  ];
+    remaining: [
+      sameClass,
+      sameLevel,
+      adjacentLevel,
+      fallback,
+    ],
+  };
 }
 
 function getDistractorExclusions(record) {
   return new Set(
-    Array.isArray(record?.distractor_exclusions)
-      ? record.distractor_exclusions.map(String)
+    Array.isArray(
+      record?.distractor_exclusions
+    )
+      ? record.distractor_exclusions.map(
+          String
+        )
       : []
   );
 }
@@ -94,6 +131,102 @@ function setsIntersect(first, second) {
   }
 
   return false;
+}
+
+function isSafeCandidate({
+  target,
+  candidate,
+  behaviour,
+  excluded,
+  occupiedSemanticKeys,
+}) {
+  if (
+    candidate.symbol_id ===
+    target.symbol_id
+  ) {
+    return null;
+  }
+
+  if (
+    excluded.has(
+      String(candidate.symbol_id)
+    )
+  ) {
+    return null;
+  }
+
+  const answer = getAnswerSpec(
+    candidate,
+    behaviour
+  );
+
+  if (!answer.value) {
+    return null;
+  }
+
+  const candidateSemanticKeys =
+    getSemanticAnswerKeys(
+      candidate,
+      behaviour
+    );
+
+  if (
+    setsIntersect(
+      occupiedSemanticKeys,
+      candidateSemanticKeys
+    )
+  ) {
+    return null;
+  }
+
+  return {
+    answer,
+    candidateSemanticKeys,
+  };
+}
+
+function appendCandidate({
+  target,
+  candidate,
+  behaviour,
+  excluded,
+  occupiedSemanticKeys,
+  selected,
+}) {
+  const safe = isSafeCandidate({
+    target,
+    candidate,
+    behaviour,
+    excluded,
+    occupiedSemanticKeys,
+  });
+
+  if (!safe) {
+    return false;
+  }
+
+  const sharedConfusionGroupIds =
+    getSharedConfusionGroupIds(
+      target,
+      candidate
+    );
+
+  selected.push({
+    record: candidate,
+    answer: safe.answer,
+    sharedConfusionGroup:
+      sharedConfusionGroupIds.length > 0,
+    sharedConfusionGroupIds,
+  });
+
+  for (
+    const key of
+    safe.candidateSemanticKeys
+  ) {
+    occupiedSemanticKeys.add(key);
+  }
+
+  return true;
 }
 
 export function selectDistractors({
@@ -109,64 +242,165 @@ export function selectDistractors({
   const selected = [];
 
   const occupiedSemanticKeys =
-    getSemanticAnswerKeys(target, behaviour);
-
-  for (const bucket of rankCandidates(
-    target,
-    records
-  )) {
-    const shuffledBucket = shuffleSeeded(
-      bucket,
-      random
+    getSemanticAnswerKeys(
+      target,
+      behaviour
     );
 
-    for (const record of shuffledBucket) {
-      if (selected.length >= count) {
+  const ranked =
+    rankCandidates(
+      target,
+      records
+    );
+
+  /*
+   * QB-05 is a confusion-pair behaviour.
+   *
+   * At least one approved same-group
+   * confusable is mandatory.
+   */
+  if (behaviour === QB05) {
+    const sharedCandidates =
+      shuffleSeeded(
+        ranked.sharedConfusion,
+        random
+      );
+
+    let requiredConfusableAdded = false;
+
+    for (
+      const candidate of
+      sharedCandidates
+    ) {
+      if (
+        appendCandidate({
+          target,
+          candidate,
+          behaviour,
+          excluded,
+          occupiedSemanticKeys,
+          selected,
+        })
+      ) {
+        requiredConfusableAdded = true;
+        break;
+      }
+    }
+
+    if (!requiredConfusableAdded) {
+      throw new Error(
+        `QB-05 requires an approved playable confusion-group distractor for ${target.symbol_id}.`
+      );
+    }
+  }
+
+  /*
+   * After QB-05's mandatory confusable
+   * is secured, continue through the
+   * standard hardened hierarchy.
+   *
+   * For QB-01 through QB-04,
+   * shared confusion remains a priority,
+   * not a requirement.
+   */
+  const buckets =
+    behaviour === QB05
+      ? ranked.remaining
+      : [
+          ranked.sharedConfusion,
+          ...ranked.remaining,
+        ];
+
+  for (const bucket of buckets) {
+    const shuffledBucket =
+      shuffleSeeded(
+        bucket,
+        random
+      );
+
+    for (
+      const candidate of
+      shuffledBucket
+    ) {
+      if (
+        selected.length >= count
+      ) {
         break;
       }
 
-      if (excluded.has(record.symbol_id)) {
-        continue;
-      }
-
-      const answer = getAnswerSpec(
-        record,
-        behaviour
-      );
-
-      if (!answer.value) {
-        continue;
-      }
-
-      const candidateSemanticKeys =
-        getSemanticAnswerKeys(
-          record,
-          behaviour
-        );
-
       if (
-        setsIntersect(
-          occupiedSemanticKeys,
-          candidateSemanticKeys
+        selected.some(
+          (item) =>
+            item.record.symbol_id ===
+            candidate.symbol_id
         )
       ) {
         continue;
       }
 
-      selected.push({
-        record,
-        answer,
-        sharedConfusionGroup:
-          sharesConfusionGroup(target, record),
+      appendCandidate({
+        target,
+        candidate,
+        behaviour,
+        excluded,
+        occupiedSemanticKeys,
+        selected,
       });
-
-      for (const key of candidateSemanticKeys) {
-        occupiedSemanticKeys.add(key);
-      }
     }
 
-    if (selected.length >= count) {
+    if (
+      selected.length >= count
+    ) {
       break;
+    }
+  }
+
+  /*
+   * A small confusion group may contain
+   * more useful safe alternatives after
+   * the mandatory QB-05 choice.
+   *
+   * Revisit unused approved confusables
+   * before declaring failure.
+   */
+  if (
+    behaviour === QB05 &&
+    selected.length < count
+  ) {
+    const remainingShared =
+      shuffleSeeded(
+        ranked.sharedConfusion,
+        random
+      );
+
+    for (
+      const candidate of
+      remainingShared
+    ) {
+      if (
+        selected.length >= count
+      ) {
+        break;
+      }
+
+      if (
+        selected.some(
+          (item) =>
+            item.record.symbol_id ===
+            candidate.symbol_id
+        )
+      ) {
+        continue;
+      }
+
+      appendCandidate({
+        target,
+        candidate,
+        behaviour,
+        excluded,
+        occupiedSemanticKeys,
+        selected,
+      });
     }
   }
 
@@ -176,5 +410,20 @@ export function selectDistractors({
     );
   }
 
-  return selected.slice(0, count);
+  if (
+    behaviour === QB05 &&
+    !selected.some(
+      (item) =>
+        item.sharedConfusionGroup
+    )
+  ) {
+    throw new Error(
+      `QB-05 encounter for ${target.symbol_id} has no approved confusion-group distractor.`
+    );
+  }
+
+  return selected.slice(
+    0,
+    count
+  );
 }
