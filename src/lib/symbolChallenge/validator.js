@@ -1,28 +1,57 @@
 import {
+  EXPERIENCE_MODES,
+  EXPERIENCE_PROFILES,
   MAX_UNIQUE_SYMBOLS,
   MIN_REPEAT_GAP,
   MIN_UNIQUE_SYMBOLS,
-  OPTION_COUNT,
   QUESTION_BEHAVIOURS,
-  ROUND_SIZE,
   SUPPORTED_RENDER_MODES,
 } from "./constants";
 
 const QB05 = "QB-05";
 
-function normalizeValue(value) {
-  return String(value || "")
+function normalizeValue(
+  value
+) {
+  return String(
+    value || ""
+  )
     .normalize("NFKC")
     .trim()
     .toLowerCase();
 }
 
+function getExpectedProfile(
+  round
+) {
+  const experienceMode =
+    round?.config
+      ?.experienceMode;
+
+  if (
+    !Object.values(
+      EXPERIENCE_MODES
+    ).includes(experienceMode)
+  ) {
+    return null;
+  }
+
+  return (
+    EXPERIENCE_PROFILES[
+      experienceMode
+    ] || null
+  );
+}
+
 function validateEncounter(
-  encounter
+  encounter,
+  expectedOptionCount
 ) {
   const errors = [];
 
-  if (!encounter?.symbolId) {
+  if (
+    !encounter?.symbolId
+  ) {
     errors.push(
       "missing symbolId"
     );
@@ -30,7 +59,8 @@ function validateEncounter(
 
   if (
     !QUESTION_BEHAVIOURS.includes(
-      encounter?.questionBehaviour
+      encounter
+        ?.questionBehaviour
     )
   ) {
     errors.push(
@@ -39,7 +69,8 @@ function validateEncounter(
   }
 
   if (
-    !encounter?.promptPayload
+    !encounter
+      ?.promptPayload
       ?.stimulus
   ) {
     errors.push(
@@ -50,8 +81,10 @@ function validateEncounter(
   if (
     !SUPPORTED_RENDER_MODES.includes(
       String(
-        encounter?.promptPayload
-          ?.renderMode || ""
+        encounter
+          ?.promptPayload
+          ?.renderMode ||
+          ""
       ).toUpperCase()
     )
   ) {
@@ -62,7 +95,8 @@ function validateEncounter(
 
   if (
     !Array.isArray(
-      encounter?.optionPayload
+      encounter
+        ?.optionPayload
     )
   ) {
     errors.push(
@@ -73,32 +107,48 @@ function validateEncounter(
   }
 
   if (
-    encounter.optionPayload.length !==
-    OPTION_COUNT
+    encounter.optionPayload
+      .length !==
+    expectedOptionCount
   ) {
     errors.push(
-      `expected ${OPTION_COUNT} options`
+      `expected ${expectedOptionCount} options`
     );
   }
 
-  const ids = new Set(
-    encounter.optionPayload.map(
-      (option) => option.id
-    )
-  );
+  if (
+    encounter
+      ?.generationMetadata
+      ?.optionCount !==
+    expectedOptionCount
+  ) {
+    errors.push(
+      "generation option count metadata does not match the experience profile"
+    );
+  }
 
-  const values = new Set(
-    encounter.optionPayload.map(
-      (option) =>
-        normalizeValue(
-          option.value
-        )
-    )
-  );
+  const ids =
+    new Set(
+      encounter.optionPayload.map(
+        (option) =>
+          option.id
+      )
+    );
+
+  const values =
+    new Set(
+      encounter.optionPayload.map(
+        (option) =>
+          normalizeValue(
+            option.value
+          )
+      )
+    );
 
   if (
     ids.size !==
-    encounter.optionPayload.length
+    encounter.optionPayload
+      .length
   ) {
     errors.push(
       "duplicate option ids"
@@ -107,7 +157,8 @@ function validateEncounter(
 
   if (
     values.size !==
-    encounter.optionPayload.length
+    encounter.optionPayload
+      .length
   ) {
     errors.push(
       "duplicate option values"
@@ -140,7 +191,8 @@ function validateEncounter(
   }
 
   if (
-    encounter.questionBehaviour ===
+    encounter
+      .questionBehaviour ===
     QB05
   ) {
     const approvedConfusables =
@@ -149,17 +201,37 @@ function validateEncounter(
           option.id !==
             encounter.correctOptionId &&
           Array.isArray(
-            option.confusionGroupIds
+            option
+              .confusionGroupIds
           ) &&
-          option.confusionGroupIds
+          option
+            .confusionGroupIds
             .length > 0
       );
 
     if (
-      approvedConfusables.length === 0
+      approvedConfusables
+        .length === 0
     ) {
       errors.push(
         "QB-05 requires at least one approved confusion-group distractor"
+      );
+    }
+
+    /*
+     * Focus has only one distractor.
+     * Therefore that sole distractor
+     * must be the required approved
+     * confusable.
+     */
+    if (
+      expectedOptionCount ===
+        2 &&
+      approvedConfusables
+        .length !== 1
+    ) {
+      errors.push(
+        "two-option QB-05 requires its sole distractor to be an approved confusion-group distractor"
       );
     }
 
@@ -197,12 +269,60 @@ export function validateRound(
     };
   }
 
+  const profile =
+    getExpectedProfile(
+      round
+    );
+
+  if (!profile) {
+    return {
+      valid: false,
+      errors: [
+        "Round has an unsupported or missing experience mode.",
+      ],
+    };
+  }
+
   if (
-    round.encounters.length !==
-    ROUND_SIZE
+    round.config
+      .roundSize !==
+    profile.roundSize
   ) {
     errors.push(
-      `Round must contain exactly ${ROUND_SIZE} encounters.`
+      `Experience mode requires roundSize ${profile.roundSize}.`
+    );
+  }
+
+  if (
+    round.config
+      .optionCount !==
+    profile.optionCount
+  ) {
+    errors.push(
+      `Experience mode requires optionCount ${profile.optionCount}.`
+    );
+  }
+
+  if (
+    round.config
+      .experienceMode ===
+      EXPERIENCE_MODES.FOCUS &&
+    round.config
+      .memberAccess !==
+      false
+  ) {
+    errors.push(
+      "Focus Mode must use public free-catalogue access."
+    );
+  }
+
+  if (
+    round.encounters
+      .length !==
+    profile.roundSize
+  ) {
+    errors.push(
+      `Round must contain exactly ${profile.roundSize} encounters.`
     );
   }
 
@@ -215,13 +335,36 @@ export function validateRound(
     );
 
   if (
+    round.config
+      .experienceMode ===
+    EXPERIENCE_MODES.FOCUS
+  ) {
+    if (
+      uniqueSymbols.size !==
+      profile.roundSize
+    ) {
+      errors.push(
+        `Focus Mode must contain ${profile.roundSize} unique symbols.`
+      );
+    }
+  } else if (
     uniqueSymbols.size <
       MIN_UNIQUE_SYMBOLS ||
     uniqueSymbols.size >
       MAX_UNIQUE_SYMBOLS
   ) {
     errors.push(
-      `Round must contain ${MIN_UNIQUE_SYMBOLS}–${MAX_UNIQUE_SYMBOLS} unique symbols.`
+      `Challenge Mode must contain ${MIN_UNIQUE_SYMBOLS}–${MAX_UNIQUE_SYMBOLS} unique symbols.`
+    );
+  }
+
+  if (
+    round.config
+      .uniqueSymbols !==
+    uniqueSymbols.size
+  ) {
+    errors.push(
+      "Round uniqueSymbols metadata does not match the generated encounters."
     );
   }
 
@@ -231,7 +374,8 @@ export function validateRound(
   round.encounters.forEach(
     (encounter, index) => {
       validateEncounter(
-        encounter
+        encounter,
+        profile.optionCount
       ).forEach(
         (message) =>
           errors.push(

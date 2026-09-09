@@ -1,6 +1,6 @@
 import {
   GENERATOR_VERSION,
-  OPTION_COUNT,
+  SUPPORTED_OPTION_COUNTS,
 } from "./constants";
 
 import {
@@ -8,11 +8,17 @@ import {
   getPromptSpec,
 } from "./answerResolver";
 
-import { chooseBehaviour } from "./behaviourSelector";
+import {
+  chooseBehaviour,
+} from "./behaviourSelector";
 
-import { selectDistractors } from "./distractorSelector";
+import {
+  selectDistractors,
+} from "./distractorSelector";
 
-import { shuffleSeeded } from "./seededRandom";
+import {
+  shuffleSeeded,
+} from "./seededRandom";
 
 const OPTION_IDS = [
   "A",
@@ -21,6 +27,20 @@ const OPTION_IDS = [
   "D",
 ];
 
+function assertOptionCount(
+  optionCount
+) {
+  if (
+    !SUPPORTED_OPTION_COUNTS.includes(
+      optionCount
+    )
+  ) {
+    throw new Error(
+      `Unsupported Symbol Challenge option count: ${optionCount}.`
+    );
+  }
+}
+
 export function buildEncounter({
   record,
   pool,
@@ -28,14 +48,20 @@ export function buildEncounter({
   random,
   answerSequence,
   seed,
+  optionCount,
   avoidBehaviours = [],
 }) {
+  assertOptionCount(
+    optionCount
+  );
+
   const behaviour =
     chooseBehaviour({
       record,
       difficulty,
       random,
-      avoid: avoidBehaviours,
+      avoid:
+        avoidBehaviours,
     });
 
   const correctAnswer =
@@ -61,10 +87,14 @@ export function buildEncounter({
 
   const distractors =
     selectDistractors({
-      target: record,
+      target:
+        record,
       behaviour,
-      records: pool,
+      records:
+        pool,
       random,
+      count:
+        optionCount - 1,
     });
 
   const rawOptions = [
@@ -75,13 +105,16 @@ export function buildEncounter({
         correctAnswer.value,
       renderMode:
         correctAnswer.renderMode,
-      isCorrect: true,
-      confusionGroupIds: [],
+      isCorrect:
+        true,
+      confusionGroupIds:
+        [],
     },
 
     ...distractors.map(
       ({
-        record: distractor,
+        record:
+          distractor,
         answer,
         sharedConfusionGroupIds,
       }) => ({
@@ -91,7 +124,8 @@ export function buildEncounter({
           answer.value,
         renderMode:
           answer.renderMode,
-        isCorrect: false,
+        isCorrect:
+          false,
         confusionGroupIds:
           Array.isArray(
             sharedConfusionGroupIds
@@ -110,17 +144,18 @@ export function buildEncounter({
       random
     ).map(
       (option, index) => ({
-        id: OPTION_IDS[index],
+        id:
+          OPTION_IDS[index],
         ...option,
       })
     );
 
   if (
     shuffledOptions.length !==
-    OPTION_COUNT
+    optionCount
   ) {
     throw new Error(
-      "Symbol Challenge encounters require four options."
+      `Symbol Challenge encounter requires exactly ${optionCount} options.`
     );
   }
 
@@ -203,6 +238,8 @@ export function buildEncounter({
       generatorVersion:
         GENERATOR_VERSION,
 
+      optionCount,
+
       symbolClass:
         record.symbol_class ||
         null,
@@ -215,7 +252,8 @@ export function buildEncounter({
           : [],
 
       qb05ConfusionRequired:
-        behaviour === "QB-05",
+        behaviour ===
+        "QB-05",
     },
   };
 }

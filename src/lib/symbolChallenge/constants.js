@@ -30,7 +30,43 @@ export const DIFFICULTY_BEHAVIOURS = Object.freeze({
   ]),
 });
 
-export const ROUND_SIZE = 10;
+export const EXPERIENCE_MODES = Object.freeze({
+  CHALLENGE: "CHALLENGE",
+  FOCUS: "FOCUS",
+});
+
+export const EXPERIENCE_PROFILES = Object.freeze({
+  [EXPERIENCE_MODES.CHALLENGE]: Object.freeze({
+    roundSize: 10,
+    optionCount: 4,
+  }),
+
+  [EXPERIENCE_MODES.FOCUS]: Object.freeze({
+    roundSize: 5,
+    optionCount: 2,
+  }),
+});
+
+export const SUPPORTED_ROUND_SIZES = Object.freeze([
+  EXPERIENCE_PROFILES.CHALLENGE.roundSize,
+  EXPERIENCE_PROFILES.FOCUS.roundSize,
+]);
+
+export const SUPPORTED_OPTION_COUNTS = Object.freeze([
+  EXPERIENCE_PROFILES.CHALLENGE.optionCount,
+  EXPERIENCE_PROFILES.FOCUS.optionCount,
+]);
+
+/*
+ * Legacy/default constants remain exported
+ * for compatibility with code outside this
+ * gate. They represent Challenge Mode.
+ */
+export const ROUND_SIZE =
+  EXPERIENCE_PROFILES.CHALLENGE.roundSize;
+
+export const OPTION_COUNT =
+  EXPERIENCE_PROFILES.CHALLENGE.optionCount;
 
 export const TARGET_UNIQUE_SYMBOLS = 6;
 
@@ -39,8 +75,6 @@ export const MIN_UNIQUE_SYMBOLS = 5;
 export const MAX_UNIQUE_SYMBOLS = 7;
 
 export const MIN_REPEAT_GAP = 2;
-
-export const OPTION_COUNT = 4;
 
 export const SUPPORTED_RENDER_MODES = Object.freeze([
   "TEXT",
@@ -62,4 +96,4 @@ export const CORE_CONTEXT_BLOCKERS = Object.freeze([
 ]);
 
 export const GENERATOR_VERSION =
-  "MSG-QG-1.0-B3B1";
+  "MSG-QG-1.0-2BA1";
