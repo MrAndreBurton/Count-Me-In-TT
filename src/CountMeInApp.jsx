@@ -84,6 +84,7 @@ import MathLanguageLevel3Dictionary from "./pages/MathLanguageLevel3Dictionary";
 import MathLanguageLevel3Play from "./pages/MathLanguageLevel3Play";
 
 import SymbolBankMyVault from "./pages/SymbolBankMyVault";
+import SymbolChallenge from "./pages/SymbolChallenge";
 
 import CoreGame from "./components/multiplication/CoreGame";
 import ScrollToTop from "./components/ScrollToTop";
@@ -729,9 +730,12 @@ export default function CountMeInApp() {
           path="/symbol-bank/my-vault"
           element={<SymbolBankMyVault />}
         />
+
+        <Route
+          path="/symbol-bank/challenge"
+          element={<SymbolChallenge />}
+        />
       </Routes>
     </Router>
   );
 }
-
-
