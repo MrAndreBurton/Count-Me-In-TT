@@ -20,6 +20,10 @@ import BocasCouvaLeaderboard from "./pages/BocasCouvaLeaderboard";
 import BocasArimaChallenge from "./pages/BocasArimaChallenge";
 import BocasArimaLeaderboard from "./pages/BocasArimaLeaderboard";
 
+import BocasSipariaChallenge from "./pages/BocasSipariaChallenge";
+import BocasSipariaLeaderboard from "./pages/BocasSipariaLeaderboard";
+import BocasSipariaHallOfFame from "./pages/BocasSipariaHallOfFame";
+
 import YouthopiaChallenge from "./pages/YouthopiaChallenge";
 import YouthopiaLeaderboard from "./pages/YouthopiaLeaderboard";
 import YouthopiaHallOfFame from "./pages/YouthopiaHallOfFame";
@@ -590,10 +594,25 @@ export default function CountMeInApp() {
           element={<BocasArimaLeaderboard />}
         />
 
+         <Route
+           path="/bocas-siparia-challenge"
+           element={<BocasSipariaChallenge />}
+         />
+
+         <Route
+           path="/bocas-siparia-hall-of-fame"
+           element={<BocasSipariaHallOfFame />}
+         />
+
         <Route
           path="/youthopia-hall-of-fame"
           element={<YouthopiaHallOfFame />}
         />
+
+         <Route
+           path="/bocas-siparia-leaderboard"
+           element={<BocasSipariaLeaderboard />}
+         />
 
         <Route
           path="/styles-challenge"
