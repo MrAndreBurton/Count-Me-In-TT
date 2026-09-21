@@ -5,6 +5,21 @@ import SiteFooter from "../components/layout/SiteFooter";
 
 const availableGames = [
   {
+    title: "Times Table Practice",
+    description:
+      "Focus on one multiplication table at a time in ordered or shuffled timed rounds.",
+    icon: "×1",
+    to: "/games/multiplication/practice",
+    action: "Practise Times Tables",
+    features: [
+      "Individual tables",
+      "Ordered + shuffled",
+      "Up to 12 or 15",
+      "Free starter tables",
+    ],
+    badge: "Practice",
+  },
+  {
     title: "Multiplication Challenge",
     description:
       "Build speed, accuracy and confidence through four multiplication grids.",
