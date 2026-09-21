@@ -1167,6 +1167,31 @@ if (!category) {
     }
   };
 
+  const gridPresentation =
+    cols <= 5
+      ? {
+          maxWidth: "56rem",
+          cellHeight: "44px",
+          cellFontSize: "0.95rem",
+          promptFontSize: "clamp(10px, 1.5vw, 15px)",
+          mobileGap: "4px",
+        }
+      : cols <= 12
+        ? {
+            maxWidth: "80rem",
+            cellHeight: "40px",
+            cellFontSize: "0.82rem",
+            promptFontSize: "11px",
+            mobileGap: "2px",
+          }
+        : {
+            maxWidth: "88rem",
+            cellHeight: "38px",
+            cellFontSize: "0.78rem",
+            promptFontSize: "10px",
+            mobileGap: "2px",
+          };
+
   return (
     <div
       className="min-h-screen text-black"
@@ -1187,112 +1212,126 @@ if (!category) {
        <GameHeader />
 <div className="px-4 py-6 sm:px-5">
       <style>{`
-        .cell-wrap {
-          position: relative;
+        .multiplication-grid-board {
+          box-sizing: border-box;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          gap: var(--multiplication-mobile-gap);
         }
 
-        .cell-wrap input {
+        .multiplication-grid-header,
+        .multiplication-grid-input {
+          box-sizing: border-box;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+          height: var(--multiplication-cell-height);
+          font-size: var(--multiplication-cell-font-size);
+        }
+
+        .multiplication-grid-header {
+          overflow: hidden;
+        }
+
+        .multiplication-cell {
+          position: relative;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+        }
+
+        .multiplication-cell input {
           position: relative;
           z-index: 1;
         }
 
-        .cell-wrap {
-  position: relative;
-}
+        .multiplication-cell input::placeholder {
+          color: transparent;
+          opacity: 0;
+        }
 
-.cell-wrap input {
-  position: relative;
-  z-index: 1;
-}
+        .multiplication-cell input:focus::placeholder {
+          color: rgba(107, 114, 128, 0.72);
+          opacity: 1;
+          font-size: var(--multiplication-prompt-font-size);
+          font-weight: 600;
+        }
 
-.cell-wrap input::placeholder {
-  color: transparent;
-  opacity: 0;
-}
+        .multiplication-hide-native-caret:focus {
+          caret-color: transparent;
+        }
 
-/* Horizontal prompt on tablets and desktop */
-.cell-wrap input:focus::placeholder {
-  color: rgba(107, 114, 128, 0.65);
-  opacity: 1;
-  font-size: clamp(9px, 1.5vw, 12px);
-  font-weight: 500;
-}
+        .multiplication-desktop-caret {
+          position: absolute;
+          left: 50%;
+          bottom: 5px;
+          z-index: 2;
+          display: block;
+          width: 10px;
+          height: 1.5px;
+          background-color: rgba(75, 85, 99, 0.9);
+          transform: translateX(-50%);
+          animation: multiplicationCaretBlink 1s step-end infinite;
+          pointer-events: none;
+        }
 
-/* Hidden on tablets and desktop */
-.mobile-cell-prompt {
-  display: none;
-}
+        .multiplication-mobile-prompt {
+          display: none;
+        }
 
- /* Hide the normal vertical cursor */
-  .mobile-hide-native-caret:focus {
-    caret-color: transparent;
-  }
+        @media (min-width: 641px) {
+          .multiplication-grid-board {
+            gap: 4px;
+          }
+        }
 
-/* Horizontal cursor for tablets and desktop */
-.desktop-horizontal-caret {
-  position: absolute;
-  left: 50%;
-  bottom: 5px;
-  z-index: 2;
-  display: block;
-  width: 10px;
-  height: 1.5px;
-  background-color: rgba(75, 85, 99, 0.9);
-  transform: translateX(-50%);
-  animation: mobileCaretBlink 1s step-end infinite;
-  pointer-events: none;
-}
+        @media (max-width: 640px) {
+          .multiplication-cell input:focus::placeholder {
+            color: transparent;
+            opacity: 0;
+          }
 
-@media (max-width: 640px) {
-  /* Hide the horizontal placeholder on mobile */
-  .cell-wrap input:focus::placeholder {
-    color: transparent;
-    opacity: 0;
-  }
+          .multiplication-desktop-caret {
+            display: none;
+          }
 
-  /* Hide the desktop cursor on mobile */
-  .desktop-horizontal-caret {
-    display: none;
-  }
+          .multiplication-mobile-prompt {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: rgba(107, 114, 128, 0.76);
+            font-size: 8px;
+            font-weight: 600;
+            line-height: 0.8;
+            pointer-events: none;
+          }
 
-  /* Show the vertical prompt on mobile */
-  .mobile-cell-prompt {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: rgba(107, 114, 128, 0.72);
-    font-size: 8px;
-    font-weight: 600;
-    line-height: 0.8;
-    pointer-events: none;
-  }
+          .multiplication-mobile-caret {
+            display: block;
+            width: 8px;
+            height: 1.5px;
+            margin-top: 2px;
+            background-color: rgba(75, 85, 99, 0.9);
+            animation: multiplicationCaretBlink 1s step-end infinite;
+          }
+        }
 
-  /* Custom horizontal blinking cursor */
-  .mobile-horizontal-caret {
-    display: block;
-    width: 8px;
-    height: 1.5px;
-    margin-top: 2px;
-    background-color: rgba(75, 85, 99, 0.9);
-    animation: mobileCaretBlink 1s step-end infinite;
-  }
-}
+        @keyframes multiplicationCaretBlink {
+          0%,
+          49% {
+            opacity: 1;
+          }
 
-@keyframes mobileCaretBlink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
+          50%,
+          100% {
+            opacity: 0;
+          }
+        }
         .row-header,
         .col-header {
           position: relative;
@@ -1523,23 +1562,36 @@ if (!category) {
           </div>
 
           <div className="mt-4 space-y-2 text-center">
-            <p className="text-sm font-bold">
+            <p className="text-sm font-black uppercase tracking-wide text-gray-700">
               Your Timer
             </p>
-            <p className="inline-block rounded bg-yellow-300 px-6 py-2 font-mono text-2xl shadow">
+            <p className="inline-block rounded-xl bg-yellow-300 px-7 py-3 font-mono text-3xl font-black shadow-md">
               ⏱️ {displayTime}
             </p>
           </div>
 
-          <div className="mx-auto w-full max-w-screen-xl overflow-x-auto px-2">
-            <div className="inline-block w-full">
+          <div
+            className="mx-auto w-full"
+            style={{ maxWidth: gridPresentation.maxWidth }}
+          >
+            <div className="mt-8 overflow-hidden rounded-2xl border border-yellow-300 bg-yellow-50/95 p-2 shadow-lg sm:p-6">
               <div
-                className="grid w-full gap-1"
+                className="multiplication-grid-board grid"
                 style={{
                   gridTemplateColumns: `repeat(${cols + 1}, minmax(0, 1fr))`,
+                  "--multiplication-cell-height":
+                    gridPresentation.cellHeight,
+                  "--multiplication-cell-font-size":
+                    gridPresentation.cellFontSize,
+                  "--multiplication-prompt-font-size":
+                    gridPresentation.promptFontSize,
+                  "--multiplication-mobile-gap":
+                    gridPresentation.mobileGap,
                 }}
               >
-                <div className="h-10" />
+                <div className="multiplication-grid-header flex min-w-0 items-center justify-center rounded-md bg-blue-500 text-lg font-black text-white">
+                  ×
+                </div>
 
                 {Array.from(
                   { length: cols },
@@ -1547,7 +1599,7 @@ if (!category) {
                     <div
                       key={`column-header-${index}`}
                       className={[
-                        "col-header flex h-10 w-full items-center justify-center bg-yellow-300 text-center text-xs font-bold sm:text-sm",
+                        "multiplication-grid-header col-header flex min-w-0 w-full items-center justify-center rounded-md bg-yellow-300 text-center font-black",
                         colSwept[index]
                           ? "sweep-col"
                           : "",
@@ -1565,7 +1617,7 @@ if (!category) {
                     >
                       <div
                         className={[
-                          "row-header flex h-10 w-full items-center justify-center bg-yellow-300 text-center text-xs font-bold sm:text-sm",
+                          "multiplication-grid-header row-header flex min-w-0 w-full items-center justify-center rounded-md bg-yellow-300 text-center font-black",
                           rowSwept[rowIndex]
                             ? "sweep-row"
                             : "",
@@ -1583,11 +1635,15 @@ if (!category) {
                                 cellKey
                               ]
                             );
+                          const showPrompt =
+                            focusedCell ===
+                              cellKey &&
+                            cell.value === "";
 
                           return (
                             <div
                               key={`cell-wrap-${rowIndex}-${columnIndex}`}
-                              className="cell-wrap"
+                              className="multiplication-cell min-w-0"
                             >
                               <input
                                 type="text"
@@ -1826,44 +1882,40 @@ if (!category) {
                                   ] = element;
                                 }}
                                 className={[
-                                  "h-10 w-full border text-center",
+                                  "multiplication-grid-input min-w-0 w-full rounded-md border text-center font-bold outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-200",
                                   cell.correct ===
                                   null
-                                    ? "border-gray-400"
+                                    ? "border-gray-400 bg-white"
                                     : cell.correct
-                                      ? "bg-green-200"
-                                      : "bg-red-200",
+                                      ? "border-green-400 bg-green-200"
+                                      : "border-red-400 bg-red-200",
                                   celebrated
                                     ? "pop-once font-bold text-yellow-700 ring-2 ring-yellow-400"
                                     : "",
-                                  focusedCell === cellKey &&
-                                  cell.value === ""
-                                    ? "mobile-hide-native-caret"
+                                  showPrompt
+                                    ? "multiplication-hide-native-caret"
                                     : "",
                                 ].join(" ")}
                               />
-{/* Desktop and tablet horizontal cursor */}
-{focusedCell === cellKey &&
-  cell.value === "" && (
-    <span
-      className="desktop-horizontal-caret"
-      aria-hidden="true"
-    />
-  )}
 
-{/* Mobile vertical prompt and cursor */}
-{focusedCell === cellKey &&
-  cell.value === "" && (
-    <span
-      className="mobile-cell-prompt"
-      aria-hidden="true"
-    >
-      <span>{rowIndex + 1}</span>
-      <span>×</span>
-      <span>{columnIndex + 1}</span>
-      <span className="mobile-horizontal-caret" />
-    </span>
-  )}
+                              {showPrompt && (
+                                <span
+                                  className="multiplication-desktop-caret"
+                                  aria-hidden="true"
+                                />
+                              )}
+
+                              {showPrompt && (
+                                <span
+                                  className="multiplication-mobile-prompt"
+                                  aria-hidden="true"
+                                >
+                                  <span>{rowIndex + 1}</span>
+                                  <span>×</span>
+                                  <span>{columnIndex + 1}</span>
+                                  <span className="multiplication-mobile-caret" />
+                                </span>
+                              )}
 
                             </div>
                           );
@@ -2253,5 +2305,6 @@ if (!category) {
 </div>
   );
 }
+
 
 
