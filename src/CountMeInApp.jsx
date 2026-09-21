@@ -43,6 +43,7 @@ import SymbolBankSymbol from "./pages/SymbolBankSymbol";
 
 import Home from "./pages/Home";
 import Games from "./pages/Games";
+import MultiplicationPractice from "./pages/MultiplicationPractice";
 import Membership from "./pages/Membership";
 import MembershipRequest from "./pages/MembershipRequest";
 import Login from "./pages/Login";
@@ -102,6 +103,11 @@ export default function CountMeInApp() {
         <Route path="/" element={<Home />} />
 
         <Route path="/games" element={<Games />} />
+
+        <Route
+          path="/games/multiplication/practice"
+          element={<MultiplicationPractice />}
+        />
 
         <Route
           path="/membership"
