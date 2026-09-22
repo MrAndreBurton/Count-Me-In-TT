@@ -11,6 +11,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import {
+  discoverAssignedGroupScope,
+  discoverOrganisationAdminScope,
+} from "../lib/organisationDiscovery";
 
 const ORGANISATION_ROLE_LABELS = {
   organisation_admin: "Organisation Administrator",
@@ -191,15 +195,113 @@ export default function OrganisationWorkspace() {
               )
           );
 
-        if (isMounted) {
-          setWorkspace({
-            organisation,
-            staffId: staff.id,
-            roles,
-          });
+        /*
+ * Roles decide which discovery paths the
+ * frontend should attempt.
+ *
+ * They do not grant access themselves.
+ * Every returned row remains governed by RLS.
+ */
 
-          setStatus("ready");
-        }
+const hasAssignedGroupRole =
+  roles.includes("teacher") ||
+  roles.includes("tutor");
+
+const hasOrganisationAdminRole =
+  roles.includes("organisation_admin");
+
+let groupDiscovery = {
+  groups: [],
+  learners: [],
+  counts: {
+    activeGroups: 0,
+    visibleLearners: 0,
+  },
+};
+
+let adminDiscovery = {
+  learners: [],
+  counts: {
+    activeEnrolments: 0,
+    visibleLearners: 0,
+  },
+};
+
+/*
+ * Teachers/tutors attempt the assigned-group path.
+ */
+if (hasAssignedGroupRole) {
+  groupDiscovery = await discoverAssignedGroupScope({
+    supabase,
+    organisationId: organisation.id,
+    staffId: staff.id,
+  });
+}
+
+/*
+ * Organisation administrators additionally attempt
+ * the organisation-wide active-enrolment path.
+ */
+if (hasOrganisationAdminRole) {
+  adminDiscovery = await discoverOrganisationAdminScope({
+    supabase,
+    organisationId: organisation.id,
+  });
+}
+
+/*
+ * Multiple valid authorization paths are unioned.
+ * A learner visible through more than one path must
+ * still appear only once.
+ */
+const learnerMap = new Map();
+
+for (const learner of groupDiscovery.learners) {
+  learnerMap.set(learner.studentId, {
+    ...learner,
+    groups: [...learner.groups],
+  });
+}
+
+for (const learner of adminDiscovery.learners) {
+  const existing = learnerMap.get(learner.studentId);
+
+  if (existing) {
+    continue;
+  }
+
+  learnerMap.set(learner.studentId, {
+    ...learner,
+    groups: [...learner.groups],
+  });
+}
+
+const learners = [...learnerMap.values()].sort((a, b) =>
+  a.displayName.localeCompare(b.displayName)
+);
+
+const discovery = {
+  groups: groupDiscovery.groups,
+  learners,
+  counts: {
+    activeGroups: groupDiscovery.groups.length,
+    activeEnrolments:
+      adminDiscovery.counts.activeEnrolments,
+    visibleLearners: learners.length,
+  },
+};
+
+if (isMounted) {
+  setWorkspace({
+    organisation,
+    staffId: staff.id,
+    roles,
+    discovery,
+  });
+
+  setStatus("ready");
+}
+
       } catch (error) {
         console.error(
           "Unable to load organisation workspace:",
@@ -327,10 +429,14 @@ export default function OrganisationWorkspace() {
     );
   }
 
-  const {
-    organisation,
-    roles,
-  } = workspace;
+ const {
+  organisation,
+  roles,
+  discovery,
+} = workspace;
+
+const groups = discovery?.groups ?? [];
+const learners = discovery?.learners ?? [];
 
   const roleLabel =
     formatOrganisationRoles(roles) ||
@@ -340,6 +446,19 @@ export default function OrganisationWorkspace() {
     formatOrganisationType(
       organisation.organisation_type
     );
+
+const hasOrganisationAdminRole =
+  roles.includes("organisation_admin");
+
+const groupsHeading =
+  hasOrganisationAdminRole
+    ? "Groups"
+    : "My Groups";
+
+const learnersHeading =
+  hasOrganisationAdminRole
+    ? "Learners"
+    : "My Learners";
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -390,17 +509,124 @@ export default function OrganisationWorkspace() {
               </p>
 
               <div className="mt-9 border-t border-slate-200 pt-8">
-                <h2 className="text-xl font-black text-slate-950">
-                  Organisation workspace
-                </h2>
+  <section>
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+          {hasOrganisationAdminRole
+            ? "Organisation groups"
+            : "Teaching scope"}
+        </p>
 
-                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-                  Your organisation context is
-                  active. Learners, groups and
-                  organisation tools will be added
-                  in the next workspace layer.
-                </p>
+        <h2 className="mt-2 text-xl font-black text-slate-950">
+          {groupsHeading}
+        </h2>
+      </div>
+
+      <p className="text-sm font-semibold text-slate-500">
+        {groups.length}{" "}
+        {groups.length === 1 ? "group" : "groups"}
+      </p>
+    </div>
+
+    {groups.length === 0 ? (
+      <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6">
+        <p className="font-semibold text-slate-700">
+          {hasOrganisationAdminRole
+            ? "No active groups."
+            : "No active groups assigned."}
+        </p>
+      </div>
+    ) : (
+      <div className="mt-5 grid gap-3">
+        {groups.map((group) => (
+          <div
+            key={group.id}
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4"
+          >
+            <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+              <div>
+                <h3 className="font-bold text-slate-950">
+                  {group.name}
+                </h3>
+
+                {group.academic_year && (
+                  <p className="mt-1 text-sm text-slate-500">
+                    {group.academic_year}
+                  </p>
+                )}
               </div>
+
+              <p className="text-sm font-semibold text-slate-600">
+                {group.learnerCount}{" "}
+                {group.learnerCount === 1
+                  ? "learner"
+                  : "learners"}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </section>
+
+  <section className="mt-10 border-t border-slate-200 pt-8">
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+          {hasOrganisationAdminRole
+            ? "Organisation roster"
+            : "Authorised learner scope"}
+        </p>
+
+        <h2 className="mt-2 text-xl font-black text-slate-950">
+          {learnersHeading}
+        </h2>
+      </div>
+
+      <p className="text-sm font-semibold text-slate-500">
+        {learners.length}{" "}
+        {learners.length === 1
+          ? "learner"
+          : "learners"}
+      </p>
+    </div>
+
+    {learners.length === 0 ? (
+      <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6">
+        <p className="font-semibold text-slate-700">
+          {hasOrganisationAdminRole
+            ? "No active learners are currently available."
+            : "No learners are currently available through your assigned groups."}
+       </p>
+      </div>
+    ) : (
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {learners.map((learner) => (
+          <div
+            key={learner.studentId}
+            className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
+          >
+            <h3 className="font-bold text-slate-950">
+              {learner.displayName}
+            </h3>
+
+            <div className="mt-2 flex flex-wrap gap-2">
+              {learner.groups.map((group) => (
+                <span
+                  key={group.groupId}
+                  className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold text-yellow-800"
+                >
+                  {group.groupName}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </section>
+</div>
             </div>
           </div>
         </main>
