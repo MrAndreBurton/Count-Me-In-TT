@@ -81,6 +81,9 @@ import MembershipProfilePage from "./pages/admin/MembershipProfilePage";
 import MembershipRequestsPage from "./pages/admin/MembershipRequestsPage";
 import MembershipRequestProfilePage from "./pages/admin/MembershipRequestProfilePage";
 
+import SchoolsPage from "./pages/admin/SchoolsPage";
+import SchoolProfilePage from "./pages/admin/SchoolProfilePage";
+
 import MathLanguageLevel2Home from "./pages/MathLanguageLevel2Home";
 import MathLanguageLevel2Dictionary from "./pages/MathLanguageLevel2Dictionary";
 import MathLanguageLevel2Play from "./pages/MathLanguageLevel2Play";
@@ -305,6 +308,24 @@ export default function CountMeInApp() {
             </AdminRoute>
           }
         />
+
+         <Route
+           path="/admin/schools"
+           element={
+             <AdminRoute>
+               <SchoolsPage />
+             </AdminRoute>
+           }
+         />
+
+         <Route
+           path="/admin/schools/:organisationId"
+           element={
+             <AdminRoute>
+               <SchoolProfilePage />
+             </AdminRoute>
+            }
+          />
 
         <Route
           path="/games/multiplication"
