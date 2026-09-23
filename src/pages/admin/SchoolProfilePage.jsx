@@ -336,6 +336,16 @@ export default function SchoolProfilePage() {
                               </strong>
                             </span>
                           </div>
+
+                          {student.origin_type === "organisation" &&
+                            student.profile_status === "active" && (
+                              <Link
+                                to={`/admin/schools/${organisationId}/learners/${student.id}/login`}
+                                className="mt-4 inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-yellow-500 hover:text-slate-950"
+                              >
+                                Create Login
+                              </Link>
+                            )}
                         </div>
                       </div>
 

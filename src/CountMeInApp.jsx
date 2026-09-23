@@ -95,6 +95,9 @@ import MathLanguageLevel3Play from "./pages/MathLanguageLevel3Play";
 import SymbolBankMyVault from "./pages/SymbolBankMyVault";
 import SymbolChallenge from "./pages/SymbolChallenge";
 
+
+import OrganisationStudentLoginPage from "./pages/admin/OrganisationStudentLoginPage";
+
 import CoreGame from "./components/multiplication/CoreGame";
 import ScrollToTop from "./components/ScrollToTop";
 
@@ -326,6 +329,16 @@ export default function CountMeInApp() {
              </AdminRoute>
             }
           />
+
+
+          <Route
+            path="/admin/schools/:organisationId/learners/:studentId/login"
+            element={
+              <AdminRoute>
+                <OrganisationStudentLoginPage />
+              </AdminRoute>
+              }
+             />
 
         <Route
           path="/games/multiplication"
