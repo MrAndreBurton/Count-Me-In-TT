@@ -8,13 +8,17 @@ import {
   ArrowLeft,
   Building2,
   LogOut,
+  Plus,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import {
   discoverAssignedGroupScope,
   discoverOrganisationAdminScope,
 } from "../lib/organisationDiscovery";
+import { isActivePlatformAdmin } from "../lib/accountCapabilities";
+import { createOrganisationStudent } from "../lib/organisationRoster";
 
 const ORGANISATION_ROLE_LABELS = {
   organisation_admin: "Organisation Administrator",
@@ -62,6 +66,27 @@ export default function OrganisationWorkspace() {
   const [isSigningOut, setIsSigningOut] =
     useState(false);
 
+  const [reloadToken, setReloadToken] =
+    useState(0);
+
+  const [isAddLearnerOpen, setIsAddLearnerOpen] =
+    useState(false);
+
+  const [isAddingLearner, setIsAddingLearner] =
+    useState(false);
+
+  const [addLearnerError, setAddLearnerError] =
+    useState("");
+
+  const [newLearner, setNewLearner] = useState({
+    firstName: "",
+    lastName: "",
+    publicDisplayName: "",
+    currentLevel: "",
+    academicYear: "",
+    groupId: "",
+  });
+
   useEffect(() => {
     let isMounted = true;
 
@@ -83,6 +108,30 @@ export default function OrganisationWorkspace() {
 
           return;
         }
+
+        const {
+          data: profile,
+          error: profileError,
+        } = await supabase
+          .from("profiles")
+          .select("admin_role, account_status")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        if (!profile || profile.account_status !== "active") {
+          if (isMounted) {
+            setStatus("forbidden");
+          }
+
+          return;
+        }
+
+        const hasActivePlatformAdminAccess =
+          isActivePlatformAdmin(profile);
 
         /*
          * The URL requests an organisation context.
@@ -242,7 +291,7 @@ if (hasAssignedGroupRole) {
  * Organisation administrators additionally attempt
  * the organisation-wide active-enrolment path.
  */
-if (hasOrganisationAdminRole) {
+if (hasOrganisationAdminRole || hasActivePlatformAdminAccess) {
   adminDiscovery = await discoverOrganisationAdminScope({
     supabase,
     organisationId: organisation.id,
@@ -296,6 +345,10 @@ if (isMounted) {
     organisation,
     staffId: staff.id,
     roles,
+    isActivePlatformAdmin: hasActivePlatformAdminAccess,
+    canManageRoster:
+      hasActivePlatformAdminAccess ||
+      hasOrganisationAdminRole,
     discovery,
   });
 
@@ -319,7 +372,80 @@ if (isMounted) {
     return () => {
       isMounted = false;
     };
-  }, [organisationId]);
+  }, [organisationId, reloadToken]);
+
+  function openAddLearner() {
+    const defaultGroupId =
+      workspace?.discovery?.groups?.length === 1
+        ? workspace.discovery.groups[0].id
+        : "";
+
+    setNewLearner({
+      firstName: "",
+      lastName: "",
+      publicDisplayName: "",
+      currentLevel: "",
+      academicYear: "",
+      groupId: defaultGroupId,
+    });
+    setAddLearnerError("");
+    setIsAddLearnerOpen(true);
+  }
+
+  function closeAddLearner() {
+    if (isAddingLearner) return;
+    setIsAddLearnerOpen(false);
+    setAddLearnerError("");
+  }
+
+  function updateNewLearner(field, value) {
+    setNewLearner((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  async function handleAddLearner(event) {
+    event.preventDefault();
+
+    if (!workspace?.canManageRoster) {
+      setAddLearnerError(
+        "You do not have permission to manage this roster."
+      );
+      return;
+    }
+
+    try {
+      setIsAddingLearner(true);
+      setAddLearnerError("");
+
+      await createOrganisationStudent({
+        supabase,
+        organisationId: workspace.organisation.id,
+        firstName: newLearner.firstName,
+        lastName: newLearner.lastName,
+        publicDisplayName: newLearner.publicDisplayName,
+        currentSchool:
+          workspace.organisation.organisation_type === "school"
+            ? workspace.organisation.name
+            : null,
+        currentLevel: newLearner.currentLevel,
+        academicYear: newLearner.academicYear,
+        groupId: newLearner.groupId || null,
+      });
+
+      setIsAddLearnerOpen(false);
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      console.error("Unable to add learner:", error);
+      setAddLearnerError(
+        error?.message ||
+          "The learner could not be added. Please try again."
+      );
+    } finally {
+      setIsAddingLearner(false);
+    }
+  }
 
   async function handleSignOut() {
     try {
@@ -433,6 +559,7 @@ if (isMounted) {
   organisation,
   roles,
   discovery,
+  canManageRoster,
 } = workspace;
 
 const groups = discovery?.groups ?? [];
@@ -450,13 +577,16 @@ const learners = discovery?.learners ?? [];
 const hasOrganisationAdminRole =
   roles.includes("organisation_admin");
 
+const hasRosterView =
+  canManageRoster || hasOrganisationAdminRole;
+
 const groupsHeading =
-  hasOrganisationAdminRole
+  hasRosterView
     ? "Groups"
     : "My Groups";
 
 const learnersHeading =
-  hasOrganisationAdminRole
+  hasRosterView
     ? "Learners"
     : "My Learners";
 
@@ -513,7 +643,7 @@ const learnersHeading =
     <div className="flex items-end justify-between gap-4">
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-          {hasOrganisationAdminRole
+          {hasRosterView
             ? "Organisation groups"
             : "Teaching scope"}
         </p>
@@ -532,7 +662,7 @@ const learnersHeading =
     {groups.length === 0 ? (
       <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6">
         <p className="font-semibold text-slate-700">
-          {hasOrganisationAdminRole
+          {hasRosterView
             ? "No active groups."
             : "No active groups assigned."}
         </p>
@@ -574,7 +704,7 @@ const learnersHeading =
     <div className="flex items-end justify-between gap-4">
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
-          {hasOrganisationAdminRole
+          {hasRosterView
             ? "Organisation roster"
             : "Authorised learner scope"}
         </p>
@@ -584,18 +714,31 @@ const learnersHeading =
         </h2>
       </div>
 
-      <p className="text-sm font-semibold text-slate-500">
-        {learners.length}{" "}
-        {learners.length === 1
-          ? "learner"
-          : "learners"}
-      </p>
+      <div className="flex flex-col items-end gap-2">
+        {canManageRoster && (
+          <button
+            type="button"
+            onClick={openAddLearner}
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
+          >
+            <Plus size={17} />
+            Add learner
+          </button>
+        )}
+
+        <p className="text-sm font-semibold text-slate-500">
+          {learners.length}{" "}
+          {learners.length === 1
+            ? "learner"
+            : "learners"}
+        </p>
+      </div>
     </div>
 
     {learners.length === 0 ? (
       <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6">
         <p className="font-semibold text-slate-700">
-          {hasOrganisationAdminRole
+          {hasRosterView
             ? "No active learners are currently available."
             : "No learners are currently available through your assigned groups."}
        </p>
@@ -630,6 +773,144 @@ const learnersHeading =
             </div>
           </div>
         </main>
+
+        {isAddLearnerOpen && canManageRoster && (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 px-5 py-8">
+            <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-yellow-700">
+                    Organisation roster
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950">
+                    Add learner
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Create an organisation learner and optionally place them in an active group.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeAddLearner}
+                  disabled={isAddingLearner}
+                  className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
+                  aria-label="Close add learner form"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddLearner} className="mt-7 grid gap-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="grid gap-2 text-sm font-bold text-slate-700">
+                    First name
+                    <input
+                      required
+                      value={newLearner.firstName}
+                      onChange={(event) =>
+                        updateNewLearner("firstName", event.target.value)
+                      }
+                      className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
+                    />
+                  </label>
+
+                  <label className="grid gap-2 text-sm font-bold text-slate-700">
+                    Last name
+                    <input
+                      required
+                      value={newLearner.lastName}
+                      onChange={(event) =>
+                        updateNewLearner("lastName", event.target.value)
+                      }
+                      className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
+                    />
+                  </label>
+                </div>
+
+                <label className="grid gap-2 text-sm font-bold text-slate-700">
+                  Display name
+                  <input
+                    value={newLearner.publicDisplayName}
+                    onChange={(event) =>
+                      updateNewLearner("publicDisplayName", event.target.value)
+                    }
+                    placeholder="Optional — defaults to first and last name"
+                    className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
+                  />
+                </label>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="grid gap-2 text-sm font-bold text-slate-700">
+                    Current level
+                    <input
+                      value={newLearner.currentLevel}
+                      onChange={(event) =>
+                        updateNewLearner("currentLevel", event.target.value)
+                      }
+                      placeholder="Optional"
+                      className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
+                    />
+                  </label>
+
+                  <label className="grid gap-2 text-sm font-bold text-slate-700">
+                    Academic year
+                    <input
+                      value={newLearner.academicYear}
+                      onChange={(event) =>
+                        updateNewLearner("academicYear", event.target.value)
+                      }
+                      placeholder="e.g. 2026/27"
+                      className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
+                    />
+                  </label>
+                </div>
+
+                <label className="grid gap-2 text-sm font-bold text-slate-700">
+                  Add to group
+                  <select
+                    value={newLearner.groupId}
+                    onChange={(event) =>
+                      updateNewLearner("groupId", event.target.value)
+                    }
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
+                  >
+                    <option value="">No group yet</option>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                       {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {addLearnerError && (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    {addLearnerError}
+                  </div>
+                )}
+
+                <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeAddLearner}
+                    disabled={isAddingLearner}
+                    className="rounded-xl border border-slate-300 px-5 py-3 font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isAddingLearner}
+                    className="rounded-xl bg-yellow-400 px-5 py-3 font-black text-slate-950 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isAddingLearner ? "Adding learner..." : "Add learner"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         <footer className="text-center text-xs text-slate-400">
           CountMeInTT Organisation Workspace
