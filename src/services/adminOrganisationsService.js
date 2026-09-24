@@ -128,7 +128,8 @@ export async function fetchAdminSchoolById(
       username,
       login_status,
       provisioning_type,
-      organisation_id
+      organisation_id,
+      last_login_at
     `)
     .in("student_id", studentIds)
     .eq("provisioning_type", "organisation")

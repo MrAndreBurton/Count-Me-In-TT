@@ -56,6 +56,24 @@ function formatDate(
   });
 }
 
+function formatDateTime(
+  dateValue,
+  fallback = "Never",
+) {
+  if (!dateValue) return fallback;
+
+  return new Date(
+    dateValue,
+  ).toLocaleString("en-TT", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 export default function SchoolProfilePage() {
   const { organisationId } = useParams();
 
@@ -338,17 +356,40 @@ export default function SchoolProfilePage() {
                             </span>
                           </div>
 
-                          {student.origin_type === "organisation" &&
-                            student.profile_status === "active" && (
-                              <Link
-                                to={`/admin/schools/${organisationId}/learners/${student.id}/login`}
-                                className="mt-4 inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-yellow-500 hover:text-slate-950"
-                              >
-                                 {login
-                                   ? "Manage Login"
-                                   : "Create Login"}
-                               </Link>
-                            )}
+                         {student.origin_type === "organisation" &&
+  student.profile_status === "active" && (
+    <div className="mt-4">
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        <span className="text-slate-500">
+          Login:{" "}
+          <strong className="font-bold text-slate-700">
+            {login?.username ||
+              "Not created"}
+          </strong>
+        </span>
+
+        {login && (
+          <span className="text-slate-500">
+            Last login:{" "}
+            <strong className="font-bold text-slate-700">
+              {formatDateTime(
+                login.last_login_at,
+              )}
+            </strong>
+          </span>
+        )}
+      </div>
+
+      <Link
+        to={`/admin/schools/${organisationId}/learners/${student.id}/login`}
+        className="mt-3 inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-yellow-500 hover:text-slate-950"
+      >
+        {login
+          ? "Manage Login"
+          : "Create Login"}
+      </Link>
+    </div>
+  )}
                         </div>
                       </div>
 
