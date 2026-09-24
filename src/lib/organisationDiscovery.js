@@ -303,4 +303,183 @@ export async function discoverOrganisationAdminScope({
   };
 }
 
+export async function discoverOrganisationLearnerDetail({
+  supabase,
+  organisationId,
+  studentId,
+}) {
+  if (!organisationId || !studentId) {
+    throw new Error(
+      "Organisation ID and student ID are required."
+    );
+  }
+
+  // The organisation relationship is the authority for whether
+  // this learner belongs in this organisation workspace.
+  const { data: enrolment, error: enrolmentError } =
+    await supabase
+      .from("organisation_enrolments")
+      .select(
+        "id, organisation_id, student_id, status, joined_at, ended_at"
+      )
+      .eq("organisation_id", organisationId)
+      .eq("student_id", studentId)
+      .maybeSingle();
+
+  if (enrolmentError) {
+    throw enrolmentError;
+  }
+
+  if (!enrolment) {
+    return null;
+  }
+
+  // Read learner-owned profile facts without manufacturing
+  // organisation-specific values.
+  const { data: student, error: studentError } =
+    await supabase
+      .from("student_profiles")
+      .select(
+        "id, first_name, last_name, public_display_name, current_level, academic_year, profile_status, origin_type"
+      )
+      .eq("id", studentId)
+      .maybeSingle();
+
+  if (studentError) {
+    throw studentError;
+  }
+
+  // If RLS withholds the learner profile, do not infer identity.
+  if (!student) {
+    return null;
+  }
+
+  const {
+    data: groupMemberships,
+    error: groupMembershipsError,
+  } = await supabase
+    .from("organisation_group_students")
+    .select(
+      "group_id, organisation_id, enrolment_id, joined_at, ended_at"
+    )
+    .eq("organisation_id", organisationId)
+    .eq("enrolment_id", enrolment.id)
+    .is("ended_at", null);
+
+  if (groupMembershipsError) {
+    throw groupMembershipsError;
+  }
+
+  const activeMemberships = groupMemberships ?? [];
+
+  const groupIds = unique(
+    activeMemberships.map((membership) => membership.group_id)
+  );
+
+  let groupRows = [];
+
+  if (groupIds.length > 0) {
+    const { data: groups, error: groupsError } =
+      await supabase
+        .from("organisation_groups")
+        .select(
+          "id, organisation_id, name, level_key, academic_year, status"
+        )
+        .eq("organisation_id", organisationId)
+        .in("id", groupIds);
+
+    if (groupsError) {
+      throw groupsError;
+    }
+
+    groupRows = groups ?? [];
+  }
+
+  const groupById = new Map(
+    groupRows.map((group) => [group.id, group])
+  );
+
+  const groups = activeMemberships
+    .map((membership) => {
+      const group = groupById.get(membership.group_id);
+
+      if (!group) {
+        return null;
+      }
+
+      return {
+        id: group.id,
+        name: group.name,
+        levelKey: group.level_key,
+        academicYear: group.academic_year,
+        status: group.status,
+        joinedAt: membership.joined_at,
+      };
+    })
+    .filter(Boolean);
+
+  // A learner may exist without a login. For this workspace,
+  // login state means an organisation-provisioned account for
+  // this learner in this organisation.
+  const { data: login, error: loginError } =
+    await supabase
+      .from("student_login_accounts")
+      .select(
+        "id, student_id, username, login_status, provisioning_type, organisation_id, created_at, password_changed_at, last_login_at"
+      )
+      .eq("student_id", studentId)
+      .eq("provisioning_type", "organisation")
+      .eq("organisation_id", organisationId)
+      .maybeSingle();
+
+  if (loginError) {
+    throw loginError;
+  }
+
+  return {
+    student: {
+      id: student.id,
+      firstName: student.first_name,
+      lastName: student.last_name,
+      publicDisplayName: student.public_display_name,
+      currentLevel: student.current_level,
+      academicYear: student.academic_year,
+      profileStatus: student.profile_status,
+      originType: student.origin_type,
+    },
+
+    enrolment: {
+      id: enrolment.id,
+      status: enrolment.status,
+      joinedAt: enrolment.joined_at,
+      endedAt: enrolment.ended_at,
+    },
+
+    groups,
+
+    login: login
+      ? {
+          exists: true,
+          id: login.id,
+          username: login.username,
+          status: login.login_status,
+          provisioningType: login.provisioning_type,
+          createdAt: login.created_at,
+          passwordChangedAt: login.password_changed_at,
+          lastLoginAt: login.last_login_at,
+        }
+      : {
+          exists: false,
+          id: null,
+          username: null,
+          status: null,
+          provisioningType: null,
+          createdAt: null,
+          passwordChangedAt: null,
+          lastLoginAt: null,
+        },
+  };
+}
+
+
 
