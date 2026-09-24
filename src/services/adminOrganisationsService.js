@@ -26,21 +26,23 @@ export async function fetchAdminSchools() {
 export async function fetchAdminSchoolById(
   organisationId,
 ) {
-  const { data: organisation, error: organisationError } =
-    await supabase
-      .from("organisations")
-      .select(`
-        id,
-        name,
-        organisation_type,
-        school_catalogue_id,
-        status,
-        created_at,
-        updated_at
-      `)
-      .eq("id", organisationId)
-      .eq("organisation_type", "school")
-      .maybeSingle();
+  const {
+    data: organisation,
+    error: organisationError,
+  } = await supabase
+    .from("organisations")
+    .select(`
+      id,
+      name,
+      organisation_type,
+      school_catalogue_id,
+      status,
+      created_at,
+      updated_at
+    `)
+    .eq("id", organisationId)
+    .eq("organisation_type", "school")
+    .maybeSingle();
 
   if (organisationError) {
     throw organisationError;
@@ -112,6 +114,30 @@ export async function fetchAdminSchoolById(
     throw studentsError;
   }
 
+  // Fetch institutional login state for the roster in one
+  // batched query. This is presentation/discovery state only;
+  // credential authority remains enforced by the backend.
+  const {
+    data: loginAccounts,
+    error: loginAccountsError,
+  } = await supabase
+    .from("student_login_accounts")
+    .select(`
+      id,
+      student_id,
+      username,
+      login_status,
+      provisioning_type,
+      organisation_id
+    `)
+    .in("student_id", studentIds)
+    .eq("provisioning_type", "organisation")
+    .eq("organisation_id", organisationId);
+
+  if (loginAccountsError) {
+    throw loginAccountsError;
+  }
+
   const enrolmentIds = activeEnrolments.map(
     (enrolment) => enrolment.id,
   );
@@ -179,6 +205,13 @@ export async function fetchAdminSchoolById(
     ]),
   );
 
+  const loginByStudentId = new Map(
+    (loginAccounts || []).map((login) => [
+      login.student_id,
+      login,
+    ]),
+  );
+
   const groupsById = new Map(
     groups.map((group) => [
       group.id,
@@ -231,6 +264,10 @@ export async function fetchAdminSchoolById(
         enrolmentStatus: enrolment.status,
         joinedAt: enrolment.joined_at,
         student,
+        login:
+          loginByStudentId.get(
+            enrolment.student_id,
+          ) || null,
         groups: learnerGroups,
       };
     })

@@ -33,6 +33,14 @@ export function validateInitialPassword(value) {
   return "";
 }
 
+export function validateNewPassword(value) {
+  if (String(value || "").length < 8) {
+    return "New Password must be at least 8 characters.";
+  }
+
+  return "";
+}
+
 export async function fetchInstitutionalLoginContext({
   organisationId,
   studentId,
@@ -96,8 +104,10 @@ export async function fetchInstitutionalLoginContext({
       .select(`
         id,
         student_id,
-        username,        
+        username,
+        login_status,
         created_at,
+        password_changed_at,
         last_login_at,
         provisioning_type,
         organisation_id
@@ -210,6 +220,39 @@ export async function createInstitutionalStudentLogin({
   password: initialPassword,
 },
 
+      },
+    );
+
+  if (error) {
+    throw new Error(
+      await getFunctionErrorMessage(error),
+    );
+  }
+
+  return data;
+}
+
+export async function changeInstitutionalStudentPassword({
+  organisationId,
+  studentId,
+  newPassword,
+}) {
+  const passwordError =
+    validateNewPassword(newPassword);
+
+  if (passwordError) {
+    throw new Error(passwordError);
+  }
+
+  const { data, error } =
+    await supabase.functions.invoke(
+      "reset-student-password",
+      {
+        body: {
+          studentId,
+          organisationId,
+          newPassword,
+        },
       },
     );
 

@@ -21,9 +21,11 @@ import {
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 
 import {
+  changeInstitutionalStudentPassword,
   createInstitutionalStudentLogin,
   fetchInstitutionalLoginContext,
   validateInitialPassword,
+  validateNewPassword,
   validateStudentUsername,
 } from "../../services/adminStudentLoginService";
 
@@ -32,6 +34,21 @@ function getStudentName(student) {
     student?.public_display_name ||
     `${student?.first_name || ""} ${student?.last_name || ""}`.trim() ||
     "Learner"
+  );
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "Not available";
+  }
+
+  return new Date(value).toLocaleDateString(
+    "en-TT",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    },
   );
 }
 
@@ -67,6 +84,36 @@ export default function OrganisationStudentLoginPage() {
     useState("");
   const [isSubmitting, setIsSubmitting] =
     useState(false);
+
+  const [
+    newPassword,
+    setNewPassword,
+  ] = useState("");
+
+  const [
+    confirmNewPassword,
+    setConfirmNewPassword,
+  ] = useState("");
+
+  const [
+    showNewPassword,
+    setShowNewPassword,
+  ] = useState(false);
+
+  const [
+    passwordChangeError,
+    setPasswordChangeError,
+  ] = useState("");
+
+  const [
+    passwordChangeSuccess,
+    setPasswordChangeSuccess,
+  ] = useState("");
+
+  const [
+    isChangingPassword,
+    setIsChangingPassword,
+  ] = useState(false);
 
   async function loadContext() {
     try {
@@ -217,6 +264,76 @@ export default function OrganisationStudentLoginPage() {
     }
   }
 
+  async function handlePasswordChange(event) {
+    event.preventDefault();
+
+    setPasswordChangeError("");
+    setPasswordChangeSuccess("");
+
+    const passwordError =
+      validateNewPassword(newPassword);
+
+    if (passwordError) {
+      setPasswordChangeError(passwordError);
+      return;
+    }
+
+    if (
+      newPassword !== confirmNewPassword
+    ) {
+      setPasswordChangeError(
+        "The New Password entries do not match.",
+      );
+      return;
+    }
+
+    if (!context?.canManageCredentials) {
+      setPasswordChangeError(
+        "You are not authorised to manage credentials for this learner.",
+      );
+      return;
+    }
+
+    if (!context?.login) {
+      setPasswordChangeError(
+        "This learner does not have a login.",
+      );
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+
+      await changeInstitutionalStudentPassword({
+        organisationId,
+        studentId,
+        newPassword,
+      });
+
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setShowNewPassword(false);
+
+      setPasswordChangeSuccess(
+        "Password changed successfully.",
+      );
+
+      await loadContext();
+    } catch (error) {
+      console.error(
+        "Unable to change learner password:",
+        error,
+      );
+
+      setPasswordChangeError(
+        error?.message ||
+          "The learner password could not be changed.",
+      );
+    } finally {
+      setIsChangingPassword(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -330,29 +447,213 @@ export default function OrganisationStudentLoginPage() {
         )}
 
         {login ? (
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                <KeyRound size={22} />
+          <div className="mt-6 grid gap-6">
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                  <KeyRound size={22} />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-bold uppercase tracking-[0.14em] text-emerald-700">
+                    Login active
+                  </p>
+
+                  <h2 className="mt-2 text-2xl font-black text-slate-950">
+                    {login.username}
+                  </h2>
+                </div>
               </div>
 
-              <div className="min-w-0">
-                <p className="text-sm font-bold uppercase tracking-[0.14em] text-emerald-700">
-                  Login created
+              <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                    Username
+                  </dt>
+
+                  <dd className="mt-1 break-all font-black text-slate-950">
+                    {login.username}
+                  </dd>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                    Status
+                  </dt>
+
+                  <dd className="mt-1 font-black capitalize text-slate-950">
+                    {login.login_status ||
+                      "Active"}
+                  </dd>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                    Login Created
+                  </dt>
+
+                  <dd className="mt-1 font-black text-slate-950">
+                    {formatDate(
+                      login.created_at,
+                    )}
+                  </dd>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                    Password Last Changed
+                  </dt>
+
+                  <dd className="mt-1 font-black text-slate-950">
+                    {formatDate(
+                      login.password_changed_at,
+                    )}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <form
+              onSubmit={handlePasswordChange}
+              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+            >
+              <div>
+                <p className="text-sm font-bold uppercase tracking-[0.14em] text-yellow-600">
+                  Change Password
                 </p>
 
-                <h2 className="mt-2 break-all text-2xl font-black text-slate-950">
-                  {login.username}
-                </h2>               
-              </div>
-            </div>
+                <h2 className="mt-2 text-xl font-black text-slate-950">
+                  Set a new password
+                </h2>
 
-            <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-              This slice verifies creation and the
-              resulting login record only. Password
-              reset controls are intentionally not
-              included yet.
-            </div>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  The new password becomes the
+                  learner's password immediately.
+                </p>
+              </div>
+
+              <div className="mt-7 grid gap-6">
+                <label className="block">
+                  <span className="text-sm font-bold text-slate-700">
+                    New Password
+                  </span>
+
+                  <div className="relative mt-2">
+                    <input
+                      type={
+                        showNewPassword
+                          ? "text"
+                          : "password"
+                      }
+                      autoComplete="new-password"
+                      value={newPassword}
+                      onChange={(event) => {
+                        setNewPassword(
+                          event.target.value,
+                        );
+                        setPasswordChangeError("");
+                        setPasswordChangeSuccess("");
+                      }}
+                      disabled={
+                        !canManageCredentials ||
+                        isChangingPassword
+                      }
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-12 text-base font-medium text-slate-950 outline-none transition focus:border-yellow-400 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowNewPassword(
+                          (current) => !current,
+                        )
+                      }
+                      disabled={isChangingPassword}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                      aria-label={
+                        showNewPassword
+                          ? "Hide password"
+                          : "Show password"
+                      }
+                    >
+                      {showNewPassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
+                  </div>
+
+                  <span className="mt-2 block text-xs leading-5 text-slate-400">
+                    At least 8 characters.
+                  </span>
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-bold text-slate-700">
+                    Confirm New Password
+                  </span>
+
+                  <input
+                    type={
+                      showNewPassword
+                        ? "text"
+                        : "password"
+                    }
+                    autoComplete="new-password"
+                    value={confirmNewPassword}
+                    onChange={(event) => {
+                      setConfirmNewPassword(
+                        event.target.value,
+                      );
+                      setPasswordChangeError("");
+                      setPasswordChangeSuccess("");
+                    }}
+                    disabled={
+                      !canManageCredentials ||
+                      isChangingPassword
+                    }
+                    className="mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base font-medium text-slate-950 outline-none transition focus:border-yellow-400 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                CountMeInTT does not display stored
+                passwords. Changing the password here
+                replaces the learner's current password
+                immediately.
+              </div>
+
+              {passwordChangeError && (
+                <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                  {passwordChangeError}
+                </div>
+              )}
+
+              {passwordChangeSuccess && (
+                <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
+                  {passwordChangeSuccess}
+                </div>
+              )}
+
+              <div className="mt-7 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={
+                    !canManageCredentials ||
+                    isChangingPassword ||
+                    !newPassword ||
+                    !confirmNewPassword
+                  }
+                  className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-950 px-6 text-sm font-black text-white transition hover:bg-yellow-500 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isChangingPassword
+                    ? "Changing Password..."
+                    : "Change Password"}
+                </button>
+              </div>
+            </form>
           </div>
         ) : (
           <form
