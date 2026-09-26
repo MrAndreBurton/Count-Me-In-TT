@@ -65,3 +65,54 @@ export async function createOrganisationStudent({
     created: row.created === true,
   };
 }
+
+export async function updateOrganisationStudentProfile({
+  supabase,
+  organisationId,
+  studentId,
+  publicDisplayName,
+  currentLevel = null,
+  academicYear = null,
+}) {
+  const cleanPublicDisplayName = publicDisplayName?.trim();
+
+  if (!cleanPublicDisplayName) {
+    throw new Error("Display name is required.");
+  }
+
+  if (!organisationId || !studentId) {
+    throw new Error(
+      "Organisation and learner are required to update the learner profile."
+    );
+  }
+
+  const { data, error } = await supabase.rpc(
+    "update_organisation_student_profile",
+    {
+      p_organisation_id: organisationId,
+      p_student_id: studentId,
+      p_public_display_name: cleanPublicDisplayName,
+      p_current_level: cleanOptionalText(currentLevel),
+      p_academic_year: cleanOptionalText(academicYear),
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+
+  if (!row?.student_id) {
+    throw new Error(
+      "The learner profile was updated, but the roster command returned an unexpected result."
+    );
+  }
+
+  return {
+    studentId: row.student_id,
+    publicDisplayName: row.public_display_name,
+    currentLevel: row.current_level,
+    academicYear: row.academic_year,
+  };
+}

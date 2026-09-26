@@ -19,7 +19,10 @@ import {
   discoverOrganisationLearnerDetail,
 } from "../lib/organisationDiscovery";
 import { isActivePlatformAdmin } from "../lib/accountCapabilities";
-import { createOrganisationStudent } from "../lib/organisationRoster";
+import {
+  createOrganisationStudent,
+  updateOrganisationStudentProfile,
+} from "../lib/organisationRoster";
 
 const ORGANISATION_ROLE_LABELS = {
   organisation_admin: "Organisation Administrator",
@@ -112,6 +115,30 @@ export default function OrganisationWorkspace() {
     learnerDetailError,
     setLearnerDetailError,
   ] = useState("");
+
+  const [
+    isEditingLearnerProfile,
+    setIsEditingLearnerProfile,
+  ] = useState(false);
+
+  const [
+    isSavingLearnerProfile,
+    setIsSavingLearnerProfile,
+  ] = useState(false);
+
+  const [
+    learnerProfileEditError,
+    setLearnerProfileEditError,
+  ] = useState("");
+
+  const [
+    learnerProfileDraft,
+    setLearnerProfileDraft,
+  ] = useState({
+    publicDisplayName: "",
+    currentLevel: "",
+    academicYear: "",
+  });
 
   const [newLearner, setNewLearner] = useState({
     firstName: "",
@@ -514,6 +541,8 @@ export default function OrganisationWorkspace() {
     setIsLearnerDetailOpen(true);
     setIsLoadingLearnerDetail(true);
     setLearnerDetailError("");
+    setLearnerProfileEditError("");
+    setIsEditingLearnerProfile(false);
     setSelectedLearnerDetail(null);
 
     try {
@@ -548,13 +577,141 @@ export default function OrganisationWorkspace() {
   }
 
   function closeLearnerDetail() {
-    if (isLoadingLearnerDetail) {
+    if (
+      isLoadingLearnerDetail ||
+      isSavingLearnerProfile
+    ) {
       return;
     }
 
     setIsLearnerDetailOpen(false);
     setSelectedLearnerDetail(null);
     setLearnerDetailError("");
+    setLearnerProfileEditError("");
+    setIsEditingLearnerProfile(false);
+  }
+
+  function beginLearnerProfileEdit() {
+    if (
+      !selectedLearnerDetail ||
+      isSavingLearnerProfile
+    ) {
+      return;
+    }
+
+    setLearnerProfileDraft({
+      publicDisplayName:
+        selectedLearnerDetail.student
+          .publicDisplayName || "",
+      currentLevel:
+        selectedLearnerDetail.student
+          .currentLevel || "",
+      academicYear:
+        selectedLearnerDetail.student
+          .academicYear || "",
+    });
+
+    setLearnerProfileEditError("");
+    setIsEditingLearnerProfile(true);
+  }
+
+  function cancelLearnerProfileEdit() {
+    if (isSavingLearnerProfile) {
+      return;
+    }
+
+    setLearnerProfileEditError("");
+    setIsEditingLearnerProfile(false);
+  }
+
+  function updateLearnerProfileDraft(
+    field,
+    value
+  ) {
+    setLearnerProfileDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  async function handleLearnerProfileSave(event) {
+    event.preventDefault();
+
+    if (
+      !workspace?.canManageRoster ||
+      !selectedLearnerDetail
+    ) {
+      setLearnerProfileEditError(
+        "You do not have permission to update this learner."
+      );
+      return;
+    }
+
+    try {
+      setIsSavingLearnerProfile(true);
+      setLearnerProfileEditError("");
+
+      await updateOrganisationStudentProfile({
+        supabase,
+        organisationId:
+          workspace.organisation.id,
+        studentId:
+          selectedLearnerDetail.student.id,
+        publicDisplayName:
+          learnerProfileDraft.publicDisplayName,
+        currentLevel:
+          learnerProfileDraft.currentLevel,
+        academicYear:
+          learnerProfileDraft.academicYear,
+      });
+
+      /*
+       * Re-read the learner after mutation.
+       *
+       * The modal therefore displays the
+       * authoritative organisation-scoped
+       * learner record rather than assuming
+       * the submitted draft is the stored state.
+       */
+      const refreshedDetail =
+        await discoverOrganisationLearnerDetail({
+          supabase,
+          organisationId:
+            workspace.organisation.id,
+          studentId:
+            selectedLearnerDetail.student.id,
+        });
+
+      if (!refreshedDetail) {
+        throw new Error(
+          "The learner was updated, but the refreshed learner record could not be loaded."
+        );
+      }
+
+      setSelectedLearnerDetail(
+        refreshedDetail
+      );
+      setIsEditingLearnerProfile(false);
+
+      /*
+       * Refresh the organisation roster too so
+       * a changed display name is reflected on
+       * the learner card after the modal closes.
+       */
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      console.error(
+        "Unable to update learner profile:",
+        error
+      );
+
+      setLearnerProfileEditError(
+        error?.message ||
+          "The learner profile could not be updated. Please try again."
+      );
+    } finally {
+      setIsSavingLearnerProfile(false);
+    }
   }
 
   async function handleSignOut() {
@@ -958,8 +1115,9 @@ export default function OrganisationWorkspace() {
                     </h2>
 
                     <p className="mt-2 text-sm leading-6 text-slate-500">
-                      Read-only organisation
-                      learner record.
+                      {isEditingLearnerProfile
+                        ? "Edit learner profile details."
+                        : "Organisation learner record."}
                     </p>
                   </div>
 
@@ -967,7 +1125,8 @@ export default function OrganisationWorkspace() {
                     type="button"
                     onClick={closeLearnerDetail}
                     disabled={
-                      isLoadingLearnerDetail
+                      isLoadingLearnerDetail ||
+                      isSavingLearnerProfile
                     }
                     className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
                     aria-label="Close learner details"
@@ -990,66 +1149,211 @@ export default function OrganisationWorkspace() {
                 ) : selectedLearnerDetail ? (
                   <div className="mt-7 grid gap-5">
                     <section className="rounded-2xl border border-slate-200 p-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-                        Identity
-                      </p>
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                          Identity
+                        </p>
 
-                      <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <dt className="text-xs font-bold text-slate-400">
-                            Full name
-                          </dt>
-                          <dd className="mt-1 font-bold text-slate-900">
-                            {[
-                              selectedLearnerDetail
-                                .student
-                                .firstName,
-                              selectedLearnerDetail
-                                .student
-                                .lastName,
-                            ]
-                              .filter(Boolean)
-                              .join(" ") ||
-                              "Not recorded"}
-                          </dd>
-                        </div>
+                        {!isEditingLearnerProfile && (
+                          <button
+                            type="button"
+                            onClick={
+                              beginLearnerProfileEdit
+                            }
+                            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
 
-                        <div>
-                          <dt className="text-xs font-bold text-slate-400">
+                      {isEditingLearnerProfile ? (
+                        <form
+                          onSubmit={
+                            handleLearnerProfileSave
+                          }
+                          className="mt-4 grid gap-5"
+                        >
+                          <div>
+                            <p className="text-xs font-bold text-slate-400">
+                              Full name
+                            </p>
+                            <p className="mt-1 font-bold text-slate-900">
+                              {[
+                                selectedLearnerDetail
+                                  .student
+                                  .firstName,
+                                selectedLearnerDetail
+                                  .student
+                                  .lastName,
+                              ]
+                                .filter(Boolean)
+                                .join(" ") ||
+                                "Not recorded"}
+                            </p>
+                            <p className="mt-1 text-xs font-medium text-slate-400">
+                              Full name is not
+                              editable here.
+                            </p>
+                          </div>
+
+                          <label className="grid gap-2 text-sm font-bold text-slate-700">
                             Display name
-                          </dt>
-                          <dd className="mt-1 font-bold text-slate-900">
-                            {selectedLearnerDetail
-                              .student
-                              .publicDisplayName ||
-                              "Not recorded"}
-                          </dd>
-                        </div>
+                            <input
+                              required
+                              value={
+                                learnerProfileDraft.publicDisplayName
+                              }
+                              onChange={(event) =>
+                                updateLearnerProfileDraft(
+                                  "publicDisplayName",
+                                  event.target.value
+                                )
+                              }
+                              disabled={
+                                isSavingLearnerProfile
+                              }
+                              className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
+                            />
+                          </label>
 
-                        <div>
-                          <dt className="text-xs font-bold text-slate-400">
-                            Current level
-                          </dt>
-                          <dd className="mt-1 font-bold text-slate-900">
-                            {selectedLearnerDetail
-                              .student
-                              .currentLevel ||
-                              "Not recorded"}
-                          </dd>
-                        </div>
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <label className="grid gap-2 text-sm font-bold text-slate-700">
+                              Current level
+                              <input
+                                value={
+                                  learnerProfileDraft.currentLevel
+                                }
+                                onChange={(event) =>
+                                  updateLearnerProfileDraft(
+                                    "currentLevel",
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                disabled={
+                                  isSavingLearnerProfile
+                                }
+                                placeholder="Optional"
+                                className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
+                              />
+                            </label>
 
-                        <div>
-                          <dt className="text-xs font-bold text-slate-400">
-                            Academic year
-                          </dt>
-                          <dd className="mt-1 font-bold text-slate-900">
-                            {selectedLearnerDetail
-                              .student
-                              .academicYear ||
-                              "Not recorded"}
-                          </dd>
-                        </div>
-                      </dl>
+                            <label className="grid gap-2 text-sm font-bold text-slate-700">
+                              Academic year
+                              <input
+                                value={
+                                  learnerProfileDraft.academicYear
+                                }
+                                onChange={(event) =>
+                                  updateLearnerProfileDraft(
+                                    "academicYear",
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                disabled={
+                                  isSavingLearnerProfile
+                                }
+                                placeholder="e.g. 2026/27"
+                                className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
+                              />
+                            </label>
+                          </div>
+
+                          {learnerProfileEditError && (
+                            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                              {
+                                learnerProfileEditError
+                              }
+                            </div>
+                          )}
+
+                          <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+                            <button
+                              type="button"
+                              onClick={
+                                cancelLearnerProfileEdit
+                              }
+                              disabled={
+                                isSavingLearnerProfile
+                              }
+                              className="rounded-xl border border-slate-300 px-5 py-3 font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+
+                            <button
+                              type="submit"
+                              disabled={
+                                isSavingLearnerProfile
+                              }
+                              className="rounded-xl bg-yellow-400 px-5 py-3 font-black text-slate-950 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isSavingLearnerProfile
+                                ? "Saving..."
+                                : "Save changes"}
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <dt className="text-xs font-bold text-slate-400">
+                              Full name
+                            </dt>
+                            <dd className="mt-1 font-bold text-slate-900">
+                              {[
+                                selectedLearnerDetail
+                                  .student
+                                  .firstName,
+                                selectedLearnerDetail
+                                  .student
+                                  .lastName,
+                              ]
+                                .filter(Boolean)
+                                .join(" ") ||
+                                "Not recorded"}
+                            </dd>
+                          </div>
+
+                          <div>
+                            <dt className="text-xs font-bold text-slate-400">
+                              Display name
+                            </dt>
+                            <dd className="mt-1 font-bold text-slate-900">
+                              {selectedLearnerDetail
+                                .student
+                                .publicDisplayName ||
+                                "Not recorded"}
+                            </dd>
+                          </div>
+
+                          <div>
+                            <dt className="text-xs font-bold text-slate-400">
+                              Current level
+                            </dt>
+                            <dd className="mt-1 font-bold text-slate-900">
+                              {selectedLearnerDetail
+                                .student
+                                .currentLevel ||
+                                "Not recorded"}
+                            </dd>
+                          </div>
+
+                          <div>
+                            <dt className="text-xs font-bold text-slate-400">
+                              Academic year
+                            </dt>
+                            <dd className="mt-1 font-bold text-slate-900">
+                              {selectedLearnerDetail
+                                .student
+                                .academicYear ||
+                                "Not recorded"}
+                            </dd>
+                          </div>
+                        </dl>
+                      )}
                     </section>
 
                     <section className="rounded-2xl border border-slate-200 p-5">
@@ -1170,17 +1474,22 @@ export default function OrganisationWorkspace() {
                       )}
                     </section>
 
-                    <div className="flex justify-end border-t border-slate-200 pt-5">
-                      <button
-                        type="button"
-                        onClick={
-                          closeLearnerDetail
-                        }
-                        className="rounded-xl bg-slate-900 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
-                      >
-                        Close
-                      </button>
-                    </div>
+                    {!isEditingLearnerProfile && (
+                      <div className="flex justify-end border-t border-slate-200 pt-5">
+                        <button
+                          type="button"
+                          onClick={
+                            closeLearnerDetail
+                          }
+                          disabled={
+                            isSavingLearnerProfile
+                          }
+                          className="rounded-xl bg-slate-900 px-5 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : null}
               </div>
