@@ -219,15 +219,15 @@ export default function ResetPassword() {
                   </h2>
 
                   <p className="mt-4 leading-7 text-gray-600">
-                    Your new password has been saved. You can now return to the
-                    login page.
+                    Your password has been saved. Continue to your CountMeInTT
+                    workspace.
                   </p>
 
                   <Link
-                    to="/login"
+                    to="/workspace"
                     className="mt-7 inline-block rounded-xl bg-blue-600 px-6 py-3 font-black text-white shadow transition hover:bg-blue-700"
                   >
-                    Log In
+                    Continue to CountMeInTT
                   </Link>
                 </div>
               )}

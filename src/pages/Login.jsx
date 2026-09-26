@@ -241,11 +241,33 @@ export default function Login() {
         accountProfile?.account_status ===
           "active";
 
+      const {
+        data: organisationStaffRows,
+        error: organisationStaffError,
+     } = await supabase
+        .from("organisation_staff")
+        .select("id")
+        .eq("profile_id", accountProfile.id)
+        .eq("status", "active")
+        .is("ended_at", null)
+        .limit(1);
+
+      if (organisationStaffError) {
+        throw organisationStaffError;
+      }
+
+      const hasOrganisationAccess =
+        (organisationStaffRows?.length || 0) > 0;
+
       if (location.state?.from?.pathname) {
         redirectPath =
           location.state.from.pathname;
-      } else if (hasAdminAccess) {
+      } else if (
+        hasAdminAccess ||
+        hasOrganisationAccess
+      ) {
         redirectPath = "/workspace";
+
       } else {
         redirectPath = "/dashboard";
       }
