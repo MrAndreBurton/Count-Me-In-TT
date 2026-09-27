@@ -19,7 +19,17 @@ import {
   discoverOrganisationLearnerDetail,
 } from "../lib/organisationDiscovery";
 import { isActivePlatformAdmin } from "../lib/accountCapabilities";
-import { createOrganisationStudent } from "../lib/organisationRoster";
+import {
+  createOrganisationStudent,
+  updateOrganisationStudentProfile,
+} from "../lib/organisationRoster";
+
+import OrganisationLayout from "../components/organisation/layout/OrganisationLayout";
+
+import {
+  addOrganisationStaff,
+  fetchOrganisationStaff,
+} from "../lib/organisationStaff";
 
 const ORGANISATION_ROLE_LABELS = {
   organisation_admin: "Organisation Administrator",
@@ -113,6 +123,30 @@ export default function OrganisationWorkspace() {
     setLearnerDetailError,
   ] = useState("");
 
+  const [
+    isEditingLearnerProfile,
+    setIsEditingLearnerProfile,
+  ] = useState(false);
+
+  const [
+    isSavingLearnerProfile,
+    setIsSavingLearnerProfile,
+  ] = useState(false);
+
+  const [
+    learnerProfileEditError,
+    setLearnerProfileEditError,
+  ] = useState("");
+
+  const [
+    learnerProfileDraft,
+    setLearnerProfileDraft,
+  ] = useState({
+    publicDisplayName: "",
+    currentLevel: "",
+    academicYear: "",
+  });
+
   const [newLearner, setNewLearner] = useState({
     firstName: "",
     lastName: "",
@@ -120,6 +154,29 @@ export default function OrganisationWorkspace() {
     currentLevel: "",
     academicYear: "",
     groupId: "",
+  });
+
+  const [
+    isAddStaffOpen,
+    setIsAddStaffOpen,
+  ] = useState(false);
+
+  const [
+    isAddingStaff,
+    setIsAddingStaff,
+  ] = useState(false);
+
+  const [
+    addStaffError,
+    setAddStaffError,
+  ] = useState("");
+
+  const [newStaff, setNewStaff] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    position: "",
+    roles: ["teacher"],
   });
 
   useEffect(() => {
@@ -149,7 +206,9 @@ export default function OrganisationWorkspace() {
           error: profileError,
         } = await supabase
           .from("profiles")
-          .select("admin_role, account_status")
+          .select(
+            "full_name, admin_role, account_status"
+          )
           .eq("id", session.user.id)
           .maybeSingle();
 
@@ -313,6 +372,8 @@ export default function OrganisationWorkspace() {
           },
         };
 
+        let organisationStaff = [];
+
         /*
          * Teachers/tutors attempt the assigned-group path.
          */
@@ -340,6 +401,19 @@ export default function OrganisationWorkspace() {
             });
         }
 
+        /*
+         * Organisation administrators can inspect
+         * the organisation-wide staff roster.
+         *
+         * Platform administration remains a separate
+         * authority surface.
+         */
+        if (hasOrganisationAdminRole) {
+          organisationStaff =
+            await fetchOrganisationStaff(
+              organisation.id
+            );
+        }
         /*
          * Multiple valid authorization paths are unioned.
          * A learner visible through more than one path must
@@ -391,6 +465,7 @@ export default function OrganisationWorkspace() {
         if (isMounted) {
           setWorkspace({
             organisation,
+            profile,
             staffId: staff.id,
             roles,
             isActivePlatformAdmin:
@@ -398,6 +473,7 @@ export default function OrganisationWorkspace() {
             canManageRoster:
               hasActivePlatformAdminAccess ||
               hasOrganisationAdminRole,
+            organisationStaff,
             discovery,
           });
 
@@ -514,6 +590,8 @@ export default function OrganisationWorkspace() {
     setIsLearnerDetailOpen(true);
     setIsLoadingLearnerDetail(true);
     setLearnerDetailError("");
+    setLearnerProfileEditError("");
+    setIsEditingLearnerProfile(false);
     setSelectedLearnerDetail(null);
 
     try {
@@ -548,13 +626,252 @@ export default function OrganisationWorkspace() {
   }
 
   function closeLearnerDetail() {
-    if (isLoadingLearnerDetail) {
+    if (
+      isLoadingLearnerDetail ||
+      isSavingLearnerProfile
+    ) {
       return;
     }
 
     setIsLearnerDetailOpen(false);
     setSelectedLearnerDetail(null);
     setLearnerDetailError("");
+    setLearnerProfileEditError("");
+    setIsEditingLearnerProfile(false);
+  }
+
+  function beginLearnerProfileEdit() {
+    if (
+      !selectedLearnerDetail ||
+      isSavingLearnerProfile
+    ) {
+      return;
+    }
+
+    setLearnerProfileDraft({
+      publicDisplayName:
+        selectedLearnerDetail.student
+          .publicDisplayName || "",
+      currentLevel:
+        selectedLearnerDetail.student
+          .currentLevel || "",
+      academicYear:
+        selectedLearnerDetail.student
+          .academicYear || "",
+    });
+
+    setLearnerProfileEditError("");
+    setIsEditingLearnerProfile(true);
+  }
+
+  function cancelLearnerProfileEdit() {
+    if (isSavingLearnerProfile) {
+      return;
+    }
+
+    setLearnerProfileEditError("");
+    setIsEditingLearnerProfile(false);
+  }
+
+  function updateLearnerProfileDraft(
+    field,
+    value
+  ) {
+    setLearnerProfileDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  async function handleLearnerProfileSave(event) {
+    event.preventDefault();
+
+    if (
+      !workspace?.canManageRoster ||
+      !selectedLearnerDetail
+    ) {
+      setLearnerProfileEditError(
+        "You do not have permission to update this learner."
+      );
+      return;
+    }
+
+    try {
+      setIsSavingLearnerProfile(true);
+      setLearnerProfileEditError("");
+
+      await updateOrganisationStudentProfile({
+        supabase,
+        organisationId:
+          workspace.organisation.id,
+        studentId:
+          selectedLearnerDetail.student.id,
+        publicDisplayName:
+          learnerProfileDraft.publicDisplayName,
+        currentLevel:
+          learnerProfileDraft.currentLevel,
+        academicYear:
+          learnerProfileDraft.academicYear,
+      });
+
+      /*
+       * Re-read the learner after mutation.
+       *
+       * The modal therefore displays the
+       * authoritative organisation-scoped
+       * learner record rather than assuming
+       * the submitted draft is the stored state.
+       */
+      const refreshedDetail =
+        await discoverOrganisationLearnerDetail({
+          supabase,
+          organisationId:
+            workspace.organisation.id,
+          studentId:
+            selectedLearnerDetail.student.id,
+        });
+
+      if (!refreshedDetail) {
+        throw new Error(
+          "The learner was updated, but the refreshed learner record could not be loaded."
+        );
+      }
+
+      setSelectedLearnerDetail(
+        refreshedDetail
+      );
+      setIsEditingLearnerProfile(false);
+
+      /*
+       * Refresh the organisation roster too so
+       * a changed display name is reflected on
+       * the learner card after the modal closes.
+       */
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      console.error(
+        "Unable to update learner profile:",
+        error
+      );
+
+      setLearnerProfileEditError(
+        error?.message ||
+          "The learner profile could not be updated. Please try again."
+      );
+    } finally {
+      setIsSavingLearnerProfile(false);
+    }
+  }
+
+  function openAddStaff() {
+    setNewStaff({
+      firstName: "",
+      lastName: "",
+      email: "",
+      position: "",
+      roles: ["teacher"],
+    });
+
+    setAddStaffError("");
+    setIsAddStaffOpen(true);
+  }
+
+  function closeAddStaff() {
+    if (isAddingStaff) {
+      return;
+    }
+
+    setIsAddStaffOpen(false);
+    setAddStaffError("");
+  }
+
+  function updateNewStaff(field, value) {
+    setNewStaff((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  function toggleNewStaffRole(role) {
+    if (
+      role !== "teacher" &&
+      role !== "tutor"
+    ) {
+      return;
+    }
+
+    setNewStaff((current) => {
+      const hasRole =
+        current.roles.includes(role);
+
+      return {
+        ...current,
+        roles: hasRole
+          ? current.roles.filter(
+              (currentRole) =>
+                currentRole !== role
+            )
+          : [...current.roles, role],
+      };
+    });
+  }
+
+  async function handleAddStaff(event) {
+    event.preventDefault();
+
+    if (
+      !workspace?.roles?.includes(
+        "organisation_admin"
+      )
+    ) {
+      setAddStaffError(
+        "You do not have permission to add organisation staff."
+      );
+      return;
+    }
+
+    if (newStaff.roles.length === 0) {
+      setAddStaffError(
+        "Select at least one staff role."
+      );
+      return;
+    }
+
+    try {
+      setIsAddingStaff(true);
+      setAddStaffError("");
+
+      await addOrganisationStaff({
+        organisationId:
+          workspace.organisation.id,
+        firstName: newStaff.firstName,
+        lastName: newStaff.lastName,
+        email: newStaff.email,
+        position: newStaff.position,
+        roles: newStaff.roles,
+      });
+
+      setIsAddStaffOpen(false);
+
+      /*
+       * Re-read the workspace after provisioning
+       * so the Staff section reflects the
+       * authoritative organisation roster.
+       */
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      console.error(
+        "Unable to add organisation staff:",
+        error
+      );
+
+      setAddStaffError(
+        error?.message ||
+          "The staff member could not be added. Please try again."
+      );
+    } finally {
+      setIsAddingStaff(false);
+    }
   }
 
   async function handleSignOut() {
@@ -698,38 +1015,44 @@ export default function OrganisationWorkspace() {
   const learnersHeading = hasRosterView
     ? "Learners"
     : "My Learners";
+  const organisationStaff =
+    workspace.organisationStaff || [];
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-8 sm:px-8 lg:px-12">
-        <header className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/workspace")
-            }
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-slate-950"
-          >
-            <ArrowLeft size={18} />
-            Workspaces
-          </button>
+  const formatStaffRole = (role) =>
+    ORGANISATION_ROLE_LABELS[role] || role;
 
-          <button
-            type="button"
-            onClick={handleSignOut}
-            disabled={isSigningOut}
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <LogOut size={18} />
+  const formatStaffStatus = (status) => {
+    if (!status) {
+      return "Not recorded";
+    }
 
-            {isSigningOut
-              ? "Signing out..."
-              : "Sign out"}
-          </button>
-        </header>
+    return (
+      status.charAt(0).toUpperCase() +
+      status.slice(1)
+    );
+  };
 
-        <main className="flex flex-1 items-center py-12 sm:py-16">
-          <div className="w-full">
+  const formatJoinedDate = (value) => {
+    if (!value) {
+      return "Not recorded";
+    }
+
+    return new Intl.DateTimeFormat("en-TT", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(value));
+  };
+
+   return (
+    <OrganisationLayout
+      organisation={organisation}
+      profile={workspace.profile}
+      roles={roles}
+      onSignOut={handleSignOut}
+      isSigningOut={isSigningOut}
+    >
+        <div id="overview" className="w-full">
             <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
               <div className="grid h-14 w-14 place-items-center rounded-2xl bg-yellow-100 text-yellow-800">
                 <Building2 size={28} />
@@ -748,7 +1071,10 @@ export default function OrganisationWorkspace() {
               </p>
 
               <div className="mt-9 border-t border-slate-200 pt-8">
-                <section>
+                <section
+                  id="groups"
+                  className="scroll-mt-28"
+                >
                   <div className="flex items-end justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
@@ -814,7 +1140,10 @@ export default function OrganisationWorkspace() {
                   )}
                 </section>
 
-                <section className="mt-10 border-t border-slate-200 pt-8">
+                <section
+                  id="learners"
+                  className="mt-10 scroll-mt-28 border-t border-slate-200 pt-8"
+                >
                   <div className="flex items-end justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
@@ -930,7 +1259,349 @@ export default function OrganisationWorkspace() {
               </div>
             </div>
           </div>
-        </main>
+
+                {hasOrganisationAdminRole && (
+          <section
+            id="staff"
+            className="mx-auto mt-8 w-full max-w-3xl scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-yellow-700">
+                  Organisation team
+                </p>
+
+                <h2 className="mt-2 text-xl font-black text-slate-950">
+                  Staff
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  People currently recorded as staff
+                  for {organisation.name}.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={openAddStaff}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
+              >
+                <Plus size={17} />
+                Add staff
+              </button>
+            </div>
+
+            {organisationStaff.length === 0 ? (
+              <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-6">
+                <p className="text-sm font-semibold text-slate-600">
+                  No staff members are recorded
+                  for this organisation.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4">
+                {organisationStaff.map(
+                  (staffMember) => (
+                    <article
+                      key={staffMember.staffId}
+                      className="rounded-2xl border border-slate-200 p-5"
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <h3 className="font-black text-slate-950">
+                            {staffMember.fullName}
+                          </h3>
+
+                          <p className="mt-1 text-sm font-semibold text-slate-500">
+                            {staffMember.position ||
+                              "Position not recorded"}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {staffMember.roles.length >
+                          0 ? (
+                            staffMember.roles.map(
+                              (role) => (
+                                <span
+                                  key={role}
+                                  className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold text-yellow-800"
+                                >
+                                  {formatStaffRole(
+                                    role
+                                  )}
+                                </span>
+                              )
+                            )
+                          ) : (
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                              No role recorded
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <dl className="mt-5 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-3">
+                        <div>
+                          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Staff status
+                          </dt>
+
+                          <dd className="mt-1 text-sm font-semibold text-slate-700">
+                            {formatStaffStatus(
+                              staffMember.status
+                            )}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Account
+                          </dt>
+
+                          <dd className="mt-1 text-sm font-semibold text-slate-700">
+                            {formatStaffStatus(
+                              staffMember.accountStatus
+                            )}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Joined
+                          </dt>
+
+                          <dd className="mt-1 text-sm font-semibold text-slate-700">
+                            {formatJoinedDate(
+                              staffMember.joinedAt
+                            )}
+                          </dd>
+                        </div>
+                      </dl>
+                    </article>
+                  )
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
+        {isAddStaffOpen &&
+          hasOrganisationAdminRole && (
+            <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 px-5 py-8">
+              <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-yellow-700">
+                      Organisation staff
+                    </p>
+
+                    <h2 className="mt-2 text-2xl font-black text-slate-950">
+                      Add staff member
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      Add a teacher or tutor to{" "}
+                      {organisation.name}.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={closeAddStaff}
+                    disabled={isAddingStaff}
+                    aria-label="Close add staff form"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={handleAddStaff}
+                  className="mt-7"
+                >
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="text-sm font-bold text-slate-700">
+                        First name
+                      </span>
+
+                      <input
+                        type="text"
+                        value={newStaff.firstName}
+                        onChange={(event) =>
+                          updateNewStaff(
+                            "firstName",
+                            event.target.value
+                          )
+                        }
+                        disabled={isAddingStaff}
+                        autoComplete="given-name"
+                        required
+                        className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-950 outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-sm font-bold text-slate-700">
+                        Last name
+                      </span>
+
+                      <input
+                        type="text"
+                        value={newStaff.lastName}
+                        onChange={(event) =>
+                          updateNewStaff(
+                            "lastName",
+                            event.target.value
+                          )
+                        }
+                        disabled={isAddingStaff}
+                        autoComplete="family-name"
+                        required
+                        className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-950 outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="mt-5 block">
+                    <span className="text-sm font-bold text-slate-700">
+                      Email
+                    </span>
+
+                    <input
+                      type="email"
+                      value={newStaff.email}
+                      onChange={(event) =>
+                        updateNewStaff(
+                          "email",
+                          event.target.value
+                        )
+                      }
+                      disabled={isAddingStaff}
+                      autoComplete="email"
+                      required
+                      className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-950 outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100"
+                    />
+                  </label>
+
+                  <label className="mt-5 block">
+                    <span className="text-sm font-bold text-slate-700">
+                      Position
+                    </span>
+
+                    <span className="ml-2 text-xs font-semibold text-slate-400">
+                      Optional
+                    </span>
+
+                    <input
+                      type="text"
+                      value={newStaff.position}
+                      onChange={(event) =>
+                        updateNewStaff(
+                          "position",
+                          event.target.value
+                        )
+                      }
+                      disabled={isAddingStaff}
+                      placeholder="e.g. Mathematics Teacher"
+                      className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-950 outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100"
+                    />
+                  </label>
+
+                  <fieldset className="mt-6">
+                    <legend className="text-sm font-bold text-slate-700">
+                      Organisation role
+                    </legend>
+
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Select at least one role. A staff
+                      member may be both a teacher and
+                      tutor.
+                    </p>
+
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {[
+                        {
+                          value: "teacher",
+                          label: "Teacher",
+                        },
+                        {
+                          value: "tutor",
+                          label: "Tutor",
+                        },
+                      ].map((role) => {
+                        const isSelected =
+                          newStaff.roles.includes(
+                            role.value
+                          );
+
+                        return (
+                          <label
+                            key={role.value}
+                            className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-4 transition ${
+                              isSelected
+                                ? "border-yellow-400 bg-yellow-50"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() =>
+                                toggleNewStaffRole(
+                                  role.value
+                                )
+                              }
+                              disabled={isAddingStaff}
+                              className="h-4 w-4 rounded border-slate-300"
+                            />
+
+                            <span className="font-bold text-slate-800">
+                              {role.label}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+
+                  {addStaffError && (
+                    <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                      <p className="text-sm font-semibold leading-6 text-red-700">
+                        {addStaffError}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={closeAddStaff}
+                      disabled={isAddingStaff}
+                      className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={
+                        isAddingStaff ||
+                        newStaff.roles.length === 0
+                      }
+                      className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isAddingStaff
+                        ? "Adding staff..."
+                        : "Add staff member"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
         {isLearnerDetailOpen &&
           canManageRoster && (
@@ -958,8 +1629,9 @@ export default function OrganisationWorkspace() {
                     </h2>
 
                     <p className="mt-2 text-sm leading-6 text-slate-500">
-                      Read-only organisation
-                      learner record.
+                      {isEditingLearnerProfile
+                        ? "Edit learner profile details."
+                        : "Organisation learner record."}
                     </p>
                   </div>
 
@@ -967,7 +1639,8 @@ export default function OrganisationWorkspace() {
                     type="button"
                     onClick={closeLearnerDetail}
                     disabled={
-                      isLoadingLearnerDetail
+                      isLoadingLearnerDetail ||
+                      isSavingLearnerProfile
                     }
                     className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
                     aria-label="Close learner details"
@@ -990,66 +1663,211 @@ export default function OrganisationWorkspace() {
                 ) : selectedLearnerDetail ? (
                   <div className="mt-7 grid gap-5">
                     <section className="rounded-2xl border border-slate-200 p-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-                        Identity
-                      </p>
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                          Identity
+                        </p>
 
-                      <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <dt className="text-xs font-bold text-slate-400">
-                            Full name
-                          </dt>
-                          <dd className="mt-1 font-bold text-slate-900">
-                            {[
-                              selectedLearnerDetail
-                                .student
-                                .firstName,
-                              selectedLearnerDetail
-                                .student
-                                .lastName,
-                            ]
-                              .filter(Boolean)
-                              .join(" ") ||
-                              "Not recorded"}
-                          </dd>
-                        </div>
+                        {!isEditingLearnerProfile && (
+                          <button
+                            type="button"
+                            onClick={
+                              beginLearnerProfileEdit
+                            }
+                            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
 
-                        <div>
-                          <dt className="text-xs font-bold text-slate-400">
+                      {isEditingLearnerProfile ? (
+                        <form
+                          onSubmit={
+                            handleLearnerProfileSave
+                          }
+                          className="mt-4 grid gap-5"
+                        >
+                          <div>
+                            <p className="text-xs font-bold text-slate-400">
+                              Full name
+                            </p>
+                            <p className="mt-1 font-bold text-slate-900">
+                              {[
+                                selectedLearnerDetail
+                                  .student
+                                  .firstName,
+                                selectedLearnerDetail
+                                  .student
+                                  .lastName,
+                              ]
+                                .filter(Boolean)
+                                .join(" ") ||
+                                "Not recorded"}
+                            </p>
+                            <p className="mt-1 text-xs font-medium text-slate-400">
+                              Full name is not
+                              editable here.
+                            </p>
+                          </div>
+
+                          <label className="grid gap-2 text-sm font-bold text-slate-700">
                             Display name
-                          </dt>
-                          <dd className="mt-1 font-bold text-slate-900">
-                            {selectedLearnerDetail
-                              .student
-                              .publicDisplayName ||
-                              "Not recorded"}
-                          </dd>
-                        </div>
+                            <input
+                              required
+                              value={
+                                learnerProfileDraft.publicDisplayName
+                              }
+                              onChange={(event) =>
+                                updateLearnerProfileDraft(
+                                  "publicDisplayName",
+                                  event.target.value
+                                )
+                              }
+                              disabled={
+                                isSavingLearnerProfile
+                              }
+                              className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
+                            />
+                          </label>
 
-                        <div>
-                          <dt className="text-xs font-bold text-slate-400">
-                            Current level
-                          </dt>
-                          <dd className="mt-1 font-bold text-slate-900">
-                            {selectedLearnerDetail
-                              .student
-                              .currentLevel ||
-                              "Not recorded"}
-                          </dd>
-                        </div>
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <label className="grid gap-2 text-sm font-bold text-slate-700">
+                              Current level
+                              <input
+                                value={
+                                  learnerProfileDraft.currentLevel
+                                }
+                                onChange={(event) =>
+                                  updateLearnerProfileDraft(
+                                    "currentLevel",
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                disabled={
+                                  isSavingLearnerProfile
+                                }
+                                placeholder="Optional"
+                                className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
+                              />
+                            </label>
 
-                        <div>
-                          <dt className="text-xs font-bold text-slate-400">
-                            Academic year
-                          </dt>
-                          <dd className="mt-1 font-bold text-slate-900">
-                            {selectedLearnerDetail
-                              .student
-                              .academicYear ||
-                              "Not recorded"}
-                          </dd>
-                        </div>
-                      </dl>
+                            <label className="grid gap-2 text-sm font-bold text-slate-700">
+                              Academic year
+                              <input
+                                value={
+                                  learnerProfileDraft.academicYear
+                                }
+                                onChange={(event) =>
+                                  updateLearnerProfileDraft(
+                                    "academicYear",
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                disabled={
+                                  isSavingLearnerProfile
+                                }
+                                placeholder="e.g. 2026/27"
+                                className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
+                              />
+                            </label>
+                          </div>
+
+                          {learnerProfileEditError && (
+                            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                              {
+                                learnerProfileEditError
+                              }
+                            </div>
+                          )}
+
+                          <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+                            <button
+                              type="button"
+                              onClick={
+                                cancelLearnerProfileEdit
+                              }
+                              disabled={
+                                isSavingLearnerProfile
+                              }
+                              className="rounded-xl border border-slate-300 px-5 py-3 font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+
+                            <button
+                              type="submit"
+                              disabled={
+                                isSavingLearnerProfile
+                              }
+                              className="rounded-xl bg-yellow-400 px-5 py-3 font-black text-slate-950 transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isSavingLearnerProfile
+                                ? "Saving..."
+                                : "Save changes"}
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <dt className="text-xs font-bold text-slate-400">
+                              Full name
+                            </dt>
+                            <dd className="mt-1 font-bold text-slate-900">
+                              {[
+                                selectedLearnerDetail
+                                  .student
+                                  .firstName,
+                                selectedLearnerDetail
+                                  .student
+                                  .lastName,
+                              ]
+                                .filter(Boolean)
+                                .join(" ") ||
+                                "Not recorded"}
+                            </dd>
+                          </div>
+
+                          <div>
+                            <dt className="text-xs font-bold text-slate-400">
+                              Display name
+                            </dt>
+                            <dd className="mt-1 font-bold text-slate-900">
+                              {selectedLearnerDetail
+                                .student
+                                .publicDisplayName ||
+                                "Not recorded"}
+                            </dd>
+                          </div>
+
+                          <div>
+                            <dt className="text-xs font-bold text-slate-400">
+                              Current level
+                            </dt>
+                            <dd className="mt-1 font-bold text-slate-900">
+                              {selectedLearnerDetail
+                                .student
+                                .currentLevel ||
+                                "Not recorded"}
+                            </dd>
+                          </div>
+
+                          <div>
+                            <dt className="text-xs font-bold text-slate-400">
+                              Academic year
+                            </dt>
+                            <dd className="mt-1 font-bold text-slate-900">
+                              {selectedLearnerDetail
+                                .student
+                                .academicYear ||
+                                "Not recorded"}
+                            </dd>
+                          </div>
+                        </dl>
+                      )}
                     </section>
 
                     <section className="rounded-2xl border border-slate-200 p-5">
@@ -1170,17 +1988,22 @@ export default function OrganisationWorkspace() {
                       )}
                     </section>
 
-                    <div className="flex justify-end border-t border-slate-200 pt-5">
-                      <button
-                        type="button"
-                        onClick={
-                          closeLearnerDetail
-                        }
-                        className="rounded-xl bg-slate-900 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
-                      >
-                        Close
-                      </button>
-                    </div>
+                    {!isEditingLearnerProfile && (
+                      <div className="flex justify-end border-t border-slate-200 pt-5">
+                        <button
+                          type="button"
+                          onClick={
+                            closeLearnerDetail
+                          }
+                          disabled={
+                            isSavingLearnerProfile
+                          }
+                          className="rounded-xl bg-slate-900 px-5 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : null}
               </div>
@@ -1375,13 +2198,8 @@ export default function OrganisationWorkspace() {
               </div>
             </div>
           )}
-
-        <footer className="text-center text-xs text-slate-400">
-          CountMeInTT Organisation Workspace
-        </footer>
-      </div>
-    </div>
-  );
-}
+          </OrganisationLayout>
+        );
+        }
 
 
