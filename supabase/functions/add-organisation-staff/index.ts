@@ -219,11 +219,17 @@ Deno.serve(async (request) => {
     }
 
     /*
-     * 2. Staff V1 is platform-admin provisioning only.
+     * 2. Establish the caller's platform authority.
      *
-     * Preserve the existing CountMeInTT platform-admin
-     * semantics: admin and super_admin only.
-     * moderator is deliberately not included.
+     * Active admin and super_admin accounts retain the
+     * existing platform-wide staff provisioning authority.
+     *
+     * Other active callers are not rejected here because
+     * Staff V2.2 also permits an active organisation
+     * administrator to add teacher/tutor staff within their
+     * own organisation.
+     *
+     * moderator is deliberately not a platform admin.
      */
     const {
       data: callerProfile,
@@ -238,17 +244,19 @@ Deno.serve(async (request) => {
 
     if (
       !callerProfile ||
-      callerProfile.account_status !== "active" ||
-      !["admin", "super_admin"].includes(
-        callerProfile.admin_role,
-      )
+      callerProfile.account_status !== "active"
     ) {
       return errorResponse(
-        "PLATFORM_ADMIN_REQUIRED",
-        "You do not have permission to add organisation staff.",
+        "ACCOUNT_NOT_ACTIVE",
+        "Your CountMeInTT account is not active.",
         403,
       );
     }
+
+    const isPlatformAdmin =
+      ["admin", "super_admin"].includes(
+        callerProfile.admin_role,
+      );
 
     /*
      * 3. Validate and normalize the request.
@@ -337,7 +345,75 @@ Deno.serve(async (request) => {
     }
 
     /*
-     * 4. Confirm the target organisation before creating
+     * 4. Authorize the caller for this organisation and
+     *    requested role set.
+     *
+     * Platform admins retain authority to provision any
+     * supported organisation role.
+     *
+     * Other callers must be active organisation
+     * administrators of the target organisation. Their
+     * authority is deliberately limited to teacher/tutor
+     * provisioning.
+     */
+    if (!isPlatformAdmin) {
+      const {
+        data: callerStaff,
+        error: callerStaffError,
+      } = await userClient
+        .from("organisation_staff")
+        .select("id")
+        .eq("organisation_id", organisationId)
+        .eq("profile_id", user.id)
+        .eq("status", "active")
+        .is("ended_at", null)
+        .maybeSingle();
+
+      if (callerStaffError) {
+        throw callerStaffError;
+      }
+
+      if (!callerStaff) {
+        return errorResponse(
+          "ORGANISATION_ADMIN_REQUIRED",
+          "You do not have permission to add staff to this organisation.",
+          403,
+        );
+      }
+
+      const {
+        data: callerAdminRole,
+        error: callerAdminRoleError,
+      } = await userClient
+        .from("organisation_staff_roles")
+        .select("role")
+        .eq("staff_id", callerStaff.id)
+        .eq("role", "organisation_admin")
+        .maybeSingle();
+
+      if (callerAdminRoleError) {
+        throw callerAdminRoleError;
+      }
+
+      if (!callerAdminRole) {
+        return errorResponse(
+          "ORGANISATION_ADMIN_REQUIRED",
+          "You do not have permission to add staff to this organisation.",
+          403,
+        );
+      }
+
+      if (roles.includes("organisation_admin")) {
+        return errorResponse(
+          "ORGANISATION_ADMIN_ROLE_FORBIDDEN",
+          "Organisation administrators cannot appoint other organisation administrators.",
+          403,
+        );
+      }
+    }
+
+    /*
+     * 5. Confirm the target organisation before creating
      *    or inviting an Auth user.
      *
      * This avoids sending an invitation for an organisation
@@ -364,7 +440,7 @@ Deno.serve(async (request) => {
     }
 
     /*
-     * 5. Resolve the adult account entirely server-side.
+     * 6. Resolve the adult account entirely server-side.
      */
     let authUser =
       await findAuthUserByEmail(adminClient, email);
@@ -431,7 +507,7 @@ Deno.serve(async (request) => {
     }
 
     /*
-     * 6. Require the Auth identity to have a corresponding
+     * 7. Require the Auth identity to have a corresponding
      *    active public profile.
      *
      * For new invitations, handle_new_user() should have
@@ -468,7 +544,7 @@ Deno.serve(async (request) => {
     }
 
     /*
-     * 7. Provision the organisation relationship through
+     * 8. Provision the organisation relationship through
      *    the service-role-only transactional RPC.
      *
      * Existing account identity is deliberately preserved:
@@ -536,7 +612,7 @@ Deno.serve(async (request) => {
     }
 
     /*
-     * 8. Return authoritative account + employment state.
+     * 9. Return authoritative account + employment state.
      */
     return jsonResponse({
       success: true,

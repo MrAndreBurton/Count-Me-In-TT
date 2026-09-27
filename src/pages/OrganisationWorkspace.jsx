@@ -27,6 +27,7 @@ import {
 import OrganisationLayout from "../components/organisation/layout/OrganisationLayout";
 
 import {
+  addOrganisationStaff,
   fetchOrganisationStaff,
 } from "../lib/organisationStaff";
 
@@ -153,6 +154,29 @@ export default function OrganisationWorkspace() {
     currentLevel: "",
     academicYear: "",
     groupId: "",
+  });
+
+  const [
+    isAddStaffOpen,
+    setIsAddStaffOpen,
+  ] = useState(false);
+
+  const [
+    isAddingStaff,
+    setIsAddingStaff,
+  ] = useState(false);
+
+  const [
+    addStaffError,
+    setAddStaffError,
+  ] = useState("");
+
+  const [newStaff, setNewStaff] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    position: "",
+    roles: ["teacher"],
   });
 
   useEffect(() => {
@@ -739,6 +763,117 @@ export default function OrganisationWorkspace() {
     }
   }
 
+  function openAddStaff() {
+    setNewStaff({
+      firstName: "",
+      lastName: "",
+      email: "",
+      position: "",
+      roles: ["teacher"],
+    });
+
+    setAddStaffError("");
+    setIsAddStaffOpen(true);
+  }
+
+  function closeAddStaff() {
+    if (isAddingStaff) {
+      return;
+    }
+
+    setIsAddStaffOpen(false);
+    setAddStaffError("");
+  }
+
+  function updateNewStaff(field, value) {
+    setNewStaff((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  function toggleNewStaffRole(role) {
+    if (
+      role !== "teacher" &&
+      role !== "tutor"
+    ) {
+      return;
+    }
+
+    setNewStaff((current) => {
+      const hasRole =
+        current.roles.includes(role);
+
+      return {
+        ...current,
+        roles: hasRole
+          ? current.roles.filter(
+              (currentRole) =>
+                currentRole !== role
+            )
+          : [...current.roles, role],
+      };
+    });
+  }
+
+  async function handleAddStaff(event) {
+    event.preventDefault();
+
+    if (
+      !workspace?.roles?.includes(
+        "organisation_admin"
+      )
+    ) {
+      setAddStaffError(
+        "You do not have permission to add organisation staff."
+      );
+      return;
+    }
+
+    if (newStaff.roles.length === 0) {
+      setAddStaffError(
+        "Select at least one staff role."
+      );
+      return;
+    }
+
+    try {
+      setIsAddingStaff(true);
+      setAddStaffError("");
+
+      await addOrganisationStaff({
+        organisationId:
+          workspace.organisation.id,
+        firstName: newStaff.firstName,
+        lastName: newStaff.lastName,
+        email: newStaff.email,
+        position: newStaff.position,
+        roles: newStaff.roles,
+      });
+
+      setIsAddStaffOpen(false);
+
+      /*
+       * Re-read the workspace after provisioning
+       * so the Staff section reflects the
+       * authoritative organisation roster.
+       */
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      console.error(
+        "Unable to add organisation staff:",
+        error
+      );
+
+      setAddStaffError(
+        error?.message ||
+          "The staff member could not be added. Please try again."
+      );
+    } finally {
+      setIsAddingStaff(false);
+    }
+  }
+
   async function handleSignOut() {
     try {
       setIsSigningOut(true);
@@ -1130,19 +1265,30 @@ export default function OrganisationWorkspace() {
             id="staff"
             className="mx-auto mt-8 w-full max-w-3xl scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10"
           >
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-yellow-700">
-                Organisation team
-              </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-yellow-700">
+                  Organisation team
+                </p>
 
-              <h2 className="mt-2 text-xl font-black text-slate-950">
-                Staff
-              </h2>
+                <h2 className="mt-2 text-xl font-black text-slate-950">
+                  Staff
+                </h2>
 
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                People currently recorded as staff
-                for {organisation.name}.
-              </p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  People currently recorded as staff
+                  for {organisation.name}.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={openAddStaff}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
+              >
+                <Plus size={17} />
+                Add staff
+              </button>
             </div>
 
             {organisationStaff.length === 0 ? (
@@ -1239,6 +1385,223 @@ export default function OrganisationWorkspace() {
             )}
           </section>
         )}
+
+        {isAddStaffOpen &&
+          hasOrganisationAdminRole && (
+            <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 px-5 py-8">
+              <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-yellow-700">
+                      Organisation staff
+                    </p>
+
+                    <h2 className="mt-2 text-2xl font-black text-slate-950">
+                      Add staff member
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      Add a teacher or tutor to{" "}
+                      {organisation.name}.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={closeAddStaff}
+                    disabled={isAddingStaff}
+                    aria-label="Close add staff form"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <form
+                  onSubmit={handleAddStaff}
+                  className="mt-7"
+                >
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="text-sm font-bold text-slate-700">
+                        First name
+                      </span>
+
+                      <input
+                        type="text"
+                        value={newStaff.firstName}
+                        onChange={(event) =>
+                          updateNewStaff(
+                            "firstName",
+                            event.target.value
+                          )
+                        }
+                        disabled={isAddingStaff}
+                        autoComplete="given-name"
+                        required
+                        className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-950 outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-sm font-bold text-slate-700">
+                        Last name
+                      </span>
+
+                      <input
+                        type="text"
+                        value={newStaff.lastName}
+                        onChange={(event) =>
+                          updateNewStaff(
+                            "lastName",
+                            event.target.value
+                          )
+                        }
+                        disabled={isAddingStaff}
+                        autoComplete="family-name"
+                        required
+                        className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-950 outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="mt-5 block">
+                    <span className="text-sm font-bold text-slate-700">
+                      Email
+                    </span>
+
+                    <input
+                      type="email"
+                      value={newStaff.email}
+                      onChange={(event) =>
+                        updateNewStaff(
+                          "email",
+                          event.target.value
+                        )
+                      }
+                      disabled={isAddingStaff}
+                      autoComplete="email"
+                      required
+                      className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-950 outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100"
+                    />
+                  </label>
+
+                  <label className="mt-5 block">
+                    <span className="text-sm font-bold text-slate-700">
+                      Position
+                    </span>
+
+                    <span className="ml-2 text-xs font-semibold text-slate-400">
+                      Optional
+                    </span>
+
+                    <input
+                      type="text"
+                      value={newStaff.position}
+                      onChange={(event) =>
+                        updateNewStaff(
+                          "position",
+                          event.target.value
+                        )
+                      }
+                      disabled={isAddingStaff}
+                      placeholder="e.g. Mathematics Teacher"
+                      className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-950 outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100"
+                    />
+                  </label>
+
+                  <fieldset className="mt-6">
+                    <legend className="text-sm font-bold text-slate-700">
+                      Organisation role
+                    </legend>
+
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Select at least one role. A staff
+                      member may be both a teacher and
+                      tutor.
+                    </p>
+
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {[
+                        {
+                          value: "teacher",
+                          label: "Teacher",
+                        },
+                        {
+                          value: "tutor",
+                          label: "Tutor",
+                        },
+                      ].map((role) => {
+                        const isSelected =
+                          newStaff.roles.includes(
+                            role.value
+                          );
+
+                        return (
+                          <label
+                            key={role.value}
+                            className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-4 transition ${
+                              isSelected
+                                ? "border-yellow-400 bg-yellow-50"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() =>
+                                toggleNewStaffRole(
+                                  role.value
+                                )
+                              }
+                              disabled={isAddingStaff}
+                              className="h-4 w-4 rounded border-slate-300"
+                            />
+
+                            <span className="font-bold text-slate-800">
+                              {role.label}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+
+                  {addStaffError && (
+                    <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                      <p className="text-sm font-semibold leading-6 text-red-700">
+                        {addStaffError}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={closeAddStaff}
+                      disabled={isAddingStaff}
+                      className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={
+                        isAddingStaff ||
+                        newStaff.roles.length === 0
+                      }
+                      className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isAddingStaff
+                        ? "Adding staff..."
+                        : "Add staff member"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
         {isLearnerDetailOpen &&
           canManageRoster && (
