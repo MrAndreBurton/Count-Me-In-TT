@@ -24,6 +24,12 @@ import {
   updateOrganisationStudentProfile,
 } from "../lib/organisationRoster";
 
+import OrganisationLayout from "../components/organisation/layout/OrganisationLayout";
+
+import {
+  fetchOrganisationStaff,
+} from "../lib/organisationStaff";
+
 const ORGANISATION_ROLE_LABELS = {
   organisation_admin: "Organisation Administrator",
   teacher: "Teacher",
@@ -176,7 +182,9 @@ export default function OrganisationWorkspace() {
           error: profileError,
         } = await supabase
           .from("profiles")
-          .select("admin_role, account_status")
+          .select(
+            "full_name, admin_role, account_status"
+          )
           .eq("id", session.user.id)
           .maybeSingle();
 
@@ -340,6 +348,8 @@ export default function OrganisationWorkspace() {
           },
         };
 
+        let organisationStaff = [];
+
         /*
          * Teachers/tutors attempt the assigned-group path.
          */
@@ -367,6 +377,19 @@ export default function OrganisationWorkspace() {
             });
         }
 
+        /*
+         * Organisation administrators can inspect
+         * the organisation-wide staff roster.
+         *
+         * Platform administration remains a separate
+         * authority surface.
+         */
+        if (hasOrganisationAdminRole) {
+          organisationStaff =
+            await fetchOrganisationStaff(
+              organisation.id
+            );
+        }
         /*
          * Multiple valid authorization paths are unioned.
          * A learner visible through more than one path must
@@ -418,6 +441,7 @@ export default function OrganisationWorkspace() {
         if (isMounted) {
           setWorkspace({
             organisation,
+            profile,
             staffId: staff.id,
             roles,
             isActivePlatformAdmin:
@@ -425,6 +449,7 @@ export default function OrganisationWorkspace() {
             canManageRoster:
               hasActivePlatformAdminAccess ||
               hasOrganisationAdminRole,
+            organisationStaff,
             discovery,
           });
 
@@ -855,38 +880,44 @@ export default function OrganisationWorkspace() {
   const learnersHeading = hasRosterView
     ? "Learners"
     : "My Learners";
+  const organisationStaff =
+    workspace.organisationStaff || [];
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-8 sm:px-8 lg:px-12">
-        <header className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/workspace")
-            }
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-slate-950"
-          >
-            <ArrowLeft size={18} />
-            Workspaces
-          </button>
+  const formatStaffRole = (role) =>
+    ORGANISATION_ROLE_LABELS[role] || role;
 
-          <button
-            type="button"
-            onClick={handleSignOut}
-            disabled={isSigningOut}
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <LogOut size={18} />
+  const formatStaffStatus = (status) => {
+    if (!status) {
+      return "Not recorded";
+    }
 
-            {isSigningOut
-              ? "Signing out..."
-              : "Sign out"}
-          </button>
-        </header>
+    return (
+      status.charAt(0).toUpperCase() +
+      status.slice(1)
+    );
+  };
 
-        <main className="flex flex-1 items-center py-12 sm:py-16">
-          <div className="w-full">
+  const formatJoinedDate = (value) => {
+    if (!value) {
+      return "Not recorded";
+    }
+
+    return new Intl.DateTimeFormat("en-TT", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(value));
+  };
+
+   return (
+    <OrganisationLayout
+      organisation={organisation}
+      profile={workspace.profile}
+      roles={roles}
+      onSignOut={handleSignOut}
+      isSigningOut={isSigningOut}
+    >
+        <div id="overview" className="w-full">
             <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
               <div className="grid h-14 w-14 place-items-center rounded-2xl bg-yellow-100 text-yellow-800">
                 <Building2 size={28} />
@@ -905,7 +936,10 @@ export default function OrganisationWorkspace() {
               </p>
 
               <div className="mt-9 border-t border-slate-200 pt-8">
-                <section>
+                <section
+                  id="groups"
+                  className="scroll-mt-28"
+                >
                   <div className="flex items-end justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
@@ -971,7 +1005,10 @@ export default function OrganisationWorkspace() {
                   )}
                 </section>
 
-                <section className="mt-10 border-t border-slate-200 pt-8">
+                <section
+                  id="learners"
+                  className="mt-10 scroll-mt-28 border-t border-slate-200 pt-8"
+                >
                   <div className="flex items-end justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
@@ -1087,7 +1124,121 @@ export default function OrganisationWorkspace() {
               </div>
             </div>
           </div>
-        </main>
+
+                {hasOrganisationAdminRole && (
+          <section
+            id="staff"
+            className="mx-auto mt-8 w-full max-w-3xl scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10"
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-yellow-700">
+                Organisation team
+              </p>
+
+              <h2 className="mt-2 text-xl font-black text-slate-950">
+                Staff
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                People currently recorded as staff
+                for {organisation.name}.
+              </p>
+            </div>
+
+            {organisationStaff.length === 0 ? (
+              <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-6">
+                <p className="text-sm font-semibold text-slate-600">
+                  No staff members are recorded
+                  for this organisation.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4">
+                {organisationStaff.map(
+                  (staffMember) => (
+                    <article
+                      key={staffMember.staffId}
+                      className="rounded-2xl border border-slate-200 p-5"
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <h3 className="font-black text-slate-950">
+                            {staffMember.fullName}
+                          </h3>
+
+                          <p className="mt-1 text-sm font-semibold text-slate-500">
+                            {staffMember.position ||
+                              "Position not recorded"}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {staffMember.roles.length >
+                          0 ? (
+                            staffMember.roles.map(
+                              (role) => (
+                                <span
+                                  key={role}
+                                  className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold text-yellow-800"
+                                >
+                                  {formatStaffRole(
+                                    role
+                                  )}
+                                </span>
+                              )
+                            )
+                          ) : (
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                              No role recorded
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <dl className="mt-5 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-3">
+                        <div>
+                          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Staff status
+                          </dt>
+
+                          <dd className="mt-1 text-sm font-semibold text-slate-700">
+                            {formatStaffStatus(
+                              staffMember.status
+                            )}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Account
+                          </dt>
+
+                          <dd className="mt-1 text-sm font-semibold text-slate-700">
+                            {formatStaffStatus(
+                              staffMember.accountStatus
+                            )}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Joined
+                          </dt>
+
+                          <dd className="mt-1 text-sm font-semibold text-slate-700">
+                            {formatJoinedDate(
+                              staffMember.joinedAt
+                            )}
+                          </dd>
+                        </div>
+                      </dl>
+                    </article>
+                  )
+                )}
+              </div>
+            )}
+          </section>
+        )}
 
         {isLearnerDetailOpen &&
           canManageRoster && (
@@ -1684,13 +1835,8 @@ export default function OrganisationWorkspace() {
               </div>
             </div>
           )}
-
-        <footer className="text-center text-xs text-slate-400">
-          CountMeInTT Organisation Workspace
-        </footer>
-      </div>
-    </div>
-  );
-}
+          </OrganisationLayout>
+        );
+        }
 
 

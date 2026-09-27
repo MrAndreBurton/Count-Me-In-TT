@@ -60,135 +60,32 @@ export async function fetchOrganisationStaff(
     });
   }
 
-  const {
-    data: staffRows,
-    error: staffError,
-  } = await supabase
-    .from("organisation_staff")
-    .select(`
-      id,
-      organisation_id,
-      profile_id,
-      position,
-      status,
-      joined_at,
-      ended_at
-    `)
-    .eq("organisation_id", cleanOrganisationId)
-    .order("joined_at", {
-      ascending: true,
-    });
-
-  if (staffError) {
-    throw staffError;
-  }
-
-  const staff = staffRows || [];
-
-  if (staff.length === 0) {
-    return [];
-  }
-
-  const profileIds = [
-    ...new Set(
-      staff.map((row) => row.profile_id)
-    ),
-  ];
-
-  const staffIds = staff.map(
-    (row) => row.id
+  const { data, error } = await supabase.rpc(
+    "get_organisation_staff_roster_v1",
+    {
+      p_organisation_id: cleanOrganisationId,
+    }
   );
 
-  const [
-    {
-      data: profiles,
-      error: profilesError,
-    },
-    {
-      data: roleRows,
-      error: rolesError,
-    },
-  ] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select(`
-        id,
-        full_name,
-        account_status
-      `)
-      .in("id", profileIds),
-
-    supabase
-      .from("organisation_staff_roles")
-      .select(`
-        staff_id,
-        role,
-        created_at
-      `)
-      .in("staff_id", staffIds),
-  ]);
-
-  if (profilesError) {
-    throw profilesError;
+  if (error) {
+    throw error;
   }
 
-  if (rolesError) {
-    throw rolesError;
-  }
-
-  const profilesById = new Map(
-    (profiles || []).map((profile) => [
-      profile.id,
-      profile,
-    ])
-  );
-
-  const rolesByStaffId = new Map();
-
-  for (const roleRow of roleRows || []) {
-    const existing =
-      rolesByStaffId.get(roleRow.staff_id) || [];
-
-    existing.push(roleRow.role);
-
-    rolesByStaffId.set(
-      roleRow.staff_id,
-      existing
-    );
-  }
-
-  return staff
-    .map((row) => {
-      const profile =
-        profilesById.get(row.profile_id);
-
-      if (!profile) {
-        return null;
-      }
-
-      return {
-        staffId: row.id,
-        organisationId:
-          row.organisation_id,
-        profileId: row.profile_id,
-        fullName:
-          profile.full_name ||
-          "Unnamed staff member",
-        accountStatus:
-          profile.account_status,
-        position: row.position,
-        status: row.status,
-        joinedAt: row.joined_at,
-        endedAt: row.ended_at,
-        roles: (
-          rolesByStaffId.get(row.id) || []
-        ).sort(),
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) =>
-      a.fullName.localeCompare(b.fullName)
-    );
+  return (data || []).map((row) => ({
+    staffId: row.staff_id,
+    organisationId: row.organisation_id,
+    profileId: row.profile_id,
+    fullName:
+      row.full_name || "Unnamed staff member",
+    accountStatus: row.account_status,
+    position: row.staff_position,
+    status: row.staff_status,
+    joinedAt: row.joined_at,
+    endedAt: row.ended_at,
+    roles: Array.isArray(row.roles)
+      ? [...row.roles].sort()
+      : [],
+  }));
 }
 
 export async function addOrganisationStaff({
