@@ -268,3 +268,137 @@ export async function addOrganisationStaff({
       data.staff ?? null,
   };
 }
+
+export async function manageOrganisationStaff({
+  organisationId,
+  staffId,
+  action,
+  position = null,
+  roles = null,
+}) {
+  const cleanOrganisationId =
+    cleanText(organisationId);
+  const cleanStaffId = cleanText(staffId);
+  const cleanAction = cleanText(action);
+  const cleanPosition = cleanText(position) || null;
+
+  const allowedActions = new Set([
+    "update",
+    "deactivate",
+    "reactivate",
+    "end",
+  ]);
+
+  if (!cleanOrganisationId) {
+    throw createOrganisationStaffError({
+      message: "Organisation is required.",
+      code: "ORGANISATION_REQUIRED",
+    });
+  }
+
+  if (!cleanStaffId) {
+    throw createOrganisationStaffError({
+      message: "Staff member is required.",
+      code: "STAFF_REQUIRED",
+    });
+  }
+
+  if (!allowedActions.has(cleanAction)) {
+    throw createOrganisationStaffError({
+      message: "Staff management action is invalid.",
+      code: "INVALID_STAFF_ACTION",
+    });
+  }
+
+  let normalizedRoles = null;
+
+  if (cleanAction === "update") {
+    normalizedRoles = normalizeRoles(roles);
+
+    if (normalizedRoles.length === 0) {
+      throw createOrganisationStaffError({
+        message:
+          "At least one organisation role is required.",
+        code: "ROLE_REQUIRED",
+      });
+    }
+
+    const invalidRole = normalizedRoles.find(
+      (role) =>
+        !ALLOWED_ORGANISATION_STAFF_ROLES.has(role)
+    );
+
+    if (invalidRole) {
+      throw createOrganisationStaffError({
+        message:
+          "One or more organisation roles are invalid.",
+        code: "INVALID_ROLE",
+        details: {
+          role: invalidRole,
+        },
+      });
+    }
+  }
+
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  if (!session) {
+    throw createOrganisationStaffError({
+      message:
+        "You must be logged in to manage organisation staff.",
+      code: "AUTH_REQUIRED",
+    });
+  }
+
+  const { data, error } = await supabase.rpc(
+    "manage_organisation_staff_v1",
+    {
+      p_organisation_id: cleanOrganisationId,
+      p_staff_id: cleanStaffId,
+      p_action: cleanAction,
+      p_position:
+        cleanAction === "update"
+          ? cleanPosition
+          : null,
+      p_roles:
+        cleanAction === "update"
+          ? normalizedRoles
+          : null,
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  const row = data?.[0];
+
+  if (!row) {
+    throw createOrganisationStaffError({
+      message:
+        "The staff management action returned no result.",
+      code: "STAFF_MANAGEMENT_NO_RESULT",
+    });
+  }
+
+  return {
+    staffId: row.staff_id,
+    organisationId: row.organisation_id,
+    profileId: row.profile_id,
+    position: row.staff_position,
+    status: row.staff_status,
+    joinedAt: row.joined_at,
+    endedAt: row.ended_at,
+    roles: Array.isArray(row.roles)
+      ? [...row.roles].sort()
+      : [],
+    action: row.staff_action,
+  };
+}

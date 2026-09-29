@@ -29,6 +29,7 @@ import OrganisationLayout from "../components/organisation/layout/OrganisationLa
 import {
   addOrganisationStaff,
   fetchOrganisationStaff,
+  manageOrganisationStaff,
 } from "../lib/organisationStaff";
 
 const ORGANISATION_ROLE_LABELS = {
@@ -178,6 +179,39 @@ export default function OrganisationWorkspace() {
     position: "",
     roles: ["teacher"],
   });
+
+  const [
+    selectedStaffMember,
+    setSelectedStaffMember,
+  ] = useState(null);
+
+  const [
+    isManageStaffOpen,
+    setIsManageStaffOpen,
+  ] = useState(false);
+
+  const [
+    isManagingStaff,
+    setIsManagingStaff,
+  ] = useState(false);
+
+  const [
+    manageStaffError,
+    setManageStaffError,
+  ] = useState("");
+
+  const [
+    staffManagementDraft,
+    setStaffManagementDraft,
+  ] = useState({
+    position: "",
+    roles: [],
+  });
+
+  const [
+    pendingStaffLifecycleAction,
+    setPendingStaffLifecycleAction,
+  ] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -816,6 +850,194 @@ export default function OrganisationWorkspace() {
     });
   }
 
+  function openManageStaff(staffMember) {
+    if (!staffMember) {
+      return;
+    }
+
+    setSelectedStaffMember(staffMember);
+
+    setStaffManagementDraft({
+      position: staffMember.position || "",
+      roles: [...(staffMember.roles || [])],
+    });
+
+    setManageStaffError("");
+    setPendingStaffLifecycleAction(null);
+    setIsManageStaffOpen(true);
+  }
+
+  function closeManageStaff() {
+    if (isManagingStaff) {
+      return;
+    }
+
+    setIsManageStaffOpen(false);
+    setSelectedStaffMember(null);
+    setManageStaffError("");
+    setPendingStaffLifecycleAction(null);
+  }
+
+  function updateStaffManagementPosition(value) {
+    setStaffManagementDraft((current) => ({
+      ...current,
+      position: value,
+    }));
+  }
+
+  function toggleStaffManagementRole(role) {
+    if (
+      role !== "teacher" &&
+      role !== "tutor"
+    ) {
+      return;
+    }
+
+    setStaffManagementDraft((current) => {
+      const hasRole =
+        current.roles.includes(role);
+
+      return {
+        ...current,
+        roles: hasRole
+          ? current.roles.filter(
+              (currentRole) =>
+                currentRole !== role
+            )
+          : [...current.roles, role],
+      };
+    });
+  }
+
+  function requestStaffLifecycleAction(action) {
+    if (
+      action !== "deactivate" &&
+      action !== "reactivate" &&
+      action !== "end"
+    ) {
+      return;
+    }
+
+    setManageStaffError("");
+    setPendingStaffLifecycleAction(action);
+  }
+
+  function cancelStaffLifecycleAction() {
+    if (isManagingStaff) {
+      return;
+    }
+
+    setPendingStaffLifecycleAction(null);
+  }
+
+  async function handleSaveStaffChanges(event) {
+    event.preventDefault();
+
+    if (
+      !workspace?.roles?.includes(
+        "organisation_admin"
+      ) ||
+      !selectedStaffMember
+    ) {
+      setManageStaffError(
+        "You do not have permission to manage organisation staff."
+      );
+      return;
+    }
+
+    if (selectedStaffMember.status === "ended") {
+      setManageStaffError(
+        "An ended staff relationship cannot be edited."
+      );
+      return;
+    }
+
+    if (staffManagementDraft.roles.length === 0) {
+      setManageStaffError(
+        "Select at least one staff role."
+      );
+      return;
+    }
+
+    try {
+      setIsManagingStaff(true);
+      setManageStaffError("");
+
+      await manageOrganisationStaff({
+        organisationId:
+          workspace.organisation.id,
+        staffId:
+          selectedStaffMember.staffId,
+        action: "update",
+        position:
+          staffManagementDraft.position,
+        roles: staffManagementDraft.roles,
+      });
+
+      setIsManageStaffOpen(false);
+      setSelectedStaffMember(null);
+      setPendingStaffLifecycleAction(null);
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      console.error(
+        "Unable to update organisation staff:",
+        error
+      );
+
+      setManageStaffError(
+        error?.message ||
+          "The staff member could not be updated. Please try again."
+      );
+    } finally {
+      setIsManagingStaff(false);
+    }
+  }
+
+  async function handleConfirmStaffLifecycleAction() {
+    if (
+      !workspace?.roles?.includes(
+        "organisation_admin"
+      ) ||
+      !selectedStaffMember ||
+      !pendingStaffLifecycleAction
+    ) {
+      setManageStaffError(
+        "The staff action could not be completed."
+      );
+      return;
+    }
+
+    try {
+      setIsManagingStaff(true);
+      setManageStaffError("");
+
+      await manageOrganisationStaff({
+        organisationId:
+          workspace.organisation.id,
+        staffId:
+          selectedStaffMember.staffId,
+        action: pendingStaffLifecycleAction,
+      });
+
+      setIsManageStaffOpen(false);
+      setSelectedStaffMember(null);
+      setPendingStaffLifecycleAction(null);
+      setReloadToken((value) => value + 1);
+    } catch (error) {
+      console.error(
+        "Unable to change organisation staff status:",
+        error
+      );
+
+      setManageStaffError(
+        error?.message ||
+          "The staff status could not be changed. Please try again."
+      );
+    } finally {
+      setIsManagingStaff(false);
+    }
+  }
+
   async function handleAddStaff(event) {
     event.preventDefault();
 
@@ -1018,6 +1240,32 @@ export default function OrganisationWorkspace() {
   const organisationStaff =
     workspace.organisationStaff || [];
 
+  const selectedStaffIsEnded =
+    selectedStaffMember?.status === "ended";
+
+  const selectedStaffIsActive =
+    selectedStaffMember?.status === "active";
+
+  const selectedStaffIsInactive =
+    selectedStaffMember?.status === "inactive";
+
+  const selectedStaffIsOrganisationAdmin =
+    selectedStaffMember?.roles?.includes(
+      "organisation_admin"
+    ) ?? false;
+
+  const canChangeSelectedStaffLifecycle =
+    Boolean(selectedStaffMember) &&
+    !selectedStaffIsEnded &&
+    !selectedStaffIsOrganisationAdmin;
+
+  const canEditSelectedStaff =
+    Boolean(selectedStaffMember) &&
+    !selectedStaffIsEnded;
+
+  const selectedStaffHasAnyRole =
+    staffManagementDraft.roles.length > 0;
+
   const formatStaffRole = (role) =>
     ORGANISATION_ROLE_LABELS[role] || role;
 
@@ -1026,7 +1274,7 @@ export default function OrganisationWorkspace() {
       return "Not recorded";
     }
 
-    return (
+   return (
       status.charAt(0).toUpperCase() +
       status.slice(1)
     );
@@ -1260,7 +1508,7 @@ export default function OrganisationWorkspace() {
             </div>
           </div>
 
-                {hasOrganisationAdminRole && (
+        {hasOrganisationAdminRole && (
           <section
             id="staff"
             className="mx-auto mt-8 w-full max-w-3xl scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10"
@@ -1276,8 +1524,8 @@ export default function OrganisationWorkspace() {
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  People currently recorded as staff
-                  for {organisation.name}.
+                  Manage current staff and review past staff
+                  relationships for {organisation.name}.
                 </p>
               </div>
 
@@ -1316,6 +1564,18 @@ export default function OrganisationWorkspace() {
                             {staffMember.position ||
                               "Position not recorded"}
                           </p>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openManageStaff(staffMember)
+                            }
+                            className="mt-3 text-sm font-bold text-yellow-700 transition hover:text-yellow-800"
+                          >
+                            {staffMember.status === "ended"
+                              ? "View details"
+                              : "Manage staff"}
+                          </button>
                         </div>
 
                         <div className="flex flex-wrap gap-2">
@@ -1341,7 +1601,13 @@ export default function OrganisationWorkspace() {
                         </div>
                       </div>
 
-                      <dl className="mt-5 grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-3">
+                      <dl
+                        className={`mt-5 grid gap-4 border-t border-slate-100 pt-5 ${
+                          staffMember.status === "ended"
+                            ? "sm:grid-cols-4"
+                            : "sm:grid-cols-3"
+                        }`}
+                      >
                         <div>
                           <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
                             Staff status
@@ -1377,6 +1643,20 @@ export default function OrganisationWorkspace() {
                             )}
                           </dd>
                         </div>
+
+                        {staffMember.status === "ended" && (
+                          <div>
+                            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                              Ended
+                            </dt>
+
+                            <dd className="mt-1 text-sm font-semibold text-slate-700">
+                              {formatJoinedDate(
+                                staffMember.endedAt
+                              )}
+                            </dd>
+                          </div>
+                        )}
                       </dl>
                     </article>
                   )
@@ -1599,6 +1879,412 @@ export default function OrganisationWorkspace() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+        {isManageStaffOpen &&
+          hasOrganisationAdminRole &&
+          selectedStaffMember && (
+            <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 px-5 py-8">
+              <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-yellow-700">
+                      Organisation staff
+                    </p>
+
+                    <h2 className="mt-2 text-2xl font-black text-slate-950">
+                      {selectedStaffIsEnded
+                        ? "Staff relationship details"
+                        : "Manage staff member"}
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      {selectedStaffMember.fullName}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={closeManageStaff}
+                    disabled={isManagingStaff}
+                    aria-label="Close staff management"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="mt-7 grid gap-5">
+                  <section className="rounded-2xl border border-slate-200 p-5">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                      Staff relationship
+                    </p>
+
+                    <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <dt className="text-xs font-bold text-slate-400">
+                          Name
+                        </dt>
+
+                        <dd className="mt-1 font-bold text-slate-900">
+                          {selectedStaffMember.fullName}
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-xs font-bold text-slate-400">
+                          Status
+                        </dt>
+
+                        <dd className="mt-1 font-bold text-slate-900">
+                          {formatStaffStatus(
+                            selectedStaffMember.status
+                          )}
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-xs font-bold text-slate-400">
+                          Joined
+                        </dt>
+
+                        <dd className="mt-1 font-bold text-slate-900">
+                          {formatJoinedDate(
+                            selectedStaffMember.joinedAt
+                          )}
+                        </dd>
+                      </div>
+
+                      {selectedStaffIsEnded && (
+                        <div>
+                          <dt className="text-xs font-bold text-slate-400">
+                            Ended
+                          </dt>
+
+                          <dd className="mt-1 font-bold text-slate-900">
+                            {formatJoinedDate(
+                              selectedStaffMember.endedAt
+                            )}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </section>
+
+                  <form
+                    onSubmit={handleSaveStaffChanges}
+                    className="grid gap-5"
+                  >
+                    <section className="rounded-2xl border border-slate-200 p-5">
+                      <label className="block">
+                        <span className="text-sm font-bold text-slate-700">
+                          Position
+                        </span>
+
+                        <span className="ml-2 text-xs font-semibold text-slate-400">
+                          Organisation-specific
+                        </span>
+
+                        <input
+                          type="text"
+                          value={
+                            staffManagementDraft.position
+                          }
+                          onChange={(event) =>
+                            updateStaffManagementPosition(
+                              event.target.value
+                            )
+                          }
+                          disabled={
+                            isManagingStaff ||
+                            !canEditSelectedStaff
+                          }
+                          placeholder="e.g. Mathematics Teacher"
+                          className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-950 outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:text-slate-500"
+                        />
+                      </label>
+                    </section>
+
+                    <section className="rounded-2xl border border-slate-200 p-5">
+                      <p className="text-sm font-bold text-slate-700">
+                        Organisation roles
+                      </p>
+
+                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                        Teacher and Tutor roles can be
+                        managed here.
+                      </p>
+
+                      {selectedStaffIsOrganisationAdmin && (
+                        <div className="mt-4 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-4">
+                          <div className="flex items-start gap-3">
+                            <ShieldCheck
+                              size={20}
+                              className="mt-0.5 shrink-0 text-yellow-700"
+                            />
+
+                            <div>
+                              <p className="font-black text-slate-900">
+                                Organisation Administrator
+                              </p>
+
+                              <p className="mt-1 text-sm leading-6 text-slate-600">
+                                Protected role. It cannot
+                                be changed through
+                                organisation management.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        {[
+                          {
+                            value: "teacher",
+                            label: "Teacher",
+                          },
+                          {
+                            value: "tutor",
+                            label: "Tutor",
+                          },
+                        ].map((role) => {
+                          const isSelected =
+                            staffManagementDraft.roles.includes(
+                              role.value
+                            );
+
+                          return (
+                            <label
+                              key={role.value}
+                              className={`flex items-center gap-3 rounded-2xl border px-4 py-4 transition ${
+                                !canEditSelectedStaff
+                                  ? "cursor-not-allowed border-slate-200 bg-slate-100"
+                                  : isSelected
+                                    ? "cursor-pointer border-yellow-400 bg-yellow-50"
+                                    : "cursor-pointer border-slate-200 bg-white hover:border-slate-300"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() =>
+                                  toggleStaffManagementRole(
+                                    role.value
+                                  )
+                                }
+                                disabled={
+                                  isManagingStaff ||
+                                  !canEditSelectedStaff
+                                }
+                                className="h-4 w-4 rounded border-slate-300"
+                              />
+
+                              <span className="font-bold text-slate-800">
+                                {role.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+
+                      {!selectedStaffIsEnded &&
+                        !selectedStaffHasAnyRole && (
+                          <p className="mt-3 text-sm font-semibold text-red-600">
+                            Active or inactive staff must
+                            retain at least one
+                            organisation role.
+                          </p>
+                        )}
+                    </section>
+
+                    {manageStaffError && (
+                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                        <p className="text-sm font-semibold leading-6 text-red-700">
+                          {manageStaffError}
+                        </p>
+                      </div>
+                    )}
+
+                    {!selectedStaffIsEnded && (
+                      <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={closeManageStaff}
+                          disabled={isManagingStaff}
+                          className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+
+                        <button
+                          type="submit"
+                          disabled={
+                            isManagingStaff ||
+                            !selectedStaffHasAnyRole
+                          }
+                          className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isManagingStaff
+                            ? "Saving..."
+                            : "Save changes"}
+                        </button>
+                      </div>
+                    )}
+                  </form>
+
+                  {selectedStaffIsEnded ? (
+                    <div className="flex justify-end border-t border-slate-200 pt-5">
+                      <button
+                        type="button"
+                        onClick={closeManageStaff}
+                        className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  ) : (
+                    canChangeSelectedStaffLifecycle && (
+                      <section className="rounded-2xl border border-slate-200 p-5">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                          Staff access
+                        </p>
+
+                        <p className="mt-2 text-sm leading-6 text-slate-500">
+                          Change this staff relationship
+                          without changing or deleting the
+                          person's CountMeInTT account.
+                        </p>
+
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          {selectedStaffIsActive && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                requestStaffLifecycleAction(
+                                  "deactivate"
+                                )
+                              }
+                              disabled={isManagingStaff}
+                              className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              Deactivate
+                            </button>
+                          )}
+
+                          {selectedStaffIsInactive && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                requestStaffLifecycleAction(
+                                  "reactivate"
+                                )
+                              }
+                              disabled={isManagingStaff}
+                              className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
+                            >
+                              Reactivate
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              requestStaffLifecycleAction(
+                                "end"
+                              )
+                            }
+                            disabled={isManagingStaff}
+                            className="rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                          >
+                            Remove from organisation
+                          </button>
+                        </div>
+                      </section>
+                    )
+                  )}
+
+                  {!selectedStaffIsEnded &&
+                    selectedStaffIsOrganisationAdmin && (
+                      <div className="rounded-2xl border border-yellow-200 bg-yellow-50 px-5 py-4">
+                        <p className="text-sm font-bold text-yellow-900">
+                          Administrator relationship
+                          protected
+                        </p>
+
+                        <p className="mt-1 text-sm leading-6 text-yellow-800">
+                          Organisation administrators cannot
+                          deactivate, reactivate, remove, or
+                          change the protected administrator
+                          role of an organisation administrator
+                          here.
+                        </p>
+                      </div>
+                    )}
+
+                  {pendingStaffLifecycleAction && (
+                    <div className="rounded-2xl border border-slate-300 bg-slate-50 p-5">
+                      <p className="font-black text-slate-950">
+                        {pendingStaffLifecycleAction ===
+                        "deactivate"
+                          ? `Deactivate ${selectedStaffMember.fullName}?`
+                          : pendingStaffLifecycleAction ===
+                              "reactivate"
+                            ? `Reactivate ${selectedStaffMember.fullName}?`
+                            : `Remove ${selectedStaffMember.fullName} from ${organisation.name}?`}
+                      </p>
+
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        {pendingStaffLifecycleAction ===
+                        "deactivate"
+                          ? "This temporarily disables the staff relationship. Their organisation roles and history are retained and the relationship can be reactivated later."
+                          : pendingStaffLifecycleAction ===
+                              "reactivate"
+                            ? "This restores the staff relationship. Their retained organisation roles will become active again."
+                            : `This ends the staff relationship with ${organisation.name}. Their CountMeInTT account and staff history will not be deleted. An ended staff relationship cannot be reactivated through organisation management.`}
+                      </p>
+
+                      <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={
+                            cancelStaffLifecycleAction
+                          }
+                          disabled={isManagingStaff}
+                          className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-white disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={
+                            handleConfirmStaffLifecycleAction
+                          }
+                          disabled={isManagingStaff}
+                          className={`rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            pendingStaffLifecycleAction ===
+                            "end"
+                              ? "bg-red-600 text-white hover:bg-red-700"
+                              : "bg-slate-900 text-white hover:bg-slate-800"
+                          }`}
+                        >
+                          {isManagingStaff
+                            ? "Working..."
+                            : pendingStaffLifecycleAction ===
+                                "deactivate"
+                              ? "Confirm deactivate"
+                              : pendingStaffLifecycleAction ===
+                                  "reactivate"
+                                ? "Confirm reactivate"
+                                : "Confirm removal"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
