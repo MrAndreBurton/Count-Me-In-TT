@@ -43,11 +43,11 @@ const actions = [
     icon: <BarChart3 size={24} />,
   },
   {
-    id: "schools",
-    title: "Schools",
+    id: "organisations",
+    title: "Organisations",
     description:
-      "Manage school accounts, partnerships and learner groups.",
-    to: "/admin/schools",
+      "Manage schools, tutoring services, staff and learner groups.",
+    to: "/admin/organisations",
     icon: <School size={24} />,
   },
   {

@@ -81,7 +81,7 @@ import MembershipProfilePage from "./pages/admin/MembershipProfilePage";
 import MembershipRequestsPage from "./pages/admin/MembershipRequestsPage";
 import MembershipRequestProfilePage from "./pages/admin/MembershipRequestProfilePage";
 
-import SchoolsPage from "./pages/admin/SchoolsPage";
+import OrganisationsPage from "./pages/admin/OrganisationsPage";
 import SchoolProfilePage from "./pages/admin/SchoolProfilePage";
 
 import MathLanguageLevel2Home from "./pages/MathLanguageLevel2Home";
@@ -313,10 +313,31 @@ export default function CountMeInApp() {
         />
 
          <Route
+           path="/admin/organisations"
+           element={
+             <AdminRoute>
+               <OrganisationsPage />
+             </AdminRoute>
+           }
+         />
+
+         <Route
+           path="/admin/organisations/:organisationId"
+           element={
+             <AdminRoute>
+               <SchoolProfilePage />
+             </AdminRoute>
+           }
+         />
+
+         <Route
            path="/admin/schools"
            element={
              <AdminRoute>
-               <SchoolsPage />
+               <Navigate
+                 to="/admin/organisations"
+                 replace
+               />
              </AdminRoute>
            }
          />

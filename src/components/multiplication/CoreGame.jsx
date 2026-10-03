@@ -403,24 +403,16 @@ export default function CoreGame({
           profile.profile_type === "account_holder" ||
           link.relationship_role === "self";
 
-     const category = isParentProfile
-  ? "NoSchool"
-  : getLeaderboardCategory(profile);
-
-if (!category) {
-  throw new Error(
-    `Unsupported learning category: ${
-      profile?.school_type || "missing"
-    }`
-  );
-}
+        const category = isParentProfile
+          ? "NoSchool"
+          : getLeaderboardCategory(profile);
 
         const playerData = {
           userId: user.id,
           profileId: profile.id,
           email: user.email || "",
           name: getProfileName(profile),
-          category,
+          category: category || "",
           school: isParentProfile
             ? "N/A"
             : profile.current_school || "",
