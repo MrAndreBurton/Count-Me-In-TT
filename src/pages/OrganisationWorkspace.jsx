@@ -24,7 +24,14 @@ import {
   updateOrganisationStudentProfile,
 } from "../lib/organisationRoster";
 
+import {
+  ACADEMIC_YEARS,
+  getLevelOptions,
+} from "../lib/studentEducationOptions";
+
 import OrganisationLayout from "../components/organisation/layout/OrganisationLayout";
+
+import SchoolSearchSelect from "../components/students/SchoolSearchSelect";
 
 import {
   addOrganisationStaff,
@@ -144,6 +151,9 @@ export default function OrganisationWorkspace() {
     setLearnerProfileDraft,
   ] = useState({
     publicDisplayName: "",
+    schoolType: "",
+    currentSchool: "",
+    customSchool: "",
     currentLevel: "",
     academicYear: "",
   });
@@ -152,10 +162,14 @@ export default function OrganisationWorkspace() {
     firstName: "",
     lastName: "",
     publicDisplayName: "",
+    schoolType: "",
+    currentSchool: "",
+    customSchool: "",
     currentLevel: "",
     academicYear: "",
     groupId: "",
   });
+
 
   const [
     isAddStaffOpen,
@@ -542,8 +556,11 @@ export default function OrganisationWorkspace() {
       firstName: "",
       lastName: "",
       publicDisplayName: "",
+      schoolType: "",
+      currentSchool: "",
+      customSchool: "",
       currentLevel: "",
-      academicYear: "",
+      academicYear: "2026/27",
       groupId: defaultGroupId,
     });
 
@@ -561,11 +578,27 @@ export default function OrganisationWorkspace() {
   }
 
   function updateNewLearner(field, value) {
-    setNewLearner((current) => ({
+  setNewLearner((current) => {
+    if (field === "schoolType") {
+  return {
+    ...current,
+    schoolType: value,
+    currentSchool: "",
+    customSchool: "",
+    currentLevel: "",
+  };
+}
+
+    return {
       ...current,
       [field]: value,
-    }));
-  }
+    };
+  });
+}
+
+const newLearnerLevelOptions = getLevelOptions(
+  newLearner.schoolType
+);
 
   async function handleAddLearner(event) {
     event.preventDefault();
@@ -582,22 +615,30 @@ export default function OrganisationWorkspace() {
       setAddLearnerError("");
 
       await createOrganisationStudent({
-        supabase,
-        organisationId:
-          workspace.organisation.id,
-        firstName: newLearner.firstName,
-        lastName: newLearner.lastName,
-        publicDisplayName:
-          newLearner.publicDisplayName,
-        currentSchool:
-          workspace.organisation
-            .organisation_type === "school"
-            ? workspace.organisation.name
-            : null,
-        currentLevel: newLearner.currentLevel,
-        academicYear: newLearner.academicYear,
-        groupId: newLearner.groupId || null,
-      });
+  supabase,
+  organisationId:
+    workspace.organisation.id,
+  firstName: newLearner.firstName,
+  lastName: newLearner.lastName,
+  publicDisplayName:
+    newLearner.publicDisplayName,
+  schoolType: newLearner.schoolType,
+  currentSchool:
+    newLearner.schoolType === "no_school"
+      ? null
+      : newLearner.currentSchool === "Other"
+        ? newLearner.customSchool
+        : newLearner.currentSchool,
+  currentLevel:
+    newLearner.schoolType === "no_school"
+      ? null
+      : newLearner.currentLevel,
+  academicYear:
+    newLearner.schoolType === "no_school"
+      ? null
+      : newLearner.academicYear,
+  groupId: newLearner.groupId || null,
+});
 
       setIsAddLearnerOpen(false);
       setReloadToken((value) => value + 1);
@@ -675,28 +716,35 @@ export default function OrganisationWorkspace() {
   }
 
   function beginLearnerProfileEdit() {
-    if (
-      !selectedLearnerDetail ||
-      isSavingLearnerProfile
-    ) {
-      return;
-    }
-
-    setLearnerProfileDraft({
-      publicDisplayName:
-        selectedLearnerDetail.student
-          .publicDisplayName || "",
-      currentLevel:
-        selectedLearnerDetail.student
-          .currentLevel || "",
-      academicYear:
-        selectedLearnerDetail.student
-          .academicYear || "",
-    });
-
-    setLearnerProfileEditError("");
-    setIsEditingLearnerProfile(true);
+  if (
+    !selectedLearnerDetail ||
+    isSavingLearnerProfile
+  ) {
+    return;
   }
+
+  setLearnerProfileDraft({
+    publicDisplayName:
+      selectedLearnerDetail.student
+        .publicDisplayName || "",
+    schoolType:
+      selectedLearnerDetail.student
+        .schoolType || "",
+    currentSchool:
+      selectedLearnerDetail.student
+        .currentSchool || "",
+    customSchool: "",
+    currentLevel:
+      selectedLearnerDetail.student
+        .currentLevel || "",
+    academicYear:
+      selectedLearnerDetail.student
+        .academicYear || "",
+  });
+
+  setLearnerProfileEditError("");
+  setIsEditingLearnerProfile(true);
+}
 
   function cancelLearnerProfileEdit() {
     if (isSavingLearnerProfile) {
@@ -708,14 +756,31 @@ export default function OrganisationWorkspace() {
   }
 
   function updateLearnerProfileDraft(
-    field,
-    value
-  ) {
-    setLearnerProfileDraft((current) => ({
+  field,
+  value
+) {
+  setLearnerProfileDraft((current) => {
+    if (field === "schoolType") {
+      return {
+        ...current,
+        schoolType: value,
+        currentSchool: "",
+        customSchool: "",
+        currentLevel: "",
+      };
+    }
+
+    return {
       ...current,
       [field]: value,
-    }));
-  }
+    };
+  });
+}
+
+const learnerProfileLevelOptions =
+  getLevelOptions(
+    learnerProfileDraft.schoolType
+  );
 
   async function handleLearnerProfileSave(event) {
     event.preventDefault();
@@ -735,18 +800,35 @@ export default function OrganisationWorkspace() {
       setLearnerProfileEditError("");
 
       await updateOrganisationStudentProfile({
-        supabase,
-        organisationId:
-          workspace.organisation.id,
-        studentId:
-          selectedLearnerDetail.student.id,
-        publicDisplayName:
-          learnerProfileDraft.publicDisplayName,
-        currentLevel:
-          learnerProfileDraft.currentLevel,
-        academicYear:
-          learnerProfileDraft.academicYear,
-      });
+  supabase,
+  organisationId:
+    workspace.organisation.id,
+  studentId:
+    selectedLearnerDetail.student.id,
+  publicDisplayName:
+    learnerProfileDraft.publicDisplayName,
+  schoolType:
+    learnerProfileDraft.schoolType,
+  currentSchool:
+    learnerProfileDraft.schoolType ===
+    "no_school"
+      ? null
+      : learnerProfileDraft.currentSchool ===
+        "Other"
+      ? learnerProfileDraft.customSchool
+      : learnerProfileDraft.currentSchool,
+  currentLevel:
+    learnerProfileDraft.schoolType ===
+    "no_school"
+      ? null
+      : learnerProfileDraft.currentLevel,
+  academicYear:
+    learnerProfileDraft.schoolType ===
+    "no_school"
+      ? null
+      : learnerProfileDraft.academicYear,
+});
+
 
       /*
        * Re-read the learner after mutation.
@@ -2417,49 +2499,151 @@ export default function OrganisationWorkspace() {
                             />
                           </label>
 
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <label className="grid gap-2 text-sm font-bold text-slate-700">
-                              Current level
-                              <input
-                                value={
-                                  learnerProfileDraft.currentLevel
-                                }
-                                onChange={(event) =>
-                                  updateLearnerProfileDraft(
-                                    "currentLevel",
-                                    event.target
-                                      .value
-                                  )
-                                }
-                                disabled={
-                                  isSavingLearnerProfile
-                                }
-                                placeholder="Optional"
-                                className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
-                              />
-                            </label>
+                          <div className="grid gap-5">
+  <label className="grid gap-2 text-sm font-bold text-slate-700">
+    Learning category
+    <select
+      required
+      value={learnerProfileDraft.schoolType}
+      onChange={(event) =>
+        updateLearnerProfileDraft(
+          "schoolType",
+          event.target.value
+        )
+      }
+      disabled={isSavingLearnerProfile}
+      className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
+    >
+      <option value="">
+        Select learning category
+      </option>
+      <option value="primary">
+        Primary
+      </option>
+      <option value="secondary">
+        Secondary
+      </option>
+      <option value="no_school">
+        No School
+      </option>
+    </select>
+  </label>
 
-                            <label className="grid gap-2 text-sm font-bold text-slate-700">
-                              Academic year
-                              <input
-                                value={
-                                  learnerProfileDraft.academicYear
-                                }
-                                onChange={(event) =>
-                                  updateLearnerProfileDraft(
-                                    "academicYear",
-                                    event.target
-                                      .value
-                                  )
-                                }
-                                disabled={
-                                  isSavingLearnerProfile
-                                }
-                                placeholder="e.g. 2026/27"
-                                className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
-                              />
-                            </label>
-                          </div>
+  {learnerProfileDraft.schoolType !==
+    "no_school" &&
+    learnerProfileDraft.schoolType && (
+      <label className="grid gap-2 text-sm font-bold text-slate-700">
+        Current school / learning institution
+        <SchoolSearchSelect
+          schoolType={
+            learnerProfileDraft.schoolType
+          }
+          value={
+            learnerProfileDraft.currentSchool
+          }
+          onChange={(value) =>
+            updateLearnerProfileDraft(
+              "currentSchool",
+              value
+            )
+          }
+          required
+          disabled={isSavingLearnerProfile}
+        />
+      </label>
+    )}
+
+  {learnerProfileDraft.currentSchool ===
+    "Other" && (
+      <label className="grid gap-2 text-sm font-bold text-slate-700">
+        School name
+        <input
+          required
+          value={
+            learnerProfileDraft.customSchool
+          }
+          onChange={(event) =>
+            updateLearnerProfileDraft(
+              "customSchool",
+              event.target.value
+            )
+          }
+          disabled={isSavingLearnerProfile}
+          placeholder="Enter the school name"
+          className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
+        />
+      </label>
+    )}
+
+  {learnerProfileDraft.schoolType !==
+    "no_school" &&
+    learnerProfileDraft.schoolType && (
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="grid gap-2 text-sm font-bold text-slate-700">
+          Current level
+          <select
+            required
+            value={
+              learnerProfileDraft.currentLevel
+            }
+            onChange={(event) =>
+              updateLearnerProfileDraft(
+                "currentLevel",
+                event.target.value
+              )
+            }
+            disabled={isSavingLearnerProfile}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
+          >
+            <option value="">
+              Select level
+            </option>
+
+            {learnerProfileLevelOptions.map(
+              (level) => (
+                <option
+                  key={level}
+                  value={level}
+                >
+                  {level}
+                </option>
+              )
+            )}
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm font-bold text-slate-700">
+          Academic year
+          <select
+            value={
+              learnerProfileDraft.academicYear
+            }
+            onChange={(event) =>
+              updateLearnerProfileDraft(
+                "academicYear",
+                event.target.value
+              )
+            }
+            disabled={isSavingLearnerProfile}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 disabled:bg-slate-100 disabled:opacity-70"
+          >
+            <option value="">
+              Select academic year
+            </option>
+
+            {ACADEMIC_YEARS.map((year) => (
+              <option
+                key={year}
+                value={year}
+              >
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    )}
+</div>
 
                           {learnerProfileEditError && (
                             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
@@ -2498,61 +2682,98 @@ export default function OrganisationWorkspace() {
                         </form>
                       ) : (
                         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                          <div>
-                            <dt className="text-xs font-bold text-slate-400">
-                              Full name
-                            </dt>
-                            <dd className="mt-1 font-bold text-slate-900">
-                              {[
-                                selectedLearnerDetail
-                                  .student
-                                  .firstName,
-                                selectedLearnerDetail
-                                  .student
-                                  .lastName,
-                              ]
-                                .filter(Boolean)
-                                .join(" ") ||
-                                "Not recorded"}
-                            </dd>
-                          </div>
+  <div>
+    <dt className="text-xs font-bold text-slate-400">
+      Full name
+    </dt>
+    <dd className="mt-1 font-bold text-slate-900">
+      {[
+        selectedLearnerDetail
+          .student
+          .firstName,
+        selectedLearnerDetail
+          .student
+          .lastName,
+      ]
+        .filter(Boolean)
+        .join(" ") ||
+        "Not recorded"}
+    </dd>
+  </div>
 
-                          <div>
-                            <dt className="text-xs font-bold text-slate-400">
-                              Display name
-                            </dt>
-                            <dd className="mt-1 font-bold text-slate-900">
-                              {selectedLearnerDetail
-                                .student
-                                .publicDisplayName ||
-                                "Not recorded"}
-                            </dd>
-                          </div>
+  <div>
+    <dt className="text-xs font-bold text-slate-400">
+      Display name
+    </dt>
+    <dd className="mt-1 font-bold text-slate-900">
+      {selectedLearnerDetail
+        .student
+        .publicDisplayName ||
+        "Not recorded"}
+    </dd>
+  </div>
 
-                          <div>
-                            <dt className="text-xs font-bold text-slate-400">
-                              Current level
-                            </dt>
-                            <dd className="mt-1 font-bold text-slate-900">
-                              {selectedLearnerDetail
-                                .student
-                                .currentLevel ||
-                                "Not recorded"}
-                            </dd>
-                          </div>
+  <div>
+    <dt className="text-xs font-bold text-slate-400">
+      Learning category
+    </dt>
+    <dd className="mt-1 font-bold text-slate-900">
+      {selectedLearnerDetail.student
+        .schoolType === "primary"
+        ? "Primary"
+        : selectedLearnerDetail.student
+              .schoolType === "secondary"
+          ? "Secondary"
+          : selectedLearnerDetail.student
+                .schoolType === "no_school"
+            ? "No School"
+            : "Not recorded"}
+    </dd>
+  </div>
 
-                          <div>
-                            <dt className="text-xs font-bold text-slate-400">
-                              Academic year
-                            </dt>
-                            <dd className="mt-1 font-bold text-slate-900">
-                              {selectedLearnerDetail
-                                .student
-                                .academicYear ||
-                                "Not recorded"}
-                            </dd>
-                          </div>
-                        </dl>
+  <div>
+    <dt className="text-xs font-bold text-slate-400">
+      Current school / learning institution
+    </dt>
+    <dd className="mt-1 font-bold text-slate-900">
+      {selectedLearnerDetail.student
+        .schoolType === "no_school"
+        ? "Not applicable"
+        : selectedLearnerDetail.student
+              .currentSchool ||
+          "Not recorded"}
+    </dd>
+  </div>
+
+  <div>
+    <dt className="text-xs font-bold text-slate-400">
+      Current level
+    </dt>
+    <dd className="mt-1 font-bold text-slate-900">
+      {selectedLearnerDetail.student
+        .schoolType === "no_school"
+        ? "Not applicable"
+        : selectedLearnerDetail.student
+              .currentLevel ||
+          "Not recorded"}
+    </dd>
+  </div>
+
+  <div>
+    <dt className="text-xs font-bold text-slate-400">
+      Academic year
+    </dt>
+    <dd className="mt-1 font-bold text-slate-900">
+      {selectedLearnerDetail.student
+        .schoolType === "no_school"
+        ? "Not applicable"
+        : selectedLearnerDetail.student
+              .academicYear ||
+          "Not recorded"}
+    </dd>
+  </div>
+</dl>
+                          
                       )}
                     </section>
 
@@ -2783,42 +3004,133 @@ export default function OrganisationWorkspace() {
                     />
                   </label>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="grid gap-2 text-sm font-bold text-slate-700">
-                      Current level
-                      <input
-                        value={
-                          newLearner.currentLevel
-                        }
-                        onChange={(event) =>
-                          updateNewLearner(
-                            "currentLevel",
-                            event.target.value
-                          )
-                        }
-                        placeholder="Optional"
-                        className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
-                      />
-                    </label>
+                  <div className="grid gap-5">
+  <label className="grid gap-2 text-sm font-bold text-slate-700">
+    Learning category
+    <select
+      required
+      value={newLearner.schoolType}
+      onChange={(event) =>
+        updateNewLearner(
+          "schoolType",
+          event.target.value
+        )
+      }
+      className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
+    >
+      <option value="">
+        Select learning category
+      </option>
+      <option value="primary">
+        Primary
+      </option>
+      <option value="secondary">
+        Secondary
+      </option>
+      <option value="no_school">
+        No School
+      </option>
+    </select>
+  </label>
 
-                    <label className="grid gap-2 text-sm font-bold text-slate-700">
-                      Academic year
-                      <input
-                        value={
-                          newLearner.academicYear
-                        }
-                        onChange={(event) =>
-                          updateNewLearner(
-                            "academicYear",
-                            event.target.value
-                          )
-                        }
-                        placeholder="e.g. 2026/27"
-                        className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
-                      />
-                    </label>
-                  </div>
+  {newLearner.schoolType !== "no_school" &&
+    newLearner.schoolType && (
+      <label className="grid gap-2 text-sm font-bold text-slate-700">
+        Current school / learning institution
+        <SchoolSearchSelect
+          schoolType={newLearner.schoolType}
+          value={newLearner.currentSchool}
+          onChange={(value) =>
+            updateNewLearner(
+              "currentSchool",
+              value
+            )
+          }
+          required
+        />
+      </label>
+    )}
 
+{newLearner.currentSchool === "Other" && (
+  <label className="grid gap-2 text-sm font-bold text-slate-700">
+    School name
+    <input
+      required
+      value={newLearner.customSchool}
+      onChange={(event) =>
+        updateNewLearner(
+          "customSchool",
+          event.target.value
+        )
+      }
+      placeholder="Enter the school name"
+      className="rounded-xl border border-slate-300 px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
+    />
+  </label>
+)}
+
+  {newLearner.schoolType !== "no_school" &&
+    newLearner.schoolType && (
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="grid gap-2 text-sm font-bold text-slate-700">
+          Current level
+          <select
+            required
+            value={newLearner.currentLevel}
+            onChange={(event) =>
+              updateNewLearner(
+                "currentLevel",
+                event.target.value
+              )
+            }
+            className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
+          >
+            <option value="">
+              Select level
+            </option>
+
+            {newLearnerLevelOptions.map(
+              (level) => (
+                <option
+                  key={level}
+                  value={level}
+                >
+                  {level}
+                </option>
+              )
+            )}
+          </select>
+        </label>
+
+        <label className="grid gap-2 text-sm font-bold text-slate-700">
+          Academic year
+          <select
+            value={newLearner.academicYear}
+            onChange={(event) =>
+              updateNewLearner(
+                "academicYear",
+                event.target.value
+              )
+            }
+            className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-medium outline-none transition focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100"
+          >
+            <option value="">
+              Select academic year
+            </option>
+
+            {ACADEMIC_YEARS.map((year) => (
+              <option
+                key={year}
+                value={year}
+              >
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    )}
+</div>
                   <label className="grid gap-2 text-sm font-bold text-slate-700">
                     Add to group
                     <select
@@ -2887,5 +3199,3 @@ export default function OrganisationWorkspace() {
           </OrganisationLayout>
         );
         }
-
-

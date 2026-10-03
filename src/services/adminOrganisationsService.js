@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase";
 
-export async function fetchAdminSchools() {
+export async function fetchAdminOrganisations() {
   const { data, error } = await supabase
     .from("organisations")
     .select(`
@@ -11,7 +11,6 @@ export async function fetchAdminSchools() {
       status,
       created_at
     `)
-    .eq("organisation_type", "school")
     .order("name", {
       ascending: true,
     });
@@ -23,7 +22,7 @@ export async function fetchAdminSchools() {
   return data || [];
 }
 
-export async function fetchAdminSchoolById(
+export async function fetchAdminOrganisationById(
   organisationId,
 ) {
   const {
@@ -41,7 +40,6 @@ export async function fetchAdminSchoolById(
       updated_at
     `)
     .eq("id", organisationId)
-    .eq("organisation_type", "school")
     .maybeSingle();
 
   if (organisationError) {
@@ -114,9 +112,6 @@ export async function fetchAdminSchoolById(
     throw studentsError;
   }
 
-  // Fetch institutional login state for the roster in one
-  // batched query. This is presentation/discovery state only;
-  // credential authority remains enforced by the backend.
   const {
     data: loginAccounts,
     error: loginAccountsError,
@@ -290,3 +285,16 @@ export async function fetchAdminSchoolById(
     learners,
   };
 }
+
+/*
+ * Temporary compatibility exports.
+ *
+ * Existing school-specific callers can continue functioning while
+ * the platform-admin UI is migrated to organisation terminology.
+ * Remove these only after all callers have moved to the generic API.
+ */
+export const fetchAdminSchools =
+  fetchAdminOrganisations;
+
+export const fetchAdminSchoolById =
+  fetchAdminOrganisationById;

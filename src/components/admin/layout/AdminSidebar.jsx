@@ -34,8 +34,8 @@ const navigation = [
     icon: CreditCard,
   },
   {
-    label: "Schools",
-    to: "/admin/schools",
+    label: "Organisations",
+    to: "/admin/organisations",
     icon: School,
   },
   {

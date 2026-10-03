@@ -71,10 +71,16 @@ export async function updateOrganisationStudentProfile({
   organisationId,
   studentId,
   publicDisplayName,
+  schoolType,
+  currentSchool = null,
   currentLevel = null,
   academicYear = null,
 }) {
-  const cleanPublicDisplayName = publicDisplayName?.trim();
+  const cleanPublicDisplayName =
+    publicDisplayName?.trim();
+
+  const cleanSchoolType =
+    schoolType?.trim().toLowerCase();
 
   if (!cleanPublicDisplayName) {
     throw new Error("Display name is required.");
@@ -86,14 +92,38 @@ export async function updateOrganisationStudentProfile({
     );
   }
 
+  if (
+    ![
+      "primary",
+      "secondary",
+      "no_school",
+    ].includes(cleanSchoolType)
+  ) {
+    throw new Error(
+      "A valid learning category is required."
+    );
+  }
+
+  const isNoSchool =
+    cleanSchoolType === "no_school";
+
   const { data, error } = await supabase.rpc(
     "update_organisation_student_profile",
     {
       p_organisation_id: organisationId,
       p_student_id: studentId,
-      p_public_display_name: cleanPublicDisplayName,
-      p_current_level: cleanOptionalText(currentLevel),
-      p_academic_year: cleanOptionalText(academicYear),
+      p_public_display_name:
+        cleanPublicDisplayName,
+      p_school_type: cleanSchoolType,
+      p_current_school: isNoSchool
+        ? null
+        : cleanOptionalText(currentSchool),
+      p_current_level: isNoSchool
+        ? null
+        : cleanOptionalText(currentLevel),
+      p_academic_year: isNoSchool
+        ? null
+        : cleanOptionalText(academicYear),
     }
   );
 
@@ -101,7 +131,9 @@ export async function updateOrganisationStudentProfile({
     throw error;
   }
 
-  const row = Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(data)
+    ? data[0]
+    : data;
 
   if (!row?.student_id) {
     throw new Error(
@@ -111,7 +143,10 @@ export async function updateOrganisationStudentProfile({
 
   return {
     studentId: row.student_id,
-    publicDisplayName: row.public_display_name,
+    publicDisplayName:
+      row.public_display_name,
+    schoolType: row.school_type,
+    currentSchool: row.current_school,
     currentLevel: row.current_level,
     academicYear: row.academic_year,
   };

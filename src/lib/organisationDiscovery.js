@@ -340,7 +340,7 @@ export async function discoverOrganisationLearnerDetail({
     await supabase
       .from("student_profiles")
       .select(
-        "id, first_name, last_name, public_display_name, current_level, academic_year, profile_status, origin_type"
+        "id, first_name, last_name, public_display_name, school_type, current_school, current_level, academic_year, profile_status, origin_type"
       )
       .eq("id", studentId)
       .maybeSingle();
@@ -442,6 +442,8 @@ export async function discoverOrganisationLearnerDetail({
       firstName: student.first_name,
       lastName: student.last_name,
       publicDisplayName: student.public_display_name,
+      schoolType: student.school_type,
+      currentSchool: student.current_school,
       currentLevel: student.current_level,
       academicYear: student.academic_year,
       profileStatus: student.profile_status,
