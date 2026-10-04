@@ -4,6 +4,23 @@ import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
 
 const availableGames = [
+
+  {
+    title: "Numberverse",
+    description:
+      "Explore the hidden structure and identity of numbers through interactive mathematical challenges.",
+    icon: "#",
+    to: "/games/numberverse",
+    action: "Enter Numberverse",
+    features: [
+      "Factor investigation",
+      "Multiple challenge modes",
+      "Build + discover",
+      "More labs coming",
+    ],
+    badge: "Explore + Reason",
+  },
+
   {
     title: "Times Table Practice",
     description:

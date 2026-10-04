@@ -95,6 +95,7 @@ import MathLanguageLevel3Play from "./pages/MathLanguageLevel3Play";
 import SymbolBankMyVault from "./pages/SymbolBankMyVault";
 import SymbolChallenge from "./pages/SymbolChallenge";
 
+import Numberverse from "./pages/Numberverse";
 import NumberverseDev from "./pages/NumberverseDev";
 import NumberverseFactorBench from "./pages/NumberverseFactorBench";
 
@@ -121,6 +122,11 @@ export default function CountMeInApp() {
         <Route
           path="/numberverse-dev"
           element={<NumberverseDev />}
+        />
+
+        <Route
+          path="/games/numberverse"
+          element={<Numberverse />}
         />
 
         <Route
