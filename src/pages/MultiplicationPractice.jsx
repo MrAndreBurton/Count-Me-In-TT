@@ -24,7 +24,6 @@ import {
   subscribeToPracticeAuthChanges,
 } from "../services/multiplicationPracticeResults";
 
-const INCORRECT_CHECK_DELAY_MS = 650;
 const CORRECT_ADVANCE_DELAY_MS = 180;
 
 export default function MultiplicationPractice() {
@@ -38,16 +37,20 @@ export default function MultiplicationPractice() {
   const [feedback, setFeedback] = useState("idle");
   const [elapsed, setElapsed] = useState(0);
   const [result, setResult] = useState(null);
+
   const [access, setAccess] = useState({
     ...GUEST_PRACTICE_ACCESS,
     status: "loading",
   });
+
   const [accessError, setAccessError] = useState("");
   const [lockedTable, setLockedTable] = useState(null);
+
   const [personalBest, setPersonalBest] = useState({
     status: "idle",
     durationMs: null,
   });
+
   const [saveState, setSaveState] = useState({
     status: "idle",
     data: null,
@@ -58,8 +61,8 @@ export default function MultiplicationPractice() {
   const answerValueRef = useRef("");
   const startTimestampRef = useRef(null);
   const timerRef = useRef(null);
-  const validationTimerRef = useRef(null);
   const advanceTimerRef = useRef(null);
+  const focusTimerRef = useRef(null);
   const incorrectAttemptsRef = useRef(0);
   const missedFactsRef = useRef(new Set());
   const lastCountedWrongRef = useRef("");
@@ -67,26 +70,22 @@ export default function MultiplicationPractice() {
   const currentFact = facts[currentIndex] || null;
   const displayTime = formatPracticeTime(elapsed);
 
-  const clearValidationTimer = useCallback(() => {
-    if (validationTimerRef.current) {
-      window.clearTimeout(validationTimerRef.current);
-      validationTimerRef.current = null;
-    }
-  }, []);
-
   const clearRoundTimers = useCallback(() => {
-    clearValidationTimer();
-
-    if (advanceTimerRef.current) {
+    if (advanceTimerRef.current !== null) {
       window.clearTimeout(advanceTimerRef.current);
       advanceTimerRef.current = null;
     }
 
-    if (timerRef.current) {
+    if (timerRef.current !== null) {
       window.clearInterval(timerRef.current);
       timerRef.current = null;
     }
-  }, [clearValidationTimer]);
+
+    if (focusTimerRef.current !== null) {
+      window.clearTimeout(focusTimerRef.current);
+      focusTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     document.title =
@@ -123,10 +122,12 @@ export default function MultiplicationPractice() {
       });
     } catch (error) {
       console.error("Practice access error:", error);
+
       setAccess({
         ...GUEST_PRACTICE_ACCESS,
         status: "ready",
       });
+
       setAccessError(
         error?.message ||
           "Your practice access could not be checked."
@@ -171,6 +172,7 @@ export default function MultiplicationPractice() {
         status: "idle",
         durationMs: null,
       });
+
       return () => {
         isCurrent = false;
       };
@@ -198,6 +200,7 @@ export default function MultiplicationPractice() {
         if (!isCurrent) return;
 
         console.error("Practice best error:", error);
+
         setPersonalBest({
           status: "error",
           durationMs: null,
@@ -218,18 +221,25 @@ export default function MultiplicationPractice() {
   ]);
 
   const focusAnswer = useCallback(() => {
-    window.setTimeout(() => {
+    if (focusTimerRef.current !== null) {
+      window.clearTimeout(focusTimerRef.current);
+    }
+
+    focusTimerRef.current = window.setTimeout(() => {
+      focusTimerRef.current = null;
       answerInputRef.current?.focus();
     }, 60);
   }, []);
 
   const resetRoundState = useCallback(() => {
     clearRoundTimers();
+
     setCurrentIndex(0);
     setAnswer("");
     setFeedback("idle");
     setElapsed(0);
     setResult(null);
+
     setSaveState({
       status: "idle",
       data: null,
@@ -275,6 +285,7 @@ export default function MultiplicationPractice() {
     if (startTimestampRef.current !== null) return;
 
     const startTimestamp = Date.now();
+
     startTimestampRef.current = startTimestamp;
 
     timerRef.current = window.setInterval(() => {
@@ -311,6 +322,7 @@ export default function MultiplicationPractice() {
         data: null,
         message: "Guest rounds are not saved.",
       });
+
       return;
     }
 
@@ -321,9 +333,10 @@ export default function MultiplicationPractice() {
     });
 
     try {
-      const saved = await saveMultiplicationPracticeRound(
-        completedResult
-      );
+      const saved =
+        await saveMultiplicationPracticeRound(
+          completedResult
+        );
 
       if (!saved.saved) {
         setSaveState({
@@ -331,6 +344,7 @@ export default function MultiplicationPractice() {
           data: saved,
           message: "Guest rounds are not saved.",
         });
+
         return;
       }
 
@@ -339,12 +353,14 @@ export default function MultiplicationPractice() {
         data: saved,
         message: "Your round was saved.",
       });
+
       setPersonalBest({
         status: "ready",
         durationMs: saved.bestDurationMs,
       });
     } catch (error) {
       console.error("Practice save error:", error);
+
       setSaveState({
         status: "error",
         data: null,
@@ -361,16 +377,22 @@ export default function MultiplicationPractice() {
       return;
     }
 
+    advanceTimerRef.current = null;
+
     setCurrentIndex((index) => index + 1);
     setAnswer("");
     setFeedback("idle");
+
     answerValueRef.current = "";
     lastCountedWrongRef.current = "";
+
     focusAnswer();
   };
 
   const acceptCorrectAnswer = () => {
-    clearValidationTimer();
+    // Prevent rapid Enter presses or taps from advancing twice.
+    if (advanceTimerRef.current !== null) return;
+
     setFeedback("correct");
 
     advanceTimerRef.current = window.setTimeout(
@@ -385,13 +407,14 @@ export default function MultiplicationPractice() {
 
       const wrongKey = `${fact.id}:${value}`;
 
-      if (lastCountedWrongRef.current === wrongKey) {
-        return;
+      // Repeated checks of the same unchanged wrong answer
+      // count as one mistake.
+      if (lastCountedWrongRef.current !== wrongKey) {
+        lastCountedWrongRef.current = wrongKey;
+        incorrectAttemptsRef.current += 1;
+        missedFactsRef.current.add(fact.id);
       }
 
-      lastCountedWrongRef.current = wrongKey;
-      incorrectAttemptsRef.current += 1;
-      missedFactsRef.current.add(fact.id);
       setFeedback("incorrect");
 
       window.requestAnimationFrame(() => {
@@ -402,21 +425,14 @@ export default function MultiplicationPractice() {
     []
   );
 
-  const scheduleIncorrectCheck = (value, fact) => {
-    clearValidationTimer();
-
-    validationTimerRef.current = window.setTimeout(() => {
-      if (
-        answerValueRef.current === value &&
-        Number(value) !== fact.answer
-      ) {
-        registerIncorrectAnswer(value, fact);
-      }
-    }, INCORRECT_CHECK_DELAY_MS);
-  };
-
   const handleAnswerChange = (event) => {
-    if (!currentFact || feedback === "correct") return;
+    if (
+      !currentFact ||
+      feedback === "correct" ||
+      advanceTimerRef.current !== null
+    ) {
+      return;
+    }
 
     const cleanValue = String(event.target.value || "")
       .replace(/\D+/g, "")
@@ -425,31 +441,50 @@ export default function MultiplicationPractice() {
     setAnswer(cleanValue);
     answerValueRef.current = cleanValue;
     setFeedback("idle");
-    clearValidationTimer();
 
-    if (!cleanValue) return;
+    // Typing starts the timer but never checks an answer.
+    if (cleanValue) {
+      startClock();
+    }
+  };
 
-    startClock();
-
-    if (Number(cleanValue) === currentFact.answer) {
-      acceptCorrectAnswer();
+  const checkAnswer = () => {
+    if (
+      screen !== "play" ||
+      !currentFact ||
+      feedback === "correct" ||
+      advanceTimerRef.current !== null
+    ) {
       return;
     }
 
-    scheduleIncorrectCheck(cleanValue, currentFact);
+    const value = answerValueRef.current;
+
+    // Empty submissions do not count as mistakes.
+    if (!value) {
+      answerInputRef.current?.focus();
+      return;
+    }
+
+    if (Number(value) === currentFact.answer) {
+      acceptCorrectAnswer();
+    } else {
+      registerIncorrectAnswer(value, currentFact);
+    }
   };
 
   const handleAnswerKeyDown = (event) => {
-    if (event.key !== "Enter" || !currentFact) return;
+    if (
+      event.key !== "Enter" ||
+      event.nativeEvent?.isComposing
+    ) {
+      return;
+    }
 
     event.preventDefault();
 
-    if (
-      answer &&
-      Number(answer) !== currentFact.answer
-    ) {
-      clearValidationTimer();
-      registerIncorrectAnswer(answer, currentFact);
+    if (!event.repeat) {
+      checkAnswer();
     }
   };
 
@@ -484,7 +519,10 @@ export default function MultiplicationPractice() {
   }, [result]);
 
   const personalBestMessage = useMemo(() => {
-    if (saveState.status !== "saved" || !saveState.data) {
+    if (
+      saveState.status !== "saved" ||
+      !saveState.data
+    ) {
       return null;
     }
 
@@ -574,7 +612,9 @@ export default function MultiplicationPractice() {
                 ) : access.authenticated ? (
                   <>
                     <p className="font-black text-blue-950">
-                      Playing as {access.profile?.displayName || "Student"}
+                      Playing as{" "}
+                      {access.profile?.displayName ||
+                        "Student"}
                     </p>
 
                     <p className="mt-1 text-sm font-semibold text-gray-600">
@@ -590,7 +630,8 @@ export default function MultiplicationPractice() {
                     </p>
 
                     <p className="mt-1 text-sm font-semibold text-gray-600">
-                      Free tables are available, but guest rounds are never saved.{" "}
+                      Free tables are available, but guest
+                      rounds are never saved.{" "}
                       <Link
                         to="/login?returnTo=%2Fgames%2Fmultiplication%2Fpractice"
                         className="font-black text-blue-700 underline"
@@ -623,8 +664,10 @@ export default function MultiplicationPractice() {
                   {PRACTICE_TABLES.map((number) => {
                     const isFree =
                       FREE_PRACTICE_TABLES.has(number);
+
                     const isLocked =
                       !isFree && !access.hasMemberAccess;
+
                     const isSelected =
                       tableNumber === number;
 
@@ -773,7 +816,9 @@ export default function MultiplicationPractice() {
                           ? `Personal best for this exact round: ${formatPracticeTime(
                               personalBest.durationMs
                             )}`
-                          : "No saved result yet for this exact round."}
+                          : personalBest.status === "error"
+                            ? "Your personal best could not be loaded."
+                            : "No saved result yet for this exact round."}
                     </p>
                   )}
                 </div>
@@ -789,7 +834,8 @@ export default function MultiplicationPractice() {
 
               <p className="mt-4 text-center text-xs font-semibold text-gray-500">
                 The timer starts when you enter your first
-                answer.
+                answer. Press Enter or tap Check Answer to
+                check each answer.
               </p>
             </section>
           )}
@@ -829,7 +875,9 @@ export default function MultiplicationPractice() {
               <div className="py-10 text-center sm:py-14">
                 <p className="text-5xl font-black sm:text-7xl">
                   {currentFact.tableNumber}
-                  <span className="mx-4 text-blue-600">×</span>
+                  <span className="mx-4 text-blue-600">
+                    ×
+                  </span>
                   {currentFact.factor}
                 </p>
 
@@ -845,13 +893,20 @@ export default function MultiplicationPractice() {
                   id="practice-answer"
                   type="text"
                   inputMode="numeric"
+                  enterKeyHint="done"
                   pattern="[0-9]*"
                   autoComplete="off"
                   value={answer}
                   onChange={handleAnswerChange}
                   onKeyDown={handleAnswerKeyDown}
-                  onPaste={(event) => event.preventDefault()}
-                  onDrop={(event) => event.preventDefault()}
+                  onPaste={(event) =>
+                    event.preventDefault()
+                  }
+                  onDrop={(event) =>
+                    event.preventDefault()
+                  }
+                  readOnly={feedback === "correct"}
+                  aria-invalid={feedback === "incorrect"}
                   aria-describedby="practice-feedback"
                   className={[
                     "mx-auto mt-3 block h-20 w-full max-w-xs rounded-2xl border-2 bg-white text-center text-4xl font-black outline-none transition focus:ring-4",
@@ -862,6 +917,17 @@ export default function MultiplicationPractice() {
                         : "border-blue-500 focus:border-blue-600 focus:ring-blue-100",
                   ].join(" ")}
                 />
+
+                <button
+                  type="button"
+                  onClick={checkAnswer}
+                  disabled={
+                    !answer || feedback === "correct"
+                  }
+                  className="mx-auto mt-4 block min-h-12 w-full max-w-xs rounded-xl bg-blue-600 px-5 py-3 font-black text-white shadow transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Check Answer
+                </button>
 
                 <div
                   id="practice-feedback"
@@ -876,13 +942,14 @@ export default function MultiplicationPractice() {
 
                   {feedback === "incorrect" && (
                     <span className="text-red-700">
-                      Try that one again.
+                      Try that one again. Press Enter or tap
+                      Check Answer.
                     </span>
                   )}
 
                   {feedback === "idle" && (
                     <span className="text-gray-500">
-                      Correct answers move automatically.
+                      Press Enter or tap Check Answer.
                     </span>
                   )}
                 </div>
@@ -982,7 +1049,10 @@ export default function MultiplicationPractice() {
                     </p>
 
                     <p className="mt-2 text-xs font-bold text-violet-700">
-                      Saved for {access.profile?.displayName || "your profile"}.
+                      Saved for{" "}
+                      {access.profile?.displayName ||
+                        "your profile"}
+                      .
                     </p>
                   </>
                 )}
@@ -1000,7 +1070,8 @@ export default function MultiplicationPractice() {
                       >
                         Sign in
                       </Link>{" "}
-                      before starting a round to record results and personal bests.
+                      before starting a round to record
+                      results and personal bests.
                     </p>
                   </>
                 )}
@@ -1028,25 +1099,16 @@ export default function MultiplicationPractice() {
                   Try Again
                 </button>
 
-                {mode === "mix" ? (
-                  <button
-                    type="button"
-                    onClick={shuffleAgain}
-                    disabled={saveState.status === "saving"}
-                    className="w-full rounded-xl bg-violet-600 px-5 py-3 font-black text-white shadow transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Shuffle Again
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={shuffleAgain}
-                    disabled={saveState.status === "saving"}
-                    className="w-full rounded-xl bg-violet-600 px-5 py-3 font-black text-white shadow transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Try Mix It Up
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={shuffleAgain}
+                  disabled={saveState.status === "saving"}
+                  className="w-full rounded-xl bg-violet-600 px-5 py-3 font-black text-white shadow transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {mode === "mix"
+                    ? "Shuffle Again"
+                    : "Try Mix It Up"}
+                </button>
 
                 <button
                   type="button"
@@ -1128,6 +1190,5 @@ export default function MultiplicationPractice() {
     </div>
   );
 }
-
 
 
