@@ -1,0 +1,592 @@
+/* ==================================================
+   FACTOR SET PRACTICE
+   Supported / Guided / Independent
+================================================== */
+
+.factor-set-practice-builder {
+  display: grid;
+
+  gap: 20px;
+
+  margin: 20px 32px 28px;
+}
+
+
+/* ==================================================
+   PRACTICE PANELS
+================================================== */
+
+.factor-set-practice-panel {
+  padding: 22px;
+
+  border: 1px solid #d6e2f2;
+  border-radius: 18px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fbfdff,
+      #f6f9ff
+    );
+
+  box-shadow:
+    0 4px 14px rgba(30, 61, 112, 0.04);
+}
+
+.factor-set-practice-panel + .factor-set-practice-panel {
+  margin-top: 2px;
+}
+
+.factor-set-practice-panel .factor-step-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #3975c7;
+
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.factor-set-practice-panel h3 {
+  margin: 0 0 7px;
+
+  color: #17214f;
+
+  font-size: 1.18rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.factor-inline-target {
+  display: inline;
+
+  color: #245ca8;
+
+  font-weight: 950;
+
+  white-space: nowrap;
+}
+
+.factor-set-practice-panel > p {
+  max-width: 720px;
+
+  margin: 0;
+
+  color: #687994;
+
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+
+/* ==================================================
+   NUMBER BANK
+================================================== */
+
+.factor-number-bank {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 11px;
+
+  min-height: 68px;
+
+  margin-top: 16px;
+  padding: 14px 0 2px;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+}
+
+
+/* --------------------------------------------------
+   NUMBER BANK TILES
+-------------------------------------------------- */
+
+.factor-number-tile {
+  display: grid;
+  place-items: center;
+
+  min-width: 60px;
+  min-height: 56px;
+
+  padding: 10px 15px;
+
+  border: 1px solid #9fc2ee;
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #edf6ff,
+      #e2efff
+    );
+
+  color: #174d98;
+
+  font: inherit;
+  font-size: 1.08rem;
+  font-weight: 950;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 3px 9px rgba(30, 79, 145, 0.07);
+
+  transition:
+    transform 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    opacity 150ms ease;
+}
+
+.factor-number-tile:hover:not(:disabled) {
+  transform: translateY(-2px);
+
+  border-color: #78a9e7;
+
+  background:
+    linear-gradient(
+      145deg,
+      #e3f0ff,
+      #d9eaff
+    );
+
+  box-shadow:
+    0 6px 14px rgba(30, 79, 145, 0.12);
+}
+
+.factor-number-tile:focus-visible {
+  outline: 4px solid rgba(76, 140, 235, 0.16);
+  outline-offset: 2px;
+
+  border-color: #4c8ceb;
+}
+
+
+/* A number already chosen should still be visible.
+   It is unavailable, not "wrong". */
+
+.factor-number-tile-selected {
+  opacity: 0.52;
+
+  border-color: #d2dbe8;
+
+  background: #edf1f7;
+  color: #7d899d;
+
+  box-shadow: none;
+
+  cursor: default;
+}
+
+
+/* ==================================================
+   LEARNER'S FACTOR SET
+================================================== */
+
+.factor-selected-set {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 10px;
+
+  min-height: 78px;
+
+  margin-top: 16px;
+  padding: 14px 16px;
+
+  border: 1.5px dashed #c7b7e9;
+  border-radius: 15px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(248, 245, 255, 0.82),
+      rgba(244, 240, 255, 0.58)
+    );
+}
+
+
+/* --------------------------------------------------
+   SELECTED FACTOR TILES
+-------------------------------------------------- */
+
+.factor-selected-tile {
+  display: grid;
+  place-items: center;
+
+  min-width: 56px;
+  min-height: 54px;
+
+  padding: 10px 14px;
+
+  border: 1px solid #b6a3e3;
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f0ebff,
+      #e9e1ff
+    );
+
+  color: #6241aa;
+
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 900;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 3px 8px rgba(91, 62, 153, 0.07);
+
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.factor-selected-tile:hover:not(:disabled) {
+  transform: translateY(-2px);
+
+  border-color: #9278ce;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ebe4ff,
+      #dfd4ff
+    );
+
+  box-shadow:
+    0 6px 14px rgba(91, 62, 153, 0.12);
+}
+
+.factor-selected-tile:focus-visible {
+  outline: 4px solid rgba(112, 87, 181, 0.14);
+  outline-offset: 2px;
+
+  border-color: #7057b5;
+}
+
+
+/* ==================================================
+   LOCKED / SUPPLIED FACTORS
+================================================== */
+
+.factor-selected-tile-locked {
+  position: relative;
+
+  border-color: #b7c8df;
+
+  background:
+    linear-gradient(
+      145deg,
+      #eef3f9,
+      #e6edf6
+    );
+
+  color: #526982;
+
+  box-shadow: none;
+
+  cursor: default;
+}
+
+.factor-selected-tile-locked:disabled {
+  opacity: 1;
+}
+
+
+/* ==================================================
+   EMPTY SET
+================================================== */
+
+.factor-empty-set {
+  margin: 0;
+
+  color: #7a879b;
+
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+
+/* ==================================================
+   INDEPENDENT ENTRY
+================================================== */
+
+.factor-set-entry-form {
+  margin-top: 20px;
+}
+
+.factor-set-entry-form label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #344765;
+
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.factor-set-entry-row {
+  display: flex;
+  align-items: stretch;
+
+  gap: 10px;
+}
+
+.factor-set-entry-row input {
+  flex: 1;
+  min-width: 0;
+
+  min-height: 52px;
+
+  padding: 0 14px;
+
+  border: 2px solid #ccd8eb;
+  border-radius: 13px;
+
+  background: #fbfdff;
+  color: #14214d;
+
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+
+  outline: none;
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.factor-set-entry-row input::placeholder {
+  color: #96a3b5;
+
+  font-weight: 500;
+}
+
+.factor-set-entry-row input:focus {
+  border-color: #4c8ceb;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 0 0 4px rgba(76, 140, 235, 0.13);
+}
+
+.factor-set-entry-row input:disabled {
+  cursor: not-allowed;
+
+  background: #f0f3f8;
+  color: #7c8799;
+}
+
+
+/* --------------------------------------------------
+   ADD FACTOR BUTTON
+-------------------------------------------------- */
+
+.factor-set-entry-row button {
+  min-height: 52px;
+
+  padding: 0 20px;
+
+  border: 1px solid #a996df;
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f2edff,
+      #eae3ff
+    );
+
+  color: #6241aa;
+
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 850;
+
+  cursor: pointer;
+
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease,
+    opacity 150ms ease;
+}
+
+.factor-set-entry-row button:hover:not(:disabled) {
+  transform: translateY(-1px);
+
+  border-color: #8164c5;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ebe4ff,
+      #dfd4ff
+    );
+
+  box-shadow:
+    0 5px 12px rgba(91, 62, 153, 0.12);
+}
+
+.factor-set-entry-row button:focus-visible {
+  outline: 4px solid rgba(112, 87, 181, 0.14);
+  outline-offset: 2px;
+
+  border-color: #7057b5;
+}
+
+.factor-set-entry-row button:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.48;
+
+  box-shadow: none;
+}
+
+
+/* ==================================================
+   DISABLED CHALLENGE STATE
+================================================== */
+
+.factor-set-practice-builder button:disabled {
+  cursor: not-allowed;
+}
+
+
+/* ==================================================
+   TABLET
+================================================== */
+
+@media (max-width: 850px) {
+  .factor-set-practice-builder {
+    margin: 18px 24px 26px;
+  }
+
+  .factor-set-practice-panel {
+    padding: 20px;
+  }
+
+  .factor-number-bank {
+    min-height: 68px;
+  }
+
+  .factor-selected-set {
+    min-height: 72px;
+  }
+}
+
+
+/* ==================================================
+   MOBILE
+================================================== */
+
+@media (max-width: 560px) {
+  .factor-set-practice-builder {
+    gap: 14px;
+
+    margin: 16px 18px 22px;
+  }
+
+  .factor-set-practice-panel {
+    padding: 18px;
+
+    border-radius: 16px;
+  }
+
+  .factor-set-practice-panel + .factor-set-practice-panel {
+    margin-top: 0;
+  }
+
+  .factor-set-practice-panel .factor-step-label {
+    margin-bottom: 6px;
+
+    font-size: 0.72rem;
+  }
+
+  .factor-set-practice-panel h3 {
+    font-size: 1.08rem;
+  }
+
+  .factor-set-practice-panel > p {
+    font-size: 0.9rem;
+  }
+
+  .factor-number-bank {
+    gap: 8px;
+
+    min-height: 58px;
+
+    margin-top: 14px;
+    padding: 10px 0 0;
+
+    border: 0;
+    border-radius: 0;
+
+    background: transparent;
+  }
+
+  .factor-selected-set {
+    gap: 8px;
+
+    min-height: 68px;
+
+    margin-top: 14px;
+    padding: 12px;
+
+    border-radius: 14px;
+  }
+
+  .factor-number-tile,
+  .factor-selected-tile {
+    min-width: 52px;
+    min-height: 50px;
+
+    padding: 8px 12px;
+
+    border-radius: 12px;
+
+    font-size: 1rem;
+  }
+
+  .factor-set-entry-form {
+    margin-top: 17px;
+  }
+
+  .factor-set-entry-row {
+    flex-direction: column;
+  }
+
+  .factor-set-entry-row input {
+    width: 100%;
+  }
+
+  .factor-set-entry-row button {
+    width: 100%;
+
+    min-height: 50px;
+  }
+}
+
+
