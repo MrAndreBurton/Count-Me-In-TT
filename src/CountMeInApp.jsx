@@ -95,6 +95,9 @@ import MathLanguageLevel3Play from "./pages/MathLanguageLevel3Play";
 import SymbolBankMyVault from "./pages/SymbolBankMyVault";
 import SymbolChallenge from "./pages/SymbolChallenge";
 
+import Numberverse from "./pages/Numberverse";
+import NumberverseDev from "./pages/NumberverseDev";
+import NumberverseFactorBench from "./pages/NumberverseFactorBench";
 
 import OrganisationStudentLoginPage from "./pages/admin/OrganisationStudentLoginPage";
 
@@ -114,6 +117,21 @@ export default function CountMeInApp() {
         <Route
           path="/games/multiplication/practice"
           element={<MultiplicationPractice />}
+        />
+
+        <Route
+          path="/numberverse-dev"
+          element={<NumberverseDev />}
+        />
+
+        <Route
+          path="/games/numberverse"
+          element={<Numberverse />}
+        />
+
+        <Route
+          path="/games/numberverse/divisibility-lab/factor-bench"
+          element={<NumberverseFactorBench />}
         />
 
         <Route
@@ -348,9 +366,8 @@ export default function CountMeInApp() {
              <AdminRoute>
                <SchoolProfilePage />
              </AdminRoute>
-            }
-          />
-
+           }
+         />
 
           <Route
             path="/admin/schools/:organisationId/learners/:studentId/login"

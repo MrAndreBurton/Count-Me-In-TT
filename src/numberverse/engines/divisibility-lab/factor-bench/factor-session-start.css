@@ -1,0 +1,407 @@
+/* Factor Bench session start */
+
+.factor-session-start {
+  display: grid;
+  gap: 0;
+}
+
+/* --------------------------------------------------
+   SESSION WORKSPACE
+-------------------------------------------------- */
+
+.factor-session-start.factor-bench-workspace {
+  overflow: hidden;
+
+  border: 1px solid rgba(190, 215, 245, 0.72);
+  border-radius: 24px;
+
+  background: rgba(250, 252, 255, 0.97);
+
+  box-shadow:
+    0 22px 60px rgba(0, 0, 30, 0.32),
+    0 0 0 1px rgba(255, 255, 255, 0.42) inset;
+}
+
+.factor-session-start .factor-bench-header {
+  padding: 24px 32px 20px;
+
+  border-bottom: 1px solid #e0e8f3;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f8fbff,
+      #f3f6ff
+    );
+}
+
+.factor-session-start .factor-bench-header h2 {
+  margin: 3px 0 6px;
+
+  color: #17214f;
+
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.factor-session-start
+  .factor-bench-header
+  > div
+  > p:last-child {
+  max-width: 700px;
+  margin-bottom: 0;
+
+  color: #687994;
+
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.factor-session-start .factor-bench-engine {
+  color: #3975c7;
+}
+
+/* --------------------------------------------------
+   MODE / SUPPORT SELECTION
+-------------------------------------------------- */
+
+.factor-session-mode-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 16px;
+
+  padding: 20px 32px 26px;
+}
+
+.factor-session-mode-card,
+.factor-session-length-card {
+  width: 100%;
+
+  border: 1px solid #d5e1f1;
+  border-radius: 18px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #f8fbff
+    );
+
+  color: #263754;
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 4px 12px rgba(30, 61, 112, 0.05);
+
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.factor-session-mode-card {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 16px;
+
+  min-height: 132px;
+
+  padding: 20px 22px;
+}
+
+/* Keep the fifth mode the same size as the others. */
+.factor-session-mode-card:last-child {
+  grid-column: auto;
+}
+
+.factor-session-mode-card:hover,
+.factor-session-length-card:hover {
+  transform: translateY(-2px);
+
+  border-color: #9bbbe6;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #f2f7ff
+    );
+
+  box-shadow:
+    0 10px 24px rgba(37, 87, 154, 0.1);
+}
+
+.factor-session-mode-card:focus-visible,
+.factor-session-length-card:focus-visible {
+  outline: 4px solid rgba(76, 140, 235, 0.18);
+  outline-offset: 3px;
+
+  border-color: #4c8ceb;
+
+  background: #f8fbff;
+}
+
+/* --------------------------------------------------
+   MODE ICON
+-------------------------------------------------- */
+
+.factor-session-mode-icon {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 52px;
+
+  width: 52px;
+  height: 52px;
+
+  border: 1px solid #c9daf2;
+  border-radius: 15px;
+
+  background: #edf5ff;
+  color: #2868c2;
+
+  font-size: 1.3rem;
+  font-weight: 900;
+
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.factor-session-mode-card:hover
+  .factor-session-mode-icon {
+  transform: translateY(-1px);
+
+  border-color: #a9c8ef;
+
+  background: #e2efff;
+}
+
+/* --------------------------------------------------
+   MODE COPY
+-------------------------------------------------- */
+
+.factor-session-mode-copy {
+  display: grid;
+
+  gap: 7px;
+
+  min-width: 0;
+}
+
+.factor-session-mode-copy strong,
+.factor-session-length-card strong {
+  color: #17214f;
+
+  font-size: 1.12rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.factor-session-mode-copy > span {
+  color: #5f6f88;
+
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.factor-session-mode-copy small {
+  margin-top: 4px;
+
+  color: #5277ad;
+
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.4;
+
+  letter-spacing: 0.01em;
+}
+
+/* --------------------------------------------------
+   SESSION LENGTH
+-------------------------------------------------- */
+
+.factor-session-length-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 16px;
+
+  padding: 20px 32px 26px;
+}
+
+.factor-session-length-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  gap: 7px;
+
+  min-height: 112px;
+
+  padding: 20px;
+}
+
+.factor-session-length-card strong {
+  font-size: 1.1rem;
+}
+
+.factor-session-length-card span {
+  color: #667792;
+
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.factor-session-length-card::before {
+  content: "";
+
+  width: 34px;
+  height: 4px;
+
+  margin-bottom: 5px;
+
+  border-radius: 999px;
+
+  background: #4c8ceb;
+
+  transition:
+    width 160ms ease,
+    background 160ms ease;
+}
+
+.factor-session-length-card:hover::before,
+.factor-session-length-card:focus-visible::before {
+  width: 52px;
+
+  background: #7057b5;
+}
+
+/* --------------------------------------------------
+   ACTION AREA
+-------------------------------------------------- */
+
+.factor-session-start .factor-bench-actions {
+  min-height: 68px;
+
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.factor-session-start .factor-clear-button {
+  justify-self: start;
+
+  min-height: 42px;
+
+  padding: 0 4px;
+
+  color: #3269ba;
+
+  font-size: 0.92rem;
+}
+
+/* --------------------------------------------------
+   TABLET
+-------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .factor-session-length-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .factor-session-mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .factor-session-mode-card {
+    min-height: 0;
+  }
+
+  .factor-session-mode-card:last-child {
+    grid-column: auto;
+  }
+}
+
+/* --------------------------------------------------
+   MOBILE
+-------------------------------------------------- */
+
+@media (max-width: 560px) {
+  .factor-session-start.factor-bench-workspace {
+    border-radius: 20px;
+  }
+
+  .factor-session-start .factor-bench-header {
+    padding: 20px 18px 17px;
+  }
+
+  .factor-session-start .factor-bench-header h2 {
+    font-size: 1.22rem;
+  }
+
+  .factor-session-mode-grid,
+  .factor-session-length-grid {
+    grid-template-columns: 1fr;
+
+    gap: 12px;
+
+    padding: 16px 18px 22px;
+  }
+
+  .factor-session-mode-card {
+    gap: 13px;
+
+    min-height: 0;
+
+    padding: 18px;
+
+    border-radius: 16px;
+  }
+
+  .factor-session-mode-icon {
+    flex-basis: 46px;
+
+    width: 46px;
+    height: 46px;
+
+    border-radius: 13px;
+
+    font-size: 1.15rem;
+  }
+
+  .factor-session-mode-copy strong {
+    font-size: 1.05rem;
+  }
+
+  .factor-session-mode-copy > span {
+    font-size: 0.9rem;
+  }
+
+  .factor-session-mode-copy small {
+    font-size: 0.8rem;
+  }
+
+  .factor-session-length-card {
+    min-height: 96px;
+
+    padding: 18px;
+
+    border-radius: 16px;
+  }
+}
