@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
 import { supabase } from "../lib/supabase";
@@ -132,6 +136,11 @@ function RegistrationSuccess({
 
 export default function Register() {
   const navigate = useNavigate();
+
+  const location = useLocation();
+
+  const returnPath =
+    location.state?.from?.pathname || null;
 
   const [accountType, setAccountType] = useState("parent");
 
@@ -266,9 +275,16 @@ export default function Register() {
         if (accountType === "student") {
           navigate("/complete-student-profile", {
             replace: true,
+            state: returnPath
+              ? {
+                  from: {
+                    pathname: returnPath,
+                  },
+                }
+              : undefined,
           });
         } else {
-          navigate("/dashboard", {
+          navigate(returnPath || "/dashboard", {
             replace: true,
           });
         }

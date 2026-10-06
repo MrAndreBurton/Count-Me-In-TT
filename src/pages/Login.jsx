@@ -41,7 +41,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [loginType, setLoginType] = useState(LOGIN_TYPES.ADULT);
+  const [loginType, setLoginType] = useState(LOGIN_TYPES.STUDENT);
 
   const [adultForm, setAdultForm] = useState({
     email: "",
@@ -91,204 +91,203 @@ export default function Login() {
   };
 
   const handleAdultLogin = async () => {
-  const email = adultForm.email.trim().toLowerCase();
+    const email = adultForm.email.trim().toLowerCase();
 
-  const { data, error } =
-    await supabase.auth.signInWithPassword({
-      email,
-      password: adultForm.password,
-    });
+    const { data, error } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password: adultForm.password,
+      });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  if (!data?.session || !data?.user) {
-    throw new Error(
-      "Your session could not be created. Please try again."
-    );
-  }
-
-  const { data: accountProfile, error: profileError } =
-    await supabase
-      .from("profiles")
-      .select(
-        "id, account_type, account_status, admin_role"
-      )
-      .eq("id", data.user.id)
-      .maybeSingle();
-
-  if (profileError) throw profileError;
-
-  if (!accountProfile) {
-    await supabase.auth.signOut();
-
-    throw new Error(
-      "Your account profile could not be found."
-    );
-  }
-
-  if (
-    accountProfile.account_status &&
-    accountProfile.account_status !== "active"
-  ) {
-    await supabase.auth.signOut();
-
-    throw new Error(
-      "This account is not currently active."
-    );
-  }
-
-  return {
-    user: data.user,
-    session: data.session,
-    accountProfile,
-  };
-};
-
-  const handleStudentLogin = async () => {
-  const outcome = await signInStudent({
-    username: studentForm.username,
-    password: studentForm.password,
-  });
-
-  if (!outcome?.session || !outcome?.user) {
-    throw new Error(
-      "Your student session could not be created. Please try again."
-    );
-  }
-
-  const {
-    data: loginAccount,
-    error: loginAccountError,
-  } = await supabase
-    .from("student_login_accounts")
-    .select(
-      `
-        id,
-        login_status,
-        must_change_password,
-        last_login_at
-      `
-    )
-    .eq("student_account_id", outcome.user.id)
-    .maybeSingle();
-
-  if (loginAccountError) {
-    throw loginAccountError;
-  }
-
-  if (!loginAccount) {
-    await supabase.auth.signOut();
-
-    throw new Error(
-      "This student login is not connected to a learning profile."
-    );
-  }
-
-  if (loginAccount.login_status === "disabled") {
-    await supabase.auth.signOut();
-
-    throw new Error(
-      "This student login has been disabled. Please ask a parent or guardian for help."
-    );
-  }
-
-  try {
-    await recordStudentLogin();
-  } catch (error) {
-    console.error(
-      "Unable to record student login:",
-      error
-    );
-  }
-
-  return {
-    user: outcome.user,
-    loginAccount,
-  };
-};
-
-  const handleSubmit = async (event) => {
-  event.preventDefault();
-
-  if (isSubmitting) return;
-
-  setErrorMessage("");
-  setIsSubmitting(true);
-
-  try {
-    let redirectPath = "/dashboard";
-
-    if (isStudentLogin) {
-      await handleStudentLogin();
-
-      redirectPath =
-        location.state?.from?.pathname ||
-        "/dashboard";
-    } else {
-      const { accountProfile } =
-        await handleAdultLogin();
-
-      const adminRoles = [
-        "super_admin",
-        "admin",
-        "moderator",
-      ];
-
-      const hasAdminAccess =
-        adminRoles.includes(
-          accountProfile?.admin_role
-        ) &&
-        accountProfile?.account_status ===
-          "active";
-
-      const {
-        data: organisationStaffRows,
-        error: organisationStaffError,
-     } = await supabase
-        .from("organisation_staff")
-        .select("id")
-        .eq("profile_id", accountProfile.id)
-        .eq("status", "active")
-        .is("ended_at", null)
-        .limit(1);
-
-      if (organisationStaffError) {
-        throw organisationStaffError;
-      }
-
-      const hasOrganisationAccess =
-        (organisationStaffRows?.length || 0) > 0;
-
-      if (location.state?.from?.pathname) {
-        redirectPath =
-          location.state.from.pathname;
-      } else if (
-        hasAdminAccess ||
-        hasOrganisationAccess
-      ) {
-        redirectPath = "/workspace";
-
-      } else {
-        redirectPath = "/dashboard";
-      }
+    if (!data?.session || !data?.user) {
+      throw new Error(
+        "Your session could not be created. Please try again."
+      );
     }
 
-    navigate(redirectPath, {
-      replace: true,
-    });
-  } catch (error) {
-    console.error("Login error:", error);
+    const { data: accountProfile, error: profileError } =
+      await supabase
+        .from("profiles")
+        .select(
+          "id, account_type, account_status, admin_role"
+        )
+        .eq("id", data.user.id)
+        .maybeSingle();
 
-    setErrorMessage(
-      isStudentLogin
-        ? error?.message ||
-            "The student username or password is incorrect."
-        : normalizeAdultLoginError(error)
-    );
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+    if (profileError) throw profileError;
+
+    if (!accountProfile) {
+      await supabase.auth.signOut();
+
+      throw new Error(
+        "Your account profile could not be found."
+      );
+    }
+
+    if (
+      accountProfile.account_status &&
+      accountProfile.account_status !== "active"
+    ) {
+      await supabase.auth.signOut();
+
+      throw new Error(
+        "This account is not currently active."
+      );
+    }
+
+    return {
+      user: data.user,
+      session: data.session,
+      accountProfile,
+    };
+  };
+
+  const handleStudentLogin = async () => {
+    const outcome = await signInStudent({
+      username: studentForm.username,
+      password: studentForm.password,
+    });
+
+    if (!outcome?.session || !outcome?.user) {
+      throw new Error(
+        "Your student session could not be created. Please try again."
+      );
+    }
+
+    const {
+      data: loginAccount,
+      error: loginAccountError,
+    } = await supabase
+      .from("student_login_accounts")
+      .select(
+        `
+          id,
+          login_status,
+          must_change_password,
+          last_login_at
+        `
+      )
+      .eq("student_account_id", outcome.user.id)
+      .maybeSingle();
+
+    if (loginAccountError) {
+      throw loginAccountError;
+    }
+
+    if (!loginAccount) {
+      await supabase.auth.signOut();
+
+      throw new Error(
+        "This student login is not connected to a learning profile."
+      );
+    }
+
+    if (loginAccount.login_status === "disabled") {
+      await supabase.auth.signOut();
+
+      throw new Error(
+        "This student login has been disabled. Please ask a parent, guardian or organisation for help."
+      );
+    }
+
+    try {
+      await recordStudentLogin();
+    } catch (error) {
+      console.error(
+        "Unable to record student login:",
+        error
+      );
+    }
+
+    return {
+      user: outcome.user,
+      loginAccount,
+    };
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (isSubmitting) return;
+
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      let redirectPath = "/dashboard";
+
+      if (isStudentLogin) {
+        await handleStudentLogin();
+
+        redirectPath =
+          location.state?.from?.pathname ||
+          "/dashboard";
+      } else {
+        const { accountProfile } =
+          await handleAdultLogin();
+
+        const adminRoles = [
+          "super_admin",
+          "admin",
+          "moderator",
+        ];
+
+        const hasAdminAccess =
+          adminRoles.includes(
+            accountProfile?.admin_role
+          ) &&
+          accountProfile?.account_status ===
+            "active";
+
+        const {
+          data: organisationStaffRows,
+          error: organisationStaffError,
+        } = await supabase
+          .from("organisation_staff")
+          .select("id")
+          .eq("profile_id", accountProfile.id)
+          .eq("status", "active")
+          .is("ended_at", null)
+          .limit(1);
+
+        if (organisationStaffError) {
+          throw organisationStaffError;
+        }
+
+        const hasOrganisationAccess =
+          (organisationStaffRows?.length || 0) > 0;
+
+        if (location.state?.from?.pathname) {
+          redirectPath =
+            location.state.from.pathname;
+        } else if (
+          hasAdminAccess ||
+          hasOrganisationAccess
+        ) {
+          redirectPath = "/workspace";
+        } else {
+          redirectPath = "/dashboard";
+        }
+      }
+
+      navigate(redirectPath, {
+        replace: true,
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+
+      setErrorMessage(
+        isStudentLogin
+          ? error?.message ||
+              "The student username or password is incorrect."
+          : normalizeAdultLoginError(error)
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const currentRememberMe = isStudentLogin
     ? studentForm.rememberMe
@@ -310,8 +309,9 @@ export default function Login() {
             </h1>
 
             <p className="mt-3 max-w-2xl text-lg leading-8 text-gray-600">
-              Parents and adults sign in with an email address.
-              Students sign in with the username created by their parent.
+              Students sign in with their CountMeInTT username.
+              Parents, teachers, organisation staff and administrators
+              sign in with their email address.
             </p>
           </div>
         </section>
@@ -335,23 +335,10 @@ export default function Login() {
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={!isStudentLogin}
-                  onClick={() => switchLoginType(LOGIN_TYPES.ADULT)}
-                  className={[
-                    "rounded-xl px-3 py-3 text-sm font-black transition sm:text-base",
-                    !isStudentLogin
-                      ? "bg-white text-blue-700 shadow-sm"
-                      : "text-gray-600 hover:bg-white/70 hover:text-gray-950",
-                  ].join(" ")}
-                >
-                  Parent / Adult
-                </button>
-
-                <button
-                  type="button"
-                  role="tab"
                   aria-selected={isStudentLogin}
-                  onClick={() => switchLoginType(LOGIN_TYPES.STUDENT)}
+                  onClick={() =>
+                    switchLoginType(LOGIN_TYPES.STUDENT)
+                  }
                   className={[
                     "rounded-xl px-3 py-3 text-sm font-black transition sm:text-base",
                     isStudentLogin
@@ -360,6 +347,23 @@ export default function Login() {
                   ].join(" ")}
                 >
                   Student
+                </button>
+
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={!isStudentLogin}
+                  onClick={() =>
+                    switchLoginType(LOGIN_TYPES.ADULT)
+                  }
+                  className={[
+                    "rounded-xl px-3 py-3 text-sm font-black transition sm:text-base",
+                    !isStudentLogin
+                      ? "bg-white text-blue-700 shadow-sm"
+                      : "text-gray-600 hover:bg-white/70 hover:text-gray-950",
+                  ].join(" ")}
+                >
+                  Account
                 </button>
               </div>
 
@@ -374,17 +378,20 @@ export default function Login() {
                 <p className="font-black text-gray-950">
                   {isStudentLogin
                     ? "Student Login"
-                    : "Parent / Adult Login"}
+                    : "Account Login"}
                 </p>
 
                 <p className="mt-1 text-sm leading-6 text-gray-600">
                   {isStudentLogin
-                    ? "Use the username and password created by your parent or guardian."
-                    : "Use the email address and password connected to your CountMeInTT account."}
+                    ? "Use your CountMeInTT username and password."
+                    : "Parents, teachers, organisation staff and administrators sign in with their email address and password."}
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="mt-7 grid gap-5">
+              <form
+                onSubmit={handleSubmit}
+                className="mt-7 grid gap-5"
+              >
                 {isStudentLogin ? (
                   <div>
                     <label
@@ -452,7 +459,11 @@ export default function Login() {
                     <input
                       id="login-password"
                       name="password"
-                      type={showPassword ? "text" : "password"}
+                      type={
+                        showPassword
+                          ? "text"
+                          : "password"
+                      }
                       autoComplete="current-password"
                       required
                       value={
@@ -472,11 +483,15 @@ export default function Login() {
                     <button
                       type="button"
                       onClick={() =>
-                        setShowPassword((current) => !current)
+                        setShowPassword(
+                          (current) => !current
+                        )
                       }
                       className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent px-2 py-1 text-sm font-black text-blue-600"
                     >
-                      {showPassword ? "Hide" : "Show"}
+                      {showPassword
+                        ? "Hide"
+                        : "Show"}
                     </button>
                   </div>
                 </div>
@@ -522,7 +537,7 @@ export default function Login() {
                     ? "Logging In..."
                     : isStudentLogin
                       ? "Student Log In"
-                      : "Parent / Adult Log In"}
+                      : "Account Log In"}
                 </button>
               </form>
 
@@ -546,7 +561,8 @@ export default function Login() {
                   </p>
 
                   <p className="mt-1 text-sm leading-6 text-gray-600">
-                    Ask the parent or guardian who created your student login.
+                    Ask the parent, guardian or organisation
+                    that provided your student login.
                   </p>
                 </div>
               )}
@@ -562,9 +578,11 @@ export default function Login() {
               </h2>
 
               <p className="mt-4 leading-7 text-gray-700">
-                Parents manage family profiles. Students log in
-                independently so their gameplay saves only to their
-                own learning record.
+                Students log in independently so their gameplay
+                saves only to their own learning record. Parents,
+                teachers and organisation staff can use their
+                account access to manage the areas available to
+                them.
               </p>
 
               <ul className="mt-6 grid gap-4">
@@ -572,9 +590,12 @@ export default function Login() {
                   "View saved results and personal bests",
                   "Track Math Language rounds and accuracy",
                   "Earn badges and achievements",
-                  "Keep each player’s learning history separate",
+                  "Keep each player's learning history separate",
                 ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
+                  <li
+                    key={item}
+                    className="flex items-start gap-3"
+                  >
                     <span
                       aria-hidden="true"
                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-yellow-200 font-black"
@@ -595,8 +616,8 @@ export default function Login() {
                 </p>
 
                 <p className="mt-1 text-sm leading-6 text-gray-600">
-                  You do not need an account to access the public
-                  multiplication game.
+                  You do not need an account to access the
+                  public multiplication game.
                 </p>
 
                 <Link

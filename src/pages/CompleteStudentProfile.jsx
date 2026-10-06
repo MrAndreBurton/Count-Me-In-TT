@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
 import { supabase } from "../lib/supabase";
@@ -109,6 +113,11 @@ function AccessMessage({ title, message }) {
 
 export default function CompleteStudentProfile() {
   const navigate = useNavigate();
+
+  const location = useLocation();
+
+  const returnPath =
+    location.state?.from?.pathname || "/dashboard";
 
   const [accountProfile, setAccountProfile] = useState(null);
   const [studentProfile, setStudentProfile] = useState(null);
@@ -263,7 +272,7 @@ export default function CompleteStudentProfile() {
           studentData.academic_year;
 
         if (profileAlreadyComplete) {
-          navigate("/dashboard", {
+          navigate(returnPath, {
             replace: true,
           });
 
@@ -315,7 +324,7 @@ export default function CompleteStudentProfile() {
     return () => {
       active = false;
     };
-  }, [navigate]);
+  }, [navigate, returnPath]);
 
   useEffect(() => {
     let active = true;
@@ -481,7 +490,7 @@ if (!isNoSchool && !selectedSchool) {
         );
       }
 
-      navigate("/dashboard", {
+      navigate(returnPath, {
         replace: true,
       });
     } catch (error) {
