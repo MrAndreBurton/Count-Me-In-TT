@@ -357,6 +357,71 @@
   line-height: 1.4;
 }
 
+.factor-session-access-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  margin-top: 8px;
+}
+
+.factor-session-access-primary,
+.factor-session-access-secondary {
+  min-height: 40px;
+  padding: 9px 15px;
+
+  border-radius: 10px;
+
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.factor-session-access-primary {
+  border: 1px solid #2f6fce;
+  background: #2f6fce;
+  color: #ffffff;
+
+  box-shadow:
+    0 5px 14px rgba(47, 111, 206, 0.16);
+}
+
+.factor-session-access-primary:hover {
+  background: #265fb4;
+  border-color: #265fb4;
+
+  transform: translateY(-1px);
+}
+
+.factor-session-access-secondary {
+  border: 1px solid #b8c9df;
+  background: #ffffff;
+  color: #315b91;
+}
+
+.factor-session-access-secondary:hover {
+  border-color: #8eabd0;
+  background: #f5f9ff;
+
+  transform: translateY(-1px);
+}
+
+.factor-session-access-primary:focus-visible,
+.factor-session-access-secondary:focus-visible {
+  outline: 3px solid rgba(76, 140, 235, 0.2);
+  outline-offset: 2px;
+}
+
 .factor-session-access-dismiss {
   display: grid;
   place-items: center;

@@ -2,6 +2,9 @@ import {
   useEffect,
   useState,
 } from "react";
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import {
   NUMBERVERSE_ACCESS_CLASSES,
@@ -160,6 +163,8 @@ const LENGTH_OPTIONS = [
 export default function FactorBenchSessionStart({
   onStartSession,
 }) {
+  const navigate = useNavigate();
+
   const [selectedMode, setSelectedMode] =
     useState(null);
 
@@ -174,6 +179,9 @@ export default function FactorBenchSessionStart({
 
   const [accessPrompt, setAccessPrompt] =
     useState(null);
+
+  const factorBenchPath =
+    "/games/numberverse/divisibility-lab/factor-bench";
 
   useEffect(() => {
     let active = true;
@@ -270,6 +278,30 @@ export default function FactorBenchSessionStart({
     }
 
     return "Full Membership";
+  }
+
+  function handleCreateFreeAccount() {
+    navigate("/register", {
+      state: {
+        from: {
+          pathname: factorBenchPath,
+        },
+      },
+    });
+  }
+
+  function handleSignIn() {
+    navigate("/login", {
+      state: {
+        from: {
+          pathname: factorBenchPath,
+        },
+      },
+    });
+  }
+
+  function handleExploreMembership() {
+    navigate("/membership");
   }
 
   function handleModeSelect(option) {
@@ -604,7 +636,9 @@ export default function FactorBenchSessionStart({
               aria-live="polite"
             >
               <div className="factor-session-access-prompt-icon">
-                <span aria-hidden="true">🔒</span>
+                <span aria-hidden="true">
+                  🔒
+                </span>
               </div>
 
               <div className="factor-session-access-prompt-copy">
@@ -617,14 +651,45 @@ export default function FactorBenchSessionStart({
                 <p>
                   {accessPrompt.authenticated
                     ? "Full membership unlocks Evidence Rounds and the complete Numberverse learning experience."
-                    : "Create your free Count Me In TT account to unlock Factor Sets, Full Practice and Quick Challenge."}
+                    : accessPrompt.option.accessClass ===
+                        NUMBERVERSE_ACCESS_CLASSES.EVIDENCE
+                      ? "Evidence Rounds are part of the full Numberverse experience. Start with a free Count Me In TT account to keep exploring Numberverse."
+                      : "Create your free Count Me In TT account to unlock Factor Sets, Full Practice and Quick Challenge."}
                 </p>
 
-                <small>
-                  {accessPrompt.authenticated
-                    ? "Membership options will be connected in the next step."
-                    : "Free account creation and sign in will be connected in the next step."}
-                </small>
+                <div className="factor-session-access-actions">
+                  {accessPrompt.authenticated ? (
+                    <button
+                      type="button"
+                      className="factor-session-access-primary"
+                      onClick={
+                        handleExploreMembership
+                      }
+                    >
+                      Explore Membership
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="factor-session-access-primary"
+                        onClick={
+                          handleCreateFreeAccount
+                        }
+                      >
+                        Create Free Account
+                      </button>
+
+                      <button
+                        type="button"
+                        className="factor-session-access-secondary"
+                        onClick={handleSignIn}
+                      >
+                        Sign In
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <button
