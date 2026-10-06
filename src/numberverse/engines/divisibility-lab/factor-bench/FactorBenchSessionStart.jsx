@@ -1,6 +1,15 @@
 import {
+  useEffect,
   useState,
 } from "react";
+
+import {
+  NUMBERVERSE_ACCESS_CLASSES,
+  GUEST_NUMBERVERSE_ACCESS,
+  canAccessNumberverseClass,
+  getNumberverseAccessState,
+  subscribeToNumberverseAuthChanges,
+} from "../../../../services/numberverseAccess";
 
 import {
   FACTOR_BENCH_MODES,
@@ -23,6 +32,7 @@ import "./factor-session-start.css";
 const MODE_OPTIONS = [
   {
     mode: FACTOR_BENCH_MODES.PAIR_PRACTICE,
+    accessClass: NUMBERVERSE_ACCESS_CLASSES.INTRO,
     title: "Factor Pairs",
     description:
       "Build factor pairs for different numbers.",
@@ -32,6 +42,7 @@ const MODE_OPTIONS = [
   },
   {
     mode: FACTOR_BENCH_MODES.FACTOR_SET_PRACTICE,
+    accessClass: NUMBERVERSE_ACCESS_CLASSES.CORE,
     title: "Factor Sets",
     description:
       "Build the complete set of factors.",
@@ -41,6 +52,7 @@ const MODE_OPTIONS = [
   },
   {
     mode: FACTOR_BENCH_MODES.FULL_PRACTICE,
+    accessClass: NUMBERVERSE_ACCESS_CLASSES.CORE,
     title: "Full Practice",
     description:
       "Build pairs, organise the factor set, and decide when the structure is complete.",
@@ -50,6 +62,7 @@ const MODE_OPTIONS = [
   },
   {
     mode: FACTOR_BENCH_MODES.QUICK_CHALLENGE,
+    accessClass: NUMBERVERSE_ACCESS_CLASSES.CORE,
     title: "Quick Challenge",
     description:
       "Take on one complete Factor Bench challenge.",
@@ -59,6 +72,7 @@ const MODE_OPTIONS = [
   },
   {
     mode: FACTOR_BENCH_MODES.EVIDENCE_ROUND,
+    accessClass: NUMBERVERSE_ACCESS_CLASSES.EVIDENCE,
     title: "Evidence Round",
     description:
       "Complete a structured five-challenge Factor Bench round.",
@@ -152,6 +166,59 @@ export default function FactorBenchSessionStart({
   const [selectedSupportLevel, setSelectedSupportLevel] =
     useState(null);
 
+  const [accessState, setAccessState] =
+    useState(GUEST_NUMBERVERSE_ACCESS);
+
+  const [accessLoading, setAccessLoading] =
+    useState(true);
+
+  const [accessPrompt, setAccessPrompt] =
+    useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAccess() {
+      setAccessLoading(true);
+
+      try {
+        const nextAccess =
+          await getNumberverseAccessState();
+
+        if (active) {
+          setAccessState(nextAccess);
+        }
+      } catch (accessError) {
+        console.error(
+          "Numberverse access could not be resolved.",
+          accessError
+        );
+
+        if (active) {
+          setAccessState(
+            GUEST_NUMBERVERSE_ACCESS
+          );
+        }
+      } finally {
+        if (active) {
+          setAccessLoading(false);
+        }
+      }
+    }
+
+    loadAccess();
+
+    const unsubscribe =
+      subscribeToNumberverseAuthChanges(
+        loadAccess
+      );
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+
   const selectedModeOption =
     MODE_OPTIONS.find(
       (option) =>
@@ -172,7 +239,51 @@ export default function FactorBenchSessionStart({
       ? SUPPORT_OPTIONS
       : FACTOR_SET_SUPPORT_OPTIONS;
 
+  function canUseMode(option) {
+    if (accessLoading) {
+      return (
+        option.accessClass ===
+        NUMBERVERSE_ACCESS_CLASSES.INTRO
+      );
+    }
+
+    return canAccessNumberverseClass(
+      accessState,
+      option.accessClass
+    );
+  }
+
+  function getAccessLabel(option) {
+    if (canUseMode(option)) {
+      return null;
+    }
+
+    if (!accessState.authenticated) {
+      if (
+        option.accessClass ===
+        NUMBERVERSE_ACCESS_CLASSES.EVIDENCE
+      ) {
+        return "Full Membership";
+      }
+
+      return "Free Account";
+    }
+
+    return "Full Membership";
+  }
+
   function handleModeSelect(option) {
+    if (!canUseMode(option)) {
+      setAccessPrompt({
+        option,
+        authenticated:
+          accessState.authenticated,
+      });
+      return;
+    }
+
+    setAccessPrompt(null);
+
     if (!option.configurableLength) {
       onStartSession({
         mode: option.mode,
@@ -411,7 +522,6 @@ export default function FactorBenchSessionStart({
               Break numbers apart. Find their pairs.
               Reveal their structure.
             </p>
-
           </div>
         </section>
 
@@ -435,35 +545,100 @@ export default function FactorBenchSessionStart({
           </header>
 
           <div className="factor-session-mode-grid">
-            {MODE_OPTIONS.map((option) => (
-              <button
-                key={option.mode}
-                type="button"
-                className="factor-session-mode-card"
-                onClick={() =>
-                  handleModeSelect(option)
-                }
-              >
-                <span className="factor-session-mode-icon">
-                  {option.icon}
-                </span>
+            {MODE_OPTIONS.map((option) => {
+              const accessible =
+                canUseMode(option);
 
-                <span className="factor-session-mode-copy">
-                  <strong>
-                    {option.title}
-                  </strong>
+              const accessLabel =
+                getAccessLabel(option);
 
-                  <span>
-                    {option.description}
+              return (
+                <button
+                  key={option.mode}
+                  type="button"
+                  className={`factor-session-mode-card${
+                    accessible
+                      ? ""
+                      : " factor-session-mode-card-locked"
+                  }`}
+                  aria-disabled={!accessible}
+                  onClick={() =>
+                    handleModeSelect(option)
+                  }
+                >
+                  <span className="factor-session-mode-icon">
+                    {option.icon}
                   </span>
 
-                  <small>
-                    {option.detail}
-                  </small>
-                </span>
-              </button>
-            ))}
+                  <span className="factor-session-mode-copy">
+                    <strong>
+                      {option.title}
+                    </strong>
+
+                    <span>
+                      {option.description}
+                    </span>
+
+                    <small>
+                      {option.detail}
+                    </small>
+
+                    {accessLabel && (
+                      <span className="factor-session-access-label">
+                        <span aria-hidden="true">
+                          🔒
+                        </span>
+                        {accessLabel}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+
+          {accessPrompt && (
+            <div
+              className="factor-session-access-prompt"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="factor-session-access-prompt-icon">
+                <span aria-hidden="true">🔒</span>
+              </div>
+
+              <div className="factor-session-access-prompt-copy">
+                <strong>
+                  {accessPrompt.authenticated
+                    ? "Go further with Numberverse"
+                    : "Keep exploring Numberverse"}
+                </strong>
+
+                <p>
+                  {accessPrompt.authenticated
+                    ? "Full membership unlocks Evidence Rounds and the complete Numberverse learning experience."
+                    : "Create your free Count Me In TT account to unlock Factor Sets, Full Practice and Quick Challenge."}
+                </p>
+
+                <small>
+                  {accessPrompt.authenticated
+                    ? "Membership options will be connected in the next step."
+                    : "Free account creation and sign in will be connected in the next step."}
+                </small>
+              </div>
+
+              <button
+                type="button"
+                className="factor-session-access-dismiss"
+                aria-label="Close access message"
+                onClick={() =>
+                  setAccessPrompt(null)
+                }
+              >
+                ×
+              </button>
+            </div>
+          )}
         </section>
 
         <section className="numberverse-footer-card">

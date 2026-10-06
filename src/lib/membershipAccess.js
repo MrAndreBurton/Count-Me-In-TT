@@ -39,6 +39,9 @@ const DEFAULT_ENTITLEMENTS = {
 
   downloadable_reports: false,
   premium_games: false,
+
+  numberverse_access: "core",
+  numberverse_evidence: false,
 };
 
 export function isPaidMembership(membership) {
@@ -321,6 +324,31 @@ export function canAccessPremiumGames(membership) {
   return hasEntitlement(
     membership,
     "premium_games"
+  );
+}
+
+export function getNumberverseAccess(membership) {
+  const value = getEntitlement(
+    membership,
+    "numberverse_access",
+    "intro"
+  );
+
+  if (value === "full") {
+    return "full";
+  }
+
+  if (value === "core") {
+    return "core";
+  }
+
+  return "intro";
+}
+
+export function canUseNumberverseEvidence(membership) {
+  return hasEntitlement(
+    membership,
+    "numberverse_evidence"
   );
 }
 
