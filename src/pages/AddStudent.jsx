@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
 import { supabase } from "../lib/supabase";
+import { canBypassParentChildLimit } from "../lib/accountCapabilities";
 
 const CHILD_LIMIT = 5;
 
@@ -199,7 +200,11 @@ export default function AddStudent() {
   const isParentAccount =
     accountProfile?.account_type === "parent";
 
-  const limitReached = childCount >= CHILD_LIMIT;
+  const bypassChildLimit =
+    isParentAccount && canBypassParentChildLimit(accountProfile);
+
+  const limitReached =
+    !bypassChildLimit && childCount >= CHILD_LIMIT;
 
   const publicDisplayName = useMemo(() => {
     const firstName = formData.firstName.trim();
@@ -257,7 +262,7 @@ export default function AddStudent() {
           await supabase
             .from("profiles")
             .select(
-              "id, full_name, account_type, account_status"
+              "id, full_name, account_type, account_status, admin_role"
             )
             .eq("id", user.id)
             .single();
@@ -558,7 +563,10 @@ export default function AddStudent() {
         throw countError;
       }
 
-      if ((count || 0) >= CHILD_LIMIT) {
+      if (
+        !canBypassParentChildLimit(accountProfile) &&
+        (count || 0) >= CHILD_LIMIT
+      ) {
         setChildCount(count || CHILD_LIMIT);
 
         throw new Error(
@@ -706,7 +714,9 @@ export default function AddStudent() {
             </p>
 
             <div className="mt-5 inline-flex rounded-full bg-yellow-100 px-4 py-2 text-sm font-black text-yellow-800">
-              {childCount} of {CHILD_LIMIT} child profiles used
+              {bypassChildLimit
+                ? `${childCount} child profiles · Platform admin — no profile limit`
+                : `${childCount} of ${CHILD_LIMIT} child profiles used`}
             </div>
 
             <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 text-left">
@@ -800,7 +810,9 @@ export default function AddStudent() {
             </div>
 
             <div className="shrink-0 rounded-full bg-yellow-100 px-4 py-2 text-sm font-black text-yellow-800">
-              {childCount} of {CHILD_LIMIT} used
+              {bypassChildLimit
+                ? `${childCount} child profiles · Platform admin — no profile limit`
+                : `${childCount} of ${CHILD_LIMIT} used`}
             </div>
           </div>
         </section>
