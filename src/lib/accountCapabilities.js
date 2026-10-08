@@ -10,3 +10,10 @@ export function isActivePlatformAdmin(profile) {
     PLATFORM_ADMIN_ROLES.includes(profile?.admin_role)
   );
 }
+
+export function canBypassParentChildLimit(profile) {
+  return (
+    profile?.account_status === "active" &&
+    ["super_admin", "admin"].includes(profile?.admin_role)
+  );
+}

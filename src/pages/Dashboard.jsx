@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
 import SiteFooter from "../components/layout/SiteFooter";
 import { supabase } from "../lib/supabase";
+import { canBypassParentChildLimit } from "../lib/accountCapabilities";
 
 const CHILD_LIMIT = 5;
 
@@ -550,7 +551,8 @@ export default function Dashboard() {
                 account_type,
                 phone,
                 communication_preference,
-                account_status
+                account_status,
+                admin_role
               `
             )
             .eq("id", user.id)
@@ -827,6 +829,9 @@ setLinkedProfiles(summaries);
   const isParentAccount =
     accountProfile?.account_type === "parent";
 
+  const bypassChildLimit =
+    isParentAccount && canBypassParentChildLimit(accountProfile);
+
   const activeIsOwnProfile =
     activeProfile?.relationshipRole === "self" ||
     activeProfile?.relationshipRole === "student";
@@ -872,7 +877,8 @@ setLinkedProfiles(summaries);
 
             <div className="flex flex-col gap-3 sm:flex-row">
               {isParentAccount &&
-                childProfiles.length < CHILD_LIMIT && (
+                (bypassChildLimit ||
+                  childProfiles.length < CHILD_LIMIT) && (
                   <Link
                     to="/students/add"
                     className="rounded-xl border-2 border-blue-600 bg-white px-5 py-3 text-center font-black text-blue-600 transition hover:bg-blue-50"
@@ -945,7 +951,9 @@ setLinkedProfiles(summaries);
                   </div>
 
                   <div className="rounded-full bg-yellow-100 px-4 py-2 text-sm font-black text-yellow-800">
-                    {childProfiles.length} of {CHILD_LIMIT} used
+                    {bypassChildLimit
+                      ? `${childProfiles.length} child profiles · Platform admin — no profile limit`
+                      : `${childProfiles.length} of ${CHILD_LIMIT} used`}
                   </div>
                 </div>
 
@@ -961,7 +969,8 @@ setLinkedProfiles(summaries);
                     />
                   ))}
 
-                  {childProfiles.length < CHILD_LIMIT ? (
+                  {bypassChildLimit ||
+                  childProfiles.length < CHILD_LIMIT ? (
                     <Link
                       to="/students/add"
                       className="flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white/80 p-6 text-center transition hover:border-blue-400 hover:bg-blue-50"
@@ -975,8 +984,9 @@ setLinkedProfiles(summaries);
                       </h3>
 
                       <p className="mt-2 max-w-xs text-sm leading-6 text-gray-600">
-                        {childProfiles.length} of {CHILD_LIMIT} child
-                        profiles currently used.
+                        {bypassChildLimit
+                          ? `${childProfiles.length} child profiles currently linked. Platform admins have no enforced profile limit.`
+                          : `${childProfiles.length} of ${CHILD_LIMIT} child profiles currently used.`}
                       </p>
                     </Link>
                   ) : (
