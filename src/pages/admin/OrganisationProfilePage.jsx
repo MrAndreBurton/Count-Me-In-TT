@@ -2,9 +2,9 @@ import {
   ArrowLeft,
   BookOpen,
   BriefcaseBusiness,
+  Building2,
   CalendarDays,
   GraduationCap,
-  School,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -22,7 +22,7 @@ import {
 import AdminLayout from "../../components/admin/layout/AdminLayout";
 
 import {
-  fetchAdminSchoolById,
+  fetchAdminOrganisationById,
 } from "../../services/adminOrganisationsService";
 
 import {
@@ -46,6 +46,18 @@ function formatStatus(status) {
     status.charAt(0).toUpperCase() +
     status.slice(1).toLowerCase()
   );
+}
+
+function formatOrganisationType(type) {
+  if (type === "school") {
+    return "School";
+  }
+
+  if (type === "tutoring_service") {
+    return "Tutoring Service";
+  }
+
+  return "Organisation";
 }
 
 function formatDate(
@@ -81,10 +93,10 @@ function formatDateTime(
   });
 }
 
-export default function SchoolProfilePage() {
+export default function OrganisationProfilePage() {
   const { organisationId } = useParams();
 
-  const [school, setSchool] =
+  const [organisation, setOrganisation] =
     useState(null);
 
   const [staff, setStaff] =
@@ -152,16 +164,16 @@ export default function SchoolProfilePage() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadSchool() {
+    async function loadOrganisation() {
       try {
         setIsLoading(true);
         setLoadError("");
 
           const [
-            schoolData,
+            organisationData,
             staffData,
         ] = await Promise.all([
-          fetchAdminSchoolById(
+          fetchAdminOrganisationById(
             organisationId,
           ),
           fetchOrganisationStaff(
@@ -171,18 +183,18 @@ export default function SchoolProfilePage() {
 
         if (!isMounted) return;
 
-        setSchool(schoolData);
+        setOrganisation(organisationData);
         setStaff(staffData);
 
       } catch (error) {
         console.error(
-          "Unable to load school profile:",
+          "Unable to load organisation profile:",
           error,
         );
 
         if (isMounted) {
           setLoadError(
-            "The school profile could not be loaded.",
+            "The organisation profile could not be loaded.",
           );
         }
       } finally {
@@ -192,7 +204,7 @@ export default function SchoolProfilePage() {
       }
     }
 
-    loadSchool();
+    loadOrganisation();
 
     return () => {
       isMounted = false;
@@ -473,7 +485,7 @@ export default function SchoolProfilePage() {
       <AdminLayout>
         <section className="py-16 text-center">
           <p className="font-bold text-slate-600">
-            Loading school profile...
+            Loading organisation profile...
           </p>
         </section>
       </AdminLayout>
@@ -485,7 +497,7 @@ export default function SchoolProfilePage() {
       <AdminLayout>
         <section className="py-16 text-center">
           <h1 className="text-2xl font-black text-red-700">
-            Unable to load school
+            Unable to load organisation
           </h1>
 
           <p className="mt-3 text-red-600">
@@ -493,39 +505,39 @@ export default function SchoolProfilePage() {
           </p>
 
           <Link
-            to="/admin/schools"
+            to="/admin/organisations"
             className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
           >
             <ArrowLeft size={18} />
-            Return to schools
+            Return to organisations
           </Link>
         </section>
       </AdminLayout>
     );
   }
 
-  if (!school) {
+  if (!organisation) {
     return (
       <AdminLayout>
         <section className="py-16 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-400">
-            <School size={30} />
+            <Building2 size={30} />
           </div>
 
           <h1 className="mt-5 text-2xl font-black text-slate-950">
-            School not found
+            Organisation not found
           </h1>
 
           <p className="mt-2 text-slate-500">
-            This school organisation does not exist.
+            This organisation does not exist.
           </p>
 
           <Link
-            to="/admin/schools"
+            to="/admin/organisations"
             className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-yellow-500 hover:text-slate-950"
           >
             <ArrowLeft size={18} />
-            Return to schools
+            Return to organisations
           </Link>
         </section>
       </AdminLayout>
@@ -536,21 +548,21 @@ export default function SchoolProfilePage() {
     <AdminLayout>
       <section className="pb-12">
         <Link
-          to="/admin/schools"
+          to="/admin/organisations"
           className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-slate-950"
         >
           <ArrowLeft size={18} />
-          Back to schools
+          Back to organisations
         </Link>
 
         <div className="mt-7 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-yellow-600">
-              School Profile
+              Organisation Profile
             </p>
 
             <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-              {school.name}
+              {organisation.name}
             </h1>
 
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
@@ -560,7 +572,7 @@ export default function SchoolProfilePage() {
           </div>
 
           <div className="inline-flex w-fit items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">
-            {formatStatus(school.status)}
+            {formatStatus(organisation.status)}
           </div>
         </div>
 
@@ -571,7 +583,7 @@ export default function SchoolProfilePage() {
             </div>
 
             <p className="mt-5 text-3xl font-black tracking-tight text-slate-950">
-              {school.learners.length}
+              {organisation.learners.length}
             </p>
 
             <p className="mt-1 text-sm font-bold text-slate-700">
@@ -600,16 +612,17 @@ export default function SchoolProfilePage() {
 
           <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700">
-              <School size={23} />
+              <BriefcaseBusiness size={23} />
             </div>
 
             <p className="mt-5 text-lg font-black tracking-tight text-slate-950">
-              {school.school_catalogue_id ||
-                "Not linked"}
+              {formatOrganisationType(
+                organisation.organisation_type,
+              )}
             </p>
 
             <p className="mt-1 text-sm font-bold text-slate-700">
-              School catalogue
+              Organisation type
             </p>
           </article>
 
@@ -619,7 +632,7 @@ export default function SchoolProfilePage() {
             </div>
 
             <p className="mt-5 text-lg font-black tracking-tight text-slate-950">
-              {formatDate(school.created_at)}
+              {formatDate(organisation.created_at)}
             </p>
 
             <p className="mt-1 text-sm font-bold text-slate-700">
@@ -1313,7 +1326,7 @@ export default function SchoolProfilePage() {
             </p>
           </div>
 
-          {school.learners.length === 0 ? (
+          {organisation.learners.length === 0 ? (
             <div className="mt-5 rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                 <UserRound size={26} />
@@ -1324,13 +1337,13 @@ export default function SchoolProfilePage() {
               </h3>
 
               <p className="mt-2 text-sm text-slate-500">
-                This school currently has no active
-                organisation enrolments.
+                This organisation currently has no active
+                learner enrolments.
               </p>
             </div>
           ) : (
             <div className="mt-5 grid gap-4">
-              {school.learners.map(
+              {organisation.learners.map(
                 ({
                   enrolmentId,
                   joinedAt,
