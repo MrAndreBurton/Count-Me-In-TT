@@ -169,6 +169,80 @@ function getProfileName(profile) {
   return `${firstName} ${lastInitial}.`.trim();
 }
 
+const GRID_CARD_NAMES = {
+  "5x5": "Starter",
+  "5x12": "Builder",
+  "12x12": "Classic",
+  "15x15": "Extended",
+};
+
+function GridPreview({ rows, cols }) {
+  return (
+    <svg
+      className="cmi-grid-choice-preview"
+      viewBox={`0 0 ${cols * 7} ${rows * 7}`}
+      aria-hidden="true"
+      focusable="false"
+    >
+      {Array.from({ length: rows * cols }, (_, index) => (
+        <rect
+          key={index}
+          x={(index % cols) * 7}
+          y={Math.floor(index / cols) * 7}
+          width="5.5"
+          height="5.5"
+          rx="1"
+          fill="currentColor"
+        />
+      ))}
+    </svg>
+  );
+}
+
+function GridChoiceCard({ gridPreset, selected, locked, onSelect }) {
+  const name = GRID_CARD_NAMES[gridPreset.id] || "Multiplication";
+  const tableDescription = gridPreset.rows === gridPreset.cols
+    ? `Tables 1–${gridPreset.rows}`
+    : `Tables 1–${gridPreset.rows}, up to ×${gridPreset.cols}`;
+
+  const contents = (
+    <>
+      <span className="cmi-grid-choice-top">
+        <span className="cmi-grid-choice-name">{name}</span>
+        <span className="cmi-grid-choice-check" aria-hidden="true">
+          {selected ? "✓" : ""}
+        </span>
+      </span>
+      <span className="cmi-grid-choice-visual">
+        <span className="cmi-grid-choice-size">
+          {gridPreset.rows} <span>×</span> {gridPreset.cols}
+        </span>
+        <GridPreview rows={gridPreset.rows} cols={gridPreset.cols} />
+      </span>
+      <span className="cmi-grid-choice-description">{tableDescription}</span>
+      <span className="cmi-grid-choice-count">
+        {gridPreset.rows * gridPreset.cols} answers
+      </span>
+    </>
+  );
+
+  if (locked) {
+    return <div className="cmi-grid-choice is-selected">{contents}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      className={`cmi-grid-choice${selected ? " is-selected" : ""}`}
+      aria-pressed={selected}
+      aria-label={`${name}, ${gridPreset.rows} by ${gridPreset.cols}, ${tableDescription}, ${gridPreset.rows * gridPreset.cols} answers`}
+      onClick={onSelect}
+    >
+      {contents}
+    </button>
+  );
+}
+
 export default function CoreGame({
   initialPreset = "12x12",
   lockPreset = false,
@@ -1204,6 +1278,220 @@ export default function CoreGame({
        <GameHeader />
 <div className="px-4 py-6 sm:px-5">
       <style>{`
+        .cmi-grid-picker-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          background: rgba(15, 23, 42, 0.72);
+          backdrop-filter: blur(5px);
+          box-sizing: border-box;
+        }
+        .cmi-grid-picker,
+        .cmi-grid-picker * { box-sizing: border-box; }
+        .cmi-grid-picker {
+          width: 100%;
+          max-width: 540px;
+          max-height: calc(100dvh - 40px);
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          padding: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          border-radius: 26px;
+          background: linear-gradient(155deg, #fffbd6 0%, #fff 48%);
+          color: #111827;
+          text-align: left;
+          box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
+          font-family: inherit;
+        }
+        .cmi-grid-picker-heading { margin-bottom: 18px; }
+        .cmi-grid-picker-eyebrow {
+          margin: 0 0 8px;
+          color: #1d4ed8;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 1.3px;
+        }
+        .cmi-grid-picker-heading h2 {
+          margin: 0;
+          max-width: 440px;
+          font-size: 30px;
+          line-height: 1.12;
+          font-weight: 900;
+          letter-spacing: -1px;
+        }
+        .cmi-grid-picker-heading > p:last-child {
+          margin: 10px 0 0;
+          color: #64748b;
+          font-size: 14px;
+          line-height: 1.6;
+        }
+        .cmi-grid-choices {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .cmi-grid-choices.is-fixed { grid-template-columns: minmax(0, 1fr); }
+        .cmi-grid-choice {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          padding: 12px;
+          border: 2px solid #f3d64a;
+          border-radius: 15px;
+          background: #fff8bd;
+          color: #111827;
+          text-align: left;
+          font-family: inherit;
+          cursor: pointer;
+          transition: border-color 160ms, background 160ms, box-shadow 160ms;
+        }
+        .cmi-grid-choice:hover { border-color: #2563eb; background: #fff19b; }
+        .cmi-grid-choice.is-selected {
+          border-color: #2563eb;
+          background: #2563eb;
+          color: #fff;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        .cmi-grid-choices.is-fixed .cmi-grid-choice { cursor: default; }
+        .cmi-grid-choice-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        .cmi-grid-choice-name { color: #1e40af; font-size: 12px; font-weight: 800; }
+        .is-selected .cmi-grid-choice-name { color: #fff38a; }
+        .cmi-grid-choice-check {
+          display: flex;
+          width: 18px;
+          height: 18px;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border: 1.5px solid #d5b92f;
+          border-radius: 50%;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 900;
+        }
+        .is-selected .cmi-grid-choice-check { border-color: #fce500; background: #fce500; color: #1e40af; }
+        .cmi-grid-choice-visual {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin: 7px 0 6px;
+          min-height: 34px;
+        }
+        .cmi-grid-choice-size { white-space: nowrap; font-size: 25px; font-weight: 900; letter-spacing: -1px; }
+        .cmi-grid-choice-size > span { color: #2563eb; font-size: 20px; }
+        .is-selected .cmi-grid-choice-size > span { color: #fce500; }
+        .cmi-grid-choice-preview { width: 55px; height: 34px; flex-shrink: 0; color: #6690db; }
+        .is-selected .cmi-grid-choice-preview { color: #ffec4d; }
+        .cmi-grid-choice-description { min-height: 0; font-size: 12px; line-height: 1.3; color: #334155; }
+        .is-selected .cmi-grid-choice-description { color: #eff6ff; }
+        .cmi-grid-choice-count {
+          align-self: flex-start;
+          margin-top: 6px;
+          padding: 3px 7px;
+          border-radius: 7px;
+          background: #fce500;
+          color: #1e3a8a;
+          font-size: 11px;
+          font-weight: 800;
+        }
+        .cmi-grid-picker-start {
+          display: flex;
+          width: 100%;
+          min-height: 52px;
+          align-items: center;
+          justify-content: center;
+          gap: 14px;
+          margin-top: 18px;
+          padding: 13px 15px;
+          border: 0;
+          border-radius: 13px;
+          background: #2563eb;
+          color: #fff;
+          font-family: inherit;
+          font-size: 15px;
+          font-weight: 800;
+          cursor: pointer;
+          box-shadow: 0 6px 16px rgba(37, 99, 235, 0.18);
+        }
+        .cmi-grid-picker-start:hover { background: #1d4ed8; }
+        .cmi-grid-choice:focus-visible,
+        .cmi-grid-picker-start:focus-visible,
+        .cmi-grid-picker-help summary:focus-visible,
+        .cmi-grid-picker-practice a:focus-visible {
+          outline: 3px solid #1d4ed8;
+          outline-offset: 3px;
+        }
+        .cmi-grid-picker-timer { margin: 10px 0 18px; text-align: center; color: #64748b; font-size: 11px; line-height: 1.5; }
+        .cmi-grid-picker-help { border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+        .cmi-grid-picker-help summary {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 13px 0;
+          color: #334155;
+          font-size: 12px;
+          font-weight: 800;
+          list-style: none;
+          cursor: pointer;
+        }
+        .cmi-grid-picker-help summary::-webkit-details-marker { display: none; }
+        .cmi-grid-picker-help summary > span { font-size: 20px; line-height: 1; transition: transform 160ms; }
+        .cmi-grid-picker-help[open] summary > span { transform: rotate(45deg); }
+        .cmi-grid-picker-help-content { padding: 0 0 14px; color: #475569; font-size: 12px; line-height: 1.6; }
+        .cmi-grid-picker-help-content p { margin: 0 0 8px; }
+        .cmi-grid-picker-help-content ul { margin: 8px 0 0; padding-left: 18px; list-style: disc; }
+        .cmi-grid-picker-help-content li + li { margin-top: 5px; }
+        .cmi-grid-picker-practice { padding-top: 14px; text-align: center; }
+        .cmi-grid-picker-practice p { margin: 0 0 8px; color: #64748b; font-size: 12px; }
+        .cmi-grid-picker-practice a {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          min-height: 44px;
+          padding: 10px 14px;
+          border: 1px solid #e1c600;
+          border-radius: 10px;
+          background: #fce500;
+          color: #1e3a8a;
+          font-size: 12px;
+          font-weight: 800;
+          text-decoration: none;
+        }
+        .cmi-grid-picker-practice a:hover { background: #ffef57; border-color: #2563eb; }
+        @media (max-width: 420px) {
+          .cmi-grid-picker-overlay { padding: 12px; }
+          .cmi-grid-picker { padding: 20px; max-height: calc(100dvh - 24px); border-radius: 22px; }
+          .cmi-grid-picker-heading { margin-bottom: 16px; }
+          .cmi-grid-picker-heading h2 { font-size: 27px; }
+          .cmi-grid-choices { gap: 10px; }
+          .cmi-grid-choice { padding: 10px; }
+          .cmi-grid-choice-size { font-size: 23px; }
+          .cmi-grid-choice-size > span { font-size: 18px; }
+          .cmi-grid-choice-preview { width: 43px; height: 30px; }
+          .cmi-grid-choice-visual { gap: 4px; min-height: 30px; margin: 6px 0; }
+        }
+        @media (max-width: 350px) {
+          .cmi-grid-picker { padding: 16px; }
+          .cmi-grid-choice { padding: 9px; }
+          .cmi-grid-choice-preview { width: 34px; }
+          .cmi-grid-choice-size { font-size: 21px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .cmi-grid-choice,
+          .cmi-grid-picker-help summary > span { transition: none; }
+        }
+
         .multiplication-grid-board {
           box-sizing: border-box;
           width: 100%;
@@ -1403,79 +1691,72 @@ export default function CoreGame({
       `}</style>
 
       {showIntro ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-          <div className="max-w-md space-y-4 rounded bg-white p-6 text-center text-black shadow">
-            <h2 className="text-xl font-bold">
-              👋 Welcome to Count Me In TT!
-            </h2>
+        <div className="cmi-grid-picker-overlay">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cmi-grid-picker-title"
+            aria-describedby="cmi-grid-picker-description"
+            className="cmi-grid-picker"
+          >
+            <header className="cmi-grid-picker-heading">
+              <p className="cmi-grid-picker-eyebrow">COUNT ME IN TT · MULTIPLICATION</p>
+              <h2 id="cmi-grid-picker-title">Your multiplication challenge</h2>
+              <p id="cmi-grid-picker-description">
+                {lockPreset
+                  ? "Complete every answer and beat your own time."
+                  : "Choose your grid. Complete every answer and beat your own time."}
+              </p>
+            </header>
 
-            <p>
-              Fill in the times tables as fast as
-              you can!
-            </p>
-
-            {!lockPreset && (
-              <div className="rounded border border-yellow-200 bg-yellow-50 p-3 text-center text-sm">
-                <label className="mb-1 block text-center font-semibold">
-                  Pick a Grid Size
-                </label>
-
-                <select
-                  className="mx-auto w-full rounded border px-3 py-2"
-                  value={gridPresetId}
-                  onChange={(event) =>
-                    setGridPresetId(
-                      event.target.value
-                    )
-                  }
-                >
-                  {GRID_PRESETS.map(
-                    (gridPreset) => (
-                      <option
-                        key={gridPreset.id}
-                        value={gridPreset.id}
-                      >
-                        {gridPreset.label}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
-            )}
+            <div
+              className={`cmi-grid-choices${lockPreset ? " is-fixed" : ""}`}
+              role="group"
+              aria-label={lockPreset ? "Your challenge grid" : "Choose a challenge grid"}
+            >
+              {(lockPreset ? [preset] : GRID_PRESETS).map((gridPreset) => (
+                <GridChoiceCard
+                  key={gridPreset.id}
+                  gridPreset={gridPreset}
+                  selected={gridPreset.id === preset.id}
+                  locked={lockPreset}
+                  onSelect={() => setGridPresetId(gridPreset.id)}
+                />
+              ))}
+            </div>
 
             <button
               type="button"
               onClick={() => setShowIntro(false)}
-              className="mx-auto block rounded bg-blue-600 px-4 py-2 text-white"
+              className="cmi-grid-picker-start"
             >
-              Start Game
+              Start {rows} × {cols} Challenge
+              <span aria-hidden="true">→</span>
             </button>
+            <p className="cmi-grid-picker-timer">
+              Your timer starts when you enter your first answer.
+            </p>
 
-            <div className="rounded border border-blue-200 bg-blue-50 p-4 text-left text-sm">
-              <h3 className="mb-2 font-semibold text-blue-700">
-                🔑 Keyboard Tips
-              </h3>
+            <details className="cmi-grid-picker-help">
+              <summary>How to play <span aria-hidden="true">+</span></summary>
+              <div className="cmi-grid-picker-help-content">
+                <p>Fill every cell with the product of its row and column numbers.</p>
+                <p>On a phone or tablet, tap a cell and use the number keyboard.</p>
+                <ul>
+                  <li><strong>Enter</strong> — Move to the next cell.</li>
+                  <li><strong>Arrow keys</strong> — Move around the grid.</li>
+                  <li><strong>Backspace</strong> — Clear the current cell.</li>
+                </ul>
+              </div>
+            </details>
 
-              <ul className="list-inside list-disc space-y-1">
-                <li>
-                  <strong>Enter</strong> – Move
-                  to next cell
-                </li>
-                <li>
-                  <strong>← ↑ → ↓</strong> –
-                  Move around the grid
-                </li>
-                <li>
-                  <strong>Backspace</strong> –
-                  Clear current cell
-                </li>
-                <li>
-                  Timer starts with your first
-                  input.
-                </li>
-              </ul>
+            <div className="cmi-grid-picker-practice">
+              <p>Want to practise one table?</p>
+              <Link to="/games/multiplication/practice">
+                Try Times Table Practice <span aria-hidden="true">→</span>
+              </Link>
             </div>
-          </div>
+          </section>
         </div>
       ) : (
        <div className="space-y-6">
@@ -1620,7 +1901,7 @@ export default function CoreGame({
 
                       {row.map(
                         (cell, columnIndex) => {
-                          const cellKey = `${rowIndex}-${columnIndex}`;
+                          const cellKey = `{columnIndex}`;
                           const celebrated =
                             Boolean(
                               celebratedMap[
@@ -1634,7 +1915,7 @@ export default function CoreGame({
 
                           return (
                             <div
-                              key={`cell-wrap-${rowIndex}-${columnIndex}`}
+                              key={`cell-wrap-{columnIndex}`}
                               className="multiplication-cell min-w-0"
                             >
                               <input
@@ -2297,6 +2578,3 @@ export default function CoreGame({
 </div>
   );
 }
-
-
-
