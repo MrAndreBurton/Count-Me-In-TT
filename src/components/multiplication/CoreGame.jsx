@@ -1560,6 +1560,11 @@ export default function CoreGame({
           display: none;
         }
 
+        .multiplication-cell:not(:focus-within) .multiplication-desktop-caret,
+        .multiplication-cell:not(:focus-within) .multiplication-mobile-prompt {
+          display: none;
+        }
+
         @media (min-width: 641px) {
           .multiplication-grid-board {
             gap: 4px;
@@ -1901,7 +1906,7 @@ export default function CoreGame({
 
                       {row.map(
                         (cell, columnIndex) => {
-                          const cellKey = `{columnIndex}`;
+                          const cellKey = `${rowIndex}-${columnIndex}`;
                           const celebrated =
                             Boolean(
                               celebratedMap[
@@ -1915,7 +1920,7 @@ export default function CoreGame({
 
                           return (
                             <div
-                              key={`cell-wrap-{columnIndex}`}
+                              key={`cell-wrap-${rowIndex}-${columnIndex}`}
                               className="multiplication-cell min-w-0"
                             >
                               <input
