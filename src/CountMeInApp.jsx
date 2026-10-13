@@ -82,7 +82,7 @@ import MembershipRequestsPage from "./pages/admin/MembershipRequestsPage";
 import MembershipRequestProfilePage from "./pages/admin/MembershipRequestProfilePage";
 
 import OrganisationsPage from "./pages/admin/OrganisationsPage";
-import SchoolProfilePage from "./pages/admin/SchoolProfilePage";
+import OrganisationProfilePage from "./pages/admin/OrganisationProfilePage";
 
 import MathLanguageLevel2Home from "./pages/MathLanguageLevel2Home";
 import MathLanguageLevel2Dictionary from "./pages/MathLanguageLevel2Dictionary";
@@ -343,7 +343,7 @@ export default function CountMeInApp() {
            path="/admin/organisations/:organisationId"
            element={
              <AdminRoute>
-               <SchoolProfilePage />
+               <OrganisationProfilePage />
              </AdminRoute>
            }
          />
@@ -364,7 +364,7 @@ export default function CountMeInApp() {
            path="/admin/schools/:organisationId"
            element={
              <AdminRoute>
-               <SchoolProfilePage />
+               <OrganisationProfilePage />
              </AdminRoute>
            }
          />
