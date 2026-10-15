@@ -1,4 +1,6 @@
-export const ENABLE_TOP_PLAYERS = true;
+// Legacy published sheets must stay disconnected during the privacy migration.
+export const ENABLE_TOP_PLAYERS = false;
+export const ENABLE_PUBLIC_LEADERBOARD_SUBMISSIONS = false;
 
 export const GRID_PRESETS = [
   {
@@ -56,53 +58,9 @@ export const SECONDARY_CLASS_OPTIONS = [
   "Upper Six (Grade 13)",
 ];
 
-export const WEBHOOKS = {
-  "5x5":
-    "https://script.google.com/macros/s/AKfycbxqc76ZwIAnrmZ8bwt7W2Leu8NtvSmbkurgzNkRN3lHhs0SeIeEdCnU58h63l0lWDMaAQ/exec",
-
-  "5x12":
-    "https://script.google.com/macros/s/AKfycbw5_-TS-qQcaAvzCl152XKngYKxVlrD5J7ZE7SeMjn12XY0vXhvqH75Kzp8eJvRfv0E/exec",
-
-  "12x12":
-    "https://script.google.com/macros/s/AKfycbyLBvT9IGpdm81NK9lR1D0LDfsaeWkHsiGIUhDMStZV8NpFPjG55q0GVgRfbX6qPo9K/exec",
-
-  "15x15":
-    "https://script.google.com/macros/s/AKfycbyGdG4O7BRgP9yGCuUFvD9dS1ZWEDvZnYhbNMhaEGcsSKH8QsyOgeOZzg7cdKnli0V9Sg/exec",
-};
-
-export const SHEET_URLS = {
-  "5x5": {
-    SmallTop:
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXvvpwFIx6TuA-dB26pjW6K0w8oRhg0IDgMO-69ag19hMATBAzC2Wf-I6m4Q5fUjLgCFNnzuT_cQUn/pub?gid=0&single=true&output=csv",
-  },
-
-  "5x12": {
-    SmallTop:
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXvvpwFIx6TuA-dB26pjW6K0w8oRhg0IDgMO-69ag19hMATBAzC2Wf-I6m4Q5fUjLgCFNnzuT_cQUn/pub?gid=1665132778&single=true&output=csv",
-  },
-
-  "12x12": {
-    Primary:
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIm6uIsWGD3h7D9T27ReAL9IrFhNcaYmNsez4xLp5N7InbXL9OjbTCHD93e4VKsF0uOPx20c3WJC-b/pub?gid=0&single=true&output=csv",
-
-    Secondary:
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIm6uIsWGD3h7D9T27ReAL9IrFhNcaYmNsez4xLp5N7InbXL9OjbTCHD93e4VKsF0uOPx20c3WJC-b/pub?gid=1127334724&single=true&output=csv",
-
-    NoSchool:
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIm6uIsWGD3h7D9T27ReAL9IrFhNcaYmNsez4xLp5N7InbXL9OjbTCHD93e4VKsF0uOPx20c3WJC-b/pub?gid=1462166071&single=true&output=csv",
-  },
-
-  "15x15": {
-    Primary:
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMNl9g61jMzOv_K8SH8ITlvGCOL8WNm3ED3vp6UoMoJArERRqthGkQNzN4bIBMs7t_uuYedtEHzXc0/pub?gid=0&single=true&output=csv",
-
-    Secondary:
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMNl9g61jMzOv_K8SH8ITlvGCOL8WNm3ED3vp6UoMoJArERRqthGkQNzN4bIBMs7t_uuYedtEHzXc0/pub?gid=1175275328&single=true&output=csv",
-
-    NoSchool:
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQMNl9g61jMzOv_K8SH8ITlvGCOL8WNm3ED3vp6UoMoJArERRqthGkQNzN4bIBMs7t_uuYedtEHzXc0/pub?gid=800118807&single=true&output=csv",
-  },
-};
+// Historical records remain in their source sheets. Do not republish them here.
+export const WEBHOOKS = {};
+export const SHEET_URLS = {};
 
 export function isSmallGrid(gridId) {
   return gridId === "5x5" || gridId === "5x12";
