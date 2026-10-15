@@ -5,6 +5,7 @@ import { createGridEvidence, describeGridPersonalBest, buildGridTableGuidance } 
 import { createGridAttemptRecorder } from "../../services/multiplicationGridAttempts";
 import {
   ENABLE_TOP_PLAYERS,
+  ENABLE_PUBLIC_LEADERBOARD_SUBMISSIONS,
   GRID_PRESETS,
   WEBHOOKS,
   formatTime,
@@ -1073,7 +1074,7 @@ export default function CoreGame({
             ),
           },
           verificationStatus: "verified",
-          publicEligible: true,
+          publicEligible: false,
           submissionType: "practice",
         })
         : { guest: true };
@@ -1101,7 +1102,7 @@ export default function CoreGame({
   if (isMissingSession) {
     setProfileSaveStatus("guest");
     setProfileSaveMessage(
-      "You played as a guest. Submit your details below to appear on the public leaderboard."
+      "You played as a guest. This result was not saved to a learning profile."
     );
   } else {
     console.error(
@@ -1262,6 +1263,8 @@ export default function CoreGame({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (!ENABLE_PUBLIC_LEADERBOARD_SUBMISSIONS) return;
 
     if (isSubmitting) return;
 
@@ -2374,7 +2377,12 @@ export default function CoreGame({
               />
             )}
 
-            <details data-leaderboard-details className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+            {!ENABLE_PUBLIC_LEADERBOARD_SUBMISSIONS && (
+              <p className="rounded-xl bg-blue-50 p-4 text-sm text-blue-900">
+                Public leaderboard submissions are temporarily paused while we update privacy and access.
+              </p>
+            )}
+            {ENABLE_PUBLIC_LEADERBOARD_SUBMISSIONS && <details data-leaderboard-details className="rounded-xl border border-gray-200 bg-gray-50 p-3">
               <summary className="cursor-pointer text-sm font-bold text-blue-800">Public leaderboard details</summary>
               <div className="mt-3 space-y-3">
                 <p className="text-xs text-gray-600">
@@ -2646,21 +2654,23 @@ export default function CoreGame({
             )}
 
               </div>
-            </details>
+            </details>}
             </div>
 
             <div className="flex shrink-0 justify-between gap-2 border-t border-gray-200 bg-white p-4">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={!ENABLE_PUBLIC_LEADERBOARD_SUBMISSIONS || isSubmitting}
                 className={[
                   "flex-1 rounded px-4 py-2 text-white",
-                  isSubmitting
+                  (!ENABLE_PUBLIC_LEADERBOARD_SUBMISSIONS || isSubmitting)
                     ? "cursor-not-allowed bg-green-400"
                     : "bg-green-600 hover:bg-green-700",
                 ].join(" ")}
               >
-                {isSubmitting
+                {!ENABLE_PUBLIC_LEADERBOARD_SUBMISSIONS
+                  ? "Public submissions paused"
+                  : isSubmitting
                   ? "Submitting..."
                   : loggedInPlayer
                     ? "✅ Submit My Time"
