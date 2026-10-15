@@ -241,6 +241,8 @@ export async function saveMultiplicationResult({
   durationMs,
   correctAnswers,
   incorrectAnswers = 0,
+  gridEvidence = null,
+  expectedIdentity = null,
   antiCheatData = {},
   verificationStatus = "verified",
   publicEligible = true,
@@ -289,6 +291,11 @@ export async function saveMultiplicationResult({
   );
 
   const { user, profile } = playableProfile;
+  if (expectedIdentity && (
+    expectedIdentity.userId !== user.id || expectedIdentity.profileId !== profile.id
+  )) {
+    throw new Error("Your account changed during this round. This result was not assigned to another profile.");
+  }
 
   const previousBest = await getPreviousBestResult({
     studentId: profile.id,
@@ -334,6 +341,12 @@ export async function saveMultiplicationResult({
       savedFrom: "multiplication-game",
     },
 
+    game_metadata: gridEvidence ? {
+      measurementVersion: 1,
+      accuracyMeaning: "correct_submissions_over_all_submissions",
+      completionAccuracyPercent: 100,
+      gridEvidence,
+    } : {},
     rejection_reason: null,
     is_personal_best: isPersonalBest,
     played_at: playedAt,
@@ -494,3 +507,24 @@ export async function saveScoreBasedResult({
 
 export { MULTIPLICATION_MODES };
 
+
+
+/** Recent comparable grid evidence for the current account's playable profile. */
+export async function getRecentGridEvidence({ gameMode, expectedIdentity, excludeAttemptId }) {
+  const playable = await getPlayableProfile();
+  if (!playable || playable.user.id !== expectedIdentity?.userId ||
+      playable.profile.id !== expectedIdentity?.profileId) return [];
+  const { data, error } = await supabase.from("game_results")
+    .select("id, game_metadata")
+    .eq("student_id", playable.profile.id)
+    .eq("account_id", playable.user.id)
+    .eq("game_type", "multiplication")
+    .eq("game_mode", normaliseGameMode(gameMode))
+    .eq("verification_status", "verified")
+    .order("played_at", { ascending: false })
+    .limit(20);
+  if (error) throw error;
+  return (data || []).map(row => row.game_metadata?.gridEvidence)
+    .filter(item => item?.timingVersion === 1 && Array.isArray(item.tables) && item.attemptId !== excludeAttemptId)
+    .slice(0, 2);
+}
