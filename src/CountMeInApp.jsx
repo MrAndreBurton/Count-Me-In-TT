@@ -65,6 +65,7 @@ import AdminRoute from "./components/admin/AdminRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import WorkspaceSelector from "./pages/WorkspaceSelector";
 import OrganisationWorkspace from "./pages/OrganisationWorkspace";
+import LeaderboardsControlCentre from "./pages/LeaderboardsControlCentre";
 
 import StudentsPage from "./pages/admin/StudentsPage";
 import StudentProfilePage from "./pages/admin/StudentProfilePage";
@@ -223,6 +224,15 @@ export default function CountMeInApp() {
         <Route
           path="/workspace"
           element={<WorkspaceSelector />}
+        />
+
+        <Route
+          path="/admin/leaderboards"
+          element={<AdminRoute><LeaderboardsControlCentre /></AdminRoute>}
+        />
+        <Route
+          path="/organisation/:organisationId/leaderboards"
+          element={<LeaderboardsControlCentre />}
         />
 
         <Route
