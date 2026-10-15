@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import GameHeader from "../components/layout/GameHeader";
 import {
   FREE_PRACTICE_TABLES,
@@ -26,11 +26,26 @@ import {
 
 const CORRECT_ADVANCE_DELAY_MS = 180;
 
+function readPracticeSelection(search) {
+  const query = new URLSearchParams(search);
+  const table = Number(query.get("table"));
+  const range = Number(query.get("range"));
+  const requestedMode = query.get("mode");
+  return {
+    table: PRACTICE_TABLES.includes(table) ? table : 2,
+    mode: Object.prototype.hasOwnProperty.call(PRACTICE_MODES, requestedMode) ? requestedMode : "build",
+    range: PRACTICE_RANGES.includes(range) ? range : 12,
+  };
+}
+
 export default function MultiplicationPractice() {
+  const location = useLocation();
+  const [initialSelection] = useState(() => readPracticeSelection(location.search));
+  const returnToPractice = "/login?returnTo=" + encodeURIComponent("/games/multiplication/practice" + location.search);
   const [screen, setScreen] = useState("setup");
-  const [tableNumber, setTableNumber] = useState(2);
-  const [mode, setMode] = useState("build");
-  const [rangeMax, setRangeMax] = useState(12);
+  const [tableNumber, setTableNumber] = useState(initialSelection.table);
+  const [mode, setMode] = useState(initialSelection.mode);
+  const [rangeMax, setRangeMax] = useState(initialSelection.range);
   const [facts, setFacts] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -155,6 +170,7 @@ export default function MultiplicationPractice() {
       access.status === "ready" &&
       !canUseTable(tableNumber)
     ) {
+      setLockedTable(tableNumber);
       setTableNumber(2);
     }
   }, [access.status, canUseTable, tableNumber]);
@@ -633,7 +649,7 @@ export default function MultiplicationPractice() {
                       Free tables are available, but guest
                       rounds are never saved.{" "}
                       <Link
-                        to="/login?returnTo=%2Fgames%2Fmultiplication%2Fpractice"
+                        to={returnToPractice}
                         className="font-black text-blue-700 underline"
                       >
                         Sign in to save results.
@@ -1065,7 +1081,7 @@ export default function MultiplicationPractice() {
 
                     <p className="mt-1 text-sm font-semibold text-gray-600">
                       <Link
-                        to="/login?returnTo=%2Fgames%2Fmultiplication%2Fpractice"
+                        to={returnToPractice}
                         className="font-black text-blue-700 underline"
                       >
                         Sign in
@@ -1154,7 +1170,7 @@ export default function MultiplicationPractice() {
                 to={
                   access.authenticated
                     ? "/membership/request"
-                    : "/login?returnTo=%2Fgames%2Fmultiplication%2Fpractice"
+                    : returnToPractice
                 }
                 className="w-full rounded-xl bg-violet-600 px-5 py-3 font-black text-white shadow transition hover:bg-violet-700"
               >
@@ -1190,5 +1206,6 @@ export default function MultiplicationPractice() {
     </div>
   );
 }
+
 
 

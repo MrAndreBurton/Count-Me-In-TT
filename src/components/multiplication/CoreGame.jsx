@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import GameHeader from "../layout/GameHeader.jsx";
+import { createGridEvidence, describeGridPersonalBest, buildGridTableGuidance } from "./gridEvidence";
+import { createGridAttemptRecorder } from "../../services/multiplicationGridAttempts";
 import {
   ENABLE_TOP_PLAYERS,
   GRID_PRESETS,
@@ -16,6 +18,7 @@ import {
 import {
   getPlayableProfile,
   saveMultiplicationResult,
+  getRecentGridEvidence,
 } from "../../lib/gameResults";
 
 import {
@@ -243,6 +246,82 @@ function GridChoiceCard({ gridPreset, selected, locked, onSelect }) {
   );
 }
 
+function focusedSeconds(milliseconds) {
+  if (milliseconds === null || milliseconds === undefined) return "—";
+  return milliseconds > 0 && milliseconds < 10 ? "<0.01" : (milliseconds / 1000).toFixed(2);
+}
+
+function GridPracticeNextStep({ guidance, rangeMax, onReplay }) {
+  const target = guidance.recommended;
+  const supported = target && target.tableNumber <= 12;
+  const query = target ? new URLSearchParams({
+    table: String(target.tableNumber),
+    mode: guidance.practiceMode,
+    range: String(rangeMax === 15 ? 15 : 12),
+  }).toString() : "mode=mix";
+  const modeLabel = guidance.practiceMode === "build" ? "Build the Table" : "Mix It Up";
+
+  return (
+    <section aria-label="Next practice step" className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-left">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold text-blue-700">Practise next</p>
+          <h3 className="mt-1 text-lg font-black text-blue-950">
+            {target ? "Times " + target.tableNumber : "Try shuffled facts"}
+          </h3>
+        </div>
+        <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-blue-800">
+          {guidance.rounds === 1 ? "This round" : guidance.rounds + " rounds"}
+        </span>
+      </div>
+      <p className="mt-1 text-sm text-gray-700">
+        {target ? guidance.reason === "errors"
+          ? target.incorrectAttempts + " error" + (target.incorrectAttempts === 1 ? "" : "s") + " · Try these facts in order."
+          : "All correct · Build your speed with shuffled facts."
+          : "Choose a table and give Mix It Up a go."}
+      </p>
+      {guidance.fastest && (
+        <p className="mt-2 text-xs font-semibold text-blue-900">
+          Quickest accurate: ×{guidance.fastest.tableNumber} · {focusedSeconds(guidance.fastest.averageFactMs)} s/fact
+        </p>
+      )}
+      {target && !supported ? (
+        <>
+          <p className="mt-2 text-xs text-gray-600">Practise the ×{target.tableNumber} row again in this grid.</p>
+          <button type="button" onClick={onReplay} className="mt-2 w-full rounded-xl bg-blue-600 px-3 py-2 text-sm font-black text-white hover:bg-blue-700">Practise this grid again</button>
+        </>
+      ) : (
+        <Link to={"/games/multiplication/practice?" + query} className="mt-2 block rounded-xl bg-blue-600 px-3 py-2 text-center text-sm font-black text-white hover:bg-blue-700">
+          {target ? "Practise ×" + target.tableNumber + " · " + modeLabel : "Choose a table"}
+        </Link>
+      )}
+      <details className="mt-3 border-t border-blue-200 pt-3">
+        <summary className="cursor-pointer text-sm font-bold text-blue-800">See your table breakdown</summary>
+        <table className="mt-3 w-full table-fixed text-center text-xs">
+          <caption className="mb-2 text-left text-xs text-gray-600">Same grid · focused time in seconds · {guidance.provisional ? "early suggestion" : "recent rounds"}</caption>
+          <thead><tr className="text-gray-600">
+            <th scope="col" className="px-1 py-2">Table</th>
+            <th scope="col" className="px-1 py-2">First try</th>
+            <th scope="col" className="px-1 py-2">Errors</th>
+            <th scope="col" className="px-1 py-2">Table s</th>
+            <th scope="col" className="px-1 py-2">Fact s</th>
+          </tr></thead>
+          <tbody>{guidance.tables.map(table => (
+            <tr key={table.tableNumber} className="border-t border-blue-100">
+              <th scope="row" className="px-1 py-2 font-black">×{table.tableNumber}</th>
+              <td className="px-1 py-2">{table.firstEntryAccuracy === null ? "—" : table.firstEntryAccuracy + "%"}</td>
+              <td className="px-1 py-2">{table.incorrectAttempts}</td>
+              <td className="break-all px-1 py-2">{table.timingAvailable ? focusedSeconds(table.focusedTimeMs / table.rounds) : "—"}</td>
+              <td className="break-all px-1 py-2">{focusedSeconds(table.averageFactMs)}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+        <p className="mt-2 text-xs leading-5 text-gray-600">A dash means there is not enough recorded focus time for a fair pace comparison. Suggestions become more useful across repeated rounds.</p>
+      </details>
+    </section>
+  );
+}
+
 export default function CoreGame({
   initialPreset = "12x12",
   lockPreset = false,
@@ -280,8 +359,11 @@ export default function CoreGame({
     generateGrid(rows, cols)
   );
 
-  const [startTime, setStartTime] = useState(null);
+  const [, setStartTime] = useState(null);
   const [completed, setCompleted] = useState(false);
+  const [roundSummary, setRoundSummary] = useState(null);
+  const [tableGuidance, setTableGuidance] = useState(null);
+  const [progressSaveError, setProgressSaveError] = useState("");
   const [elapsed, setElapsed] = useState(0);
 
   const [showForm, setShowForm] = useState(false);
@@ -292,6 +374,8 @@ export default function CoreGame({
 
   const [profileSaveMessage, setProfileSaveMessage] =
     useState("");
+
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   const [loggedInPlayer, setLoggedInPlayer] =
     useState(null);
@@ -350,6 +434,123 @@ export default function CoreGame({
   const timerStartedRef = useRef(false);
   const inputRefs = useRef([]);
   const antiRef = useRef(null);
+  const gridRef = useRef(grid);
+  const evidenceRef = useRef(createGridEvidence(rows, cols));
+  const roundRef = useRef(null);
+  const completedRef = useRef(false);
+  const checkpointTimerRef = useRef(null);
+  const activeCellRef = useRef(null);
+  gridRef.current = grid;
+
+  const checkpointRound = (status = "in_progress", checkpointTime = Date.now()) => {
+    const round = roundRef.current;
+    if (!round || round.status !== "in_progress") return;
+    const evidence = evidenceRef.current.snapshot(gridRef.current, checkpointTime);
+    const duration = checkpointTime - round.startedMs;
+    if (status !== "in_progress") round.status = status;
+    void round.recorder?.queue(evidence, duration, status);
+  };
+
+  const clearCheckpointTimer = () => {
+    if (checkpointTimerRef.current !== null) {
+      window.clearInterval(checkpointTimerRef.current);
+      checkpointTimerRef.current = null;
+    }
+  };
+
+  const beginRound = () => {
+    if (roundRef.current) return;
+    const startedMs = Date.now();
+    // Capture the playable identity at the start, never from a profile picker.
+    const identity = loggedInPlayer ? { ...loggedInPlayer } : null;
+    const round = {
+      id: window.crypto.randomUUID(), gameMode: gridPresetId,
+      startedMs, startedAt: new Date(startedMs).toISOString(),
+      identity, status: "in_progress", recorder: null,
+    };
+    round.recorder = createGridAttemptRecorder(identity, round, (error) => {
+      console.warn("Grid progress checkpoint error:", error);
+      if (roundRef.current?.id === round.id) {
+        setProgressSaveError("Progress could not be saved. Your completed result will still be saved separately.");
+      }
+    });
+    roundRef.current = round;
+    if (activeCellRef.current) {
+      evidenceRef.current.focus(activeCellRef.current.row, activeCellRef.current.col, startedMs);
+    }
+    setStartTime(startedMs);
+    timerStartedRef.current = true;
+    timerRef.current = window.setInterval(() => setElapsed(Date.now() - startedMs), 10);
+    checkpointTimerRef.current = window.setInterval(() => checkpointRound(), 15000);
+    checkpointRound();
+  };
+
+  useEffect(() => {
+    const flushProgress = () => {
+      const round = roundRef.current;
+      if (!round || round.status !== "in_progress") return;
+      void round.recorder?.queue(
+        evidenceRef.current.snapshot(gridRef.current), Date.now() - round.startedMs
+      );
+      void round.recorder?.flush();
+    };
+    const pauseFocusedTime = () => {
+      evidenceRef.current.pause(Date.now());
+      flushProgress();
+    };
+    const resumeFocusedTime = () => {
+      const active = activeCellRef.current;
+      if (!active || roundRef.current?.status !== "in_progress" || document.visibilityState === "hidden" || !document.hasFocus()) return;
+      if (document.activeElement === inputRefs.current[active.row]?.[active.col]) {
+        evidenceRef.current.focus(active.row, active.col, Date.now());
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") pauseFocusedTime();
+      else resumeFocusedTime();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", pauseFocusedTime);
+    window.addEventListener("focus", resumeFocusedTime);
+    window.addEventListener("pagehide", pauseFocusedTime);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", pauseFocusedTime);
+      window.removeEventListener("blur", pauseFocusedTime);
+      window.removeEventListener("focus", resumeFocusedTime);
+      evidenceRef.current.pause(Date.now());
+      clearCheckpointTimer();
+      const round = roundRef.current;
+      if (round?.status === "in_progress") {
+        round.status = "interrupted";
+        void round.recorder?.queue(
+          evidenceRef.current.snapshot(gridRef.current),
+          Date.now() - round.startedMs, "interrupted"
+        );
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!roundSummary?.tables) return;
+    let active = true;
+    setTableGuidance(buildGridTableGuidance(roundSummary));
+    const identity = roundRef.current?.identity;
+    if (identity) {
+      getRecentGridEvidence({
+        gameMode: roundRef.current.gameMode,
+        expectedIdentity: identity,
+        excludeAttemptId: roundSummary.attemptId,
+      }).then(previous => {
+        if (active && roundRef.current?.id === roundSummary.attemptId) {
+          setTableGuidance(buildGridTableGuidance(roundSummary, previous));
+        }
+      }).catch(error => {
+        console.warn("Earlier grid evidence unavailable; using this round only:", error);
+      });
+    }
+    return () => { active = false; };
+  }, [roundSummary]);
 
   if (
     inputRefs.current.length !== rows ||
@@ -519,6 +720,8 @@ export default function CoreGame({
         if (active) {
           setLoggedInPlayer(null);
         }
+      } finally {
+        if (active) setProfileLoaded(true);
       }
     }
 
@@ -530,7 +733,18 @@ export default function CoreGame({
   }, []);
 
   useEffect(() => {
-    setGrid(generateGrid(rows, cols));
+    checkpointRound("abandoned");
+    clearCheckpointTimer();
+    roundRef.current = null;
+    evidenceRef.current = createGridEvidence(rows, cols);
+    completedRef.current = false;
+    activeCellRef.current = null;
+    setRoundSummary(null);
+    setTableGuidance(null);
+    setProgressSaveError("");
+    const freshGrid = generateGrid(rows, cols);
+    gridRef.current = freshGrid;
+    setGrid(freshGrid);
     setFocusedCell(null);
 
     if (timerRef.current) {
@@ -722,7 +936,18 @@ export default function CoreGame({
       clearInterval(timerRef.current);
     }
 
-    setGrid(generateGrid(rows, cols));
+    checkpointRound("abandoned");
+    clearCheckpointTimer();
+    roundRef.current = null;
+    evidenceRef.current = createGridEvidence(rows, cols);
+    completedRef.current = false;
+    activeCellRef.current = null;
+    setRoundSummary(null);
+    setTableGuidance(null);
+    setProgressSaveError("");
+    const freshGrid = generateGrid(rows, cols);
+    gridRef.current = freshGrid;
+    setGrid(freshGrid);
     setStartTime(null);
     setCompleted(false);
     setElapsed(0);
@@ -760,14 +985,16 @@ export default function CoreGame({
     );
   };
 
-  const checkCompletion = async (newGrid) => {
+  const checkCompletion = async (newGrid, completionTime = Date.now()) => {
     const allCorrect = newGrid.every((row) =>
       row.every(
         (cell) => cell.correct === true
       )
     );
 
-    if (!allCorrect || completed) return;
+    if (!allCorrect || completedRef.current || !roundRef.current) return;
+    completedRef.current = true;
+    const finishedRound = roundRef.current;
 
     const antiCheatData =
       antiRef.current?.finish?.();
@@ -781,13 +1008,23 @@ export default function CoreGame({
       return;
     }
 
-    const stopTime = Date.now();
+    const stopTime = completionTime;
 
-    const finalDurationMs = startTime
-      ? stopTime - startTime
-      : Number(
-          antiCheatData?.durationMs || 0
-        );
+    const finalDurationMs = stopTime - finishedRound.startedMs;
+    evidenceRef.current.pause(stopTime);
+    // Confirm any remaining filled cells before taking the final snapshot.
+    newGrid.forEach((row, r) => row.forEach((cell, c) => {
+      evidenceRef.current.submit(r, c, cell.value, stopTime);
+    }));
+    const evidence = {
+      ...evidenceRef.current.snapshot(newGrid, stopTime),
+      attemptId: finishedRound.id,
+      completionBoundary: "last_correct_input",
+    };
+    setRoundSummary(evidence);
+    setFocusedCell(null);
+    checkpointRound("completed", stopTime);
+    clearCheckpointTimer();
 
     setCompleted(true);
 
@@ -803,12 +1040,14 @@ export default function CoreGame({
     );
 
     try {
-      const saveOutcome =
-        await saveMultiplicationResult({
+      const saveOutcome = finishedRound.identity
+        ? await saveMultiplicationResult({
           gameMode: gridPresetId,
           durationMs: finalDurationMs,
-          correctAnswers: rows * cols,
-          incorrectAnswers: 0,
+          correctAnswers: evidence.correctSubmissions,
+          incorrectAnswers: evidence.incorrectAttempts,
+          gridEvidence: evidence,
+          expectedIdentity: finishedRound.identity,
           antiCheatData: {
             moves: Number(
               antiCheatData?.moves || 0
@@ -836,37 +1075,18 @@ export default function CoreGame({
           verificationStatus: "verified",
           publicEligible: true,
           submissionType: "practice",
-        });
+        })
+        : { guest: true };
+      if (roundRef.current?.id !== finishedRound.id) return;
 
       if (saveOutcome.guest) {
         setProfileSaveStatus("guest");
         setProfileSaveMessage(
           "You played as a guest. This result was not saved to a learning profile."
         );
-      } else if (
-        saveOutcome.isPersonalBest
-      ) {
-        setProfileSaveStatus(
-          "personal-best"
-        );
-        setProfileSaveMessage(
-          `New personal best saved for ${
-            saveOutcome.profile
-              .public_display_name ||
-            saveOutcome.profile.first_name ||
-            "your profile"
-          }!`
-        );
       } else {
-        setProfileSaveStatus("saved");
-        setProfileSaveMessage(
-          `Result saved to ${
-            saveOutcome.profile
-              .public_display_name ||
-            saveOutcome.profile.first_name ||
-            "your learning profile"
-          }.`
-        );
+        setProfileSaveStatus(saveOutcome.isPersonalBest ? "personal-best" : "saved");
+        setProfileSaveMessage(describeGridPersonalBest(saveOutcome, finalDurationMs));
       }
    } catch (error) {
   const errorMessage = String(
@@ -902,11 +1122,61 @@ export default function CoreGame({
     }, 500);
   };
 
+  const markCorrectCell = (nextGrid, rowIndex, columnIndex) => {
+    const cellKey = rowIndex + "-" + columnIndex;
+    if (rowIndex === columnIndex) {
+      setCelebratedMap(current => ({ ...current, [cellKey]: true }));
+    }
+    if (nextGrid[rowIndex].every(cell => cell.correct === true)) {
+      setRowSwept(current => current.map((value, index) => index === rowIndex ? true : value));
+    }
+    if (nextGrid.every(row => row[columnIndex].correct === true)) {
+      setColSwept(current => current.map((value, index) => index === columnIndex ? true : value));
+    }
+  };
+
+  const submitCell = (rowIndex, columnIndex) => {
+    if (completedRef.current || !roundRef.current) return null;
+    const nextGrid = gridRef.current.map(row => row.map(cell => ({ ...cell })));
+    const cell = nextGrid[rowIndex][columnIndex];
+    if (cell.value === "") return nextGrid;
+    evidenceRef.current.submit(rowIndex, columnIndex, cell.value);
+    cell.correct = Number(cell.value) === cell.answer;
+    if (cell.correct) markCorrectCell(nextGrid, rowIndex, columnIndex);
+    gridRef.current = nextGrid;
+    setGrid(nextGrid);
+    checkpointRound();
+    void checkCompletion(nextGrid);
+    return nextGrid;
+  };
+
+  const handleCellChange = (event, rowIndex, columnIndex) => {
+    if (completedRef.current) return;
+    const inputTime = Date.now();
+    const value = String(event.target.value || "").replace(/\D+/g, "").slice(0, 3);
+    const nextGrid = gridRef.current.map(row => row.map(cell => ({ ...cell })));
+    const cell = nextGrid[rowIndex][columnIndex];
+    cell.value = value;
+    // A partial answer is neutral. Errors are recorded only at submission.
+    cell.correct = value !== "" && Number(value) === cell.answer ? true : null;
+    evidenceRef.current.edit(rowIndex, columnIndex, value);
+    gridRef.current = nextGrid;
+    setGrid(nextGrid);
+    if (value !== "") beginRound();
+    if (roundRef.current?.status === "in_progress") {
+      evidenceRef.current.focus(rowIndex, columnIndex, inputTime);
+    }
+    // The final correct digit finishes the round immediately, in any cell.
+    // Completion confirms the remaining correct answer for evidence tracking.
+    void checkCompletion(nextGrid, inputTime);
+  };
+
   const handleKeyDown = (
     event,
     rowIndex,
     columnIndex
   ) => {
+    if (completedRef.current) return;
     antiRef.current?.onKeyDown(event);
 
     const lastRow = rows - 1;
@@ -920,57 +1190,9 @@ export default function CoreGame({
     ) {
       event.preventDefault();
 
-      const nextGrid = grid.map((row) =>
-        row.map((cell) => ({ ...cell }))
-      );
-
-      const cell =
-        nextGrid[rowIndex][columnIndex];
-
-      const raw = String(cell.value || "")
-        .replace(/\D+/g, "")
-        .slice(0, 3);
-
-      cell.value = raw;
-      cell.correct =
-        Number(raw) === cell.answer;
-
-      if (cell.correct) {
-        if (
-          !rowSwept[rowIndex] &&
-          nextGrid[rowIndex].every(
-            (item) => item.correct === true
-          )
-        ) {
-          setRowSwept((current) =>
-            current.map((value, index) =>
-              index === rowIndex
-                ? true
-                : value
-            )
-          );
-        }
-
-        if (
-          !colSwept[columnIndex] &&
-          nextGrid.every(
-            (row) =>
-              row[columnIndex].correct ===
-              true
-          )
-        ) {
-          setColSwept((current) =>
-            current.map((value, index) =>
-              index === columnIndex
-                ? true
-                : value
-            )
-          );
-        }
-      }
-
-      setGrid(nextGrid);
-      checkCompletion(nextGrid);
+      const nextGrid = submitCell(rowIndex, columnIndex);
+      if (!nextGrid) return;
+      const cell = nextGrid[rowIndex][columnIndex];
 
       if (cell.correct) {
         if (columnIndex < lastColumn) {
@@ -1028,15 +1250,12 @@ export default function CoreGame({
     ) {
       event.preventDefault();
 
-      const nextGrid = grid.map((row) =>
-        row.map((cell) => ({ ...cell }))
-      );
-
-      nextGrid[rowIndex][columnIndex].value =
-        "";
-      nextGrid[rowIndex][columnIndex].correct =
-        null;
-
+      if (completedRef.current) return;
+      const nextGrid = gridRef.current.map(row => row.map(cell => ({ ...cell })));
+      nextGrid[rowIndex][columnIndex].value = "";
+      nextGrid[rowIndex][columnIndex].correct = null;
+      evidenceRef.current.edit(rowIndex, columnIndex, "");
+      gridRef.current = nextGrid;
       setGrid(nextGrid);
     }
   };
@@ -1733,10 +1952,10 @@ export default function CoreGame({
             <button
               type="button"
               onClick={() => setShowIntro(false)}
+              disabled={!profileLoaded}
               className="cmi-grid-picker-start"
             >
-              Start {rows} × {cols} Challenge
-              <span aria-hidden="true">→</span>
+              {profileLoaded ? <>Start {rows} × {cols} Challenge <span aria-hidden="true">→</span></> : "Checking your profile…"}
             </button>
             <p className="cmi-grid-picker-timer">
               Your timer starts when you enter your first answer.
@@ -1746,9 +1965,9 @@ export default function CoreGame({
               <summary>How to play <span aria-hidden="true">+</span></summary>
               <div className="cmi-grid-picker-help-content">
                 <p>Fill every cell with the product of its row and column numbers.</p>
-                <p>On a phone or tablet, tap a cell and use the number keyboard.</p>
+                <p>Answers are recorded when you press Enter or leave a cell. Typing pauses do not count as mistakes.</p>
                 <ul>
-                  <li><strong>Enter</strong> — Move to the next cell.</li>
+                  <li><strong>Enter</strong> — Check your answer and move to the next cell when correct.</li>
                   <li><strong>Arrow keys</strong> — Move around the grid.</li>
                   <li><strong>Backspace</strong> — Clear the current cell.</li>
                 </ul>
@@ -1768,6 +1987,7 @@ export default function CoreGame({
   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
     <button
   type="button"
+  disabled={profileSaveStatus === "saving"}
   onClick={() => {
     resetCurrentRun();
     setShowIntro(true);
@@ -1779,6 +1999,7 @@ export default function CoreGame({
 
     <button
       type="button"
+      disabled={profileSaveStatus === "saving"}
       onClick={resetCurrentRun}
       className="rounded-lg bg-red-500 px-4 py-2 text-sm font-black text-white shadow transition hover:bg-red-600"
     >
@@ -1930,184 +2151,21 @@ export default function CoreGame({
                                 value={cell.value}
                                 placeholder={`${rowIndex + 1} × ${columnIndex + 1}`}
                                 aria-label={`${rowIndex + 1} times ${columnIndex + 1}`}
-                                onFocus={() => setFocusedCell(cellKey)}
-                                onBlur={() =>
-                                  setFocusedCell((current) =>
-                                     current === cellKey ? null : current
-                                 )
-                               }
-
-                                onChange={(
-                                  event
-                                ) => {
-                                  const wasCorrect =
-                                    Boolean(
-                                      grid[
-                                        rowIndex
-                                      ][
-                                        columnIndex
-                                      ].correct
-                                    );
-
-                                  const nextGrid =
-                                    grid.map(
-                                      (
-                                        gridRow
-                                      ) =>
-                                        gridRow.map(
-                                          (
-                                            gridCell
-                                          ) => ({
-                                            ...gridCell,
-                                          })
-                                        )
-                                    );
-
-                                  const nextCell =
-                                    nextGrid[
-                                      rowIndex
-                                    ][
-                                      columnIndex
-                                    ];
-
-                                  const newValue =
-                                    event.target.value
-                                      .replace(
-                                        /\D+/g,
-                                        ""
-                                      )
-                                      .slice(0, 3);
-
-                                  nextCell.value =
-                                    newValue;
-
-                                  nextCell.correct =
-                                    newValue !==
-                                      "" &&
-                                    Number(
-                                      newValue
-                                    ) ===
-                                      nextCell.answer;
-
-                                  if (
-                                    !wasCorrect &&
-                                    nextCell.correct &&
-                                    rowIndex ===
-                                      columnIndex &&
-                                    !celebratedMap[
-                                      cellKey
-                                    ]
-                                  ) {
-                                    setCelebratedMap(
-                                      (
-                                        current
-                                      ) => ({
-                                        ...current,
-                                        [cellKey]:
-                                          true,
-                                      })
-                                    );
-                                  }
-
-                                  if (
-                                    nextCell.correct
-                                  ) {
-                                    if (
-                                      !rowSwept[
-                                        rowIndex
-                                      ] &&
-                                      nextGrid[
-                                        rowIndex
-                                      ].every(
-                                        (
-                                          item
-                                        ) =>
-                                          item.correct ===
-                                          true
-                                      )
-                                    ) {
-                                      setRowSwept(
-                                        (
-                                          current
-                                        ) =>
-                                          current.map(
-                                            (
-                                              value,
-                                              index
-                                            ) =>
-                                              index ===
-                                              rowIndex
-                                                ? true
-                                                : value
-                                          )
-                                      );
-                                    }
-
-                                    if (
-                                      !colSwept[
-                                        columnIndex
-                                      ] &&
-                                      nextGrid.every(
-                                        (
-                                          gridRow
-                                        ) =>
-                                          gridRow[
-                                            columnIndex
-                                          ].correct ===
-                                          true
-                                      )
-                                    ) {
-                                      setColSwept(
-                                        (
-                                          current
-                                        ) =>
-                                          current.map(
-                                            (
-                                              value,
-                                              index
-                                            ) =>
-                                              index ===
-                                              columnIndex
-                                                ? true
-                                                : value
-                                          )
-                                      );
-                                    }
-                                  }
-
-                                  setGrid(
-                                    nextGrid
-                                  );
-
-                                  checkCompletion(
-                                    nextGrid
-                                  );
-
-                                  if (
-                                    !timerStartedRef.current &&
-                                    newValue !== ""
-                                  ) {
-                                    const now =
-                                      Date.now();
-
-                                    setStartTime(
-                                      now
-                                    );
-
-                                    timerRef.current =
-                                      setInterval(
-                                        () =>
-                                          setElapsed(
-                                            Date.now() -
-                                              now
-                                          ),
-                                        10
-                                      );
-
-                                    timerStartedRef.current =
-                                      true;
+                                readOnly={completed}
+                                enterKeyHint="next"
+                                onFocus={() => {
+                                  setFocusedCell(cellKey);
+                                  activeCellRef.current = { row: rowIndex, col: columnIndex };
+                                  if (roundRef.current?.status === "in_progress") {
+                                    evidenceRef.current.focus(rowIndex, columnIndex, Date.now());
                                   }
                                 }}
+                                onBlur={() => {
+                                  evidenceRef.current.blur(rowIndex, columnIndex, Date.now());
+                                  submitCell(rowIndex, columnIndex);
+                                  setFocusedCell(current => current === cellKey ? null : current);
+                                }}
+                                onChange={event => handleCellChange(event, rowIndex, columnIndex)}
                                 onKeyDown={(
                                   event
                                 ) =>
@@ -2205,6 +2263,12 @@ export default function CoreGame({
               </div>
             </div>
           </div>
+          <div className="mx-auto max-w-lg space-y-2 text-center">
+            <p className="text-xs font-semibold text-gray-700">
+              Press Enter or move to another cell to submit an answer. The timer stops automatically when every cell is correct.
+            </p>
+            {progressSaveError && <p role="status" className="text-xs text-red-700">{progressSaveError}</p>}
+          </div>
         </div>
       )}
 
@@ -2231,11 +2295,16 @@ export default function CoreGame({
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black bg-opacity-70 p-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-70 p-4">
           <form
             onSubmit={handleSubmit}
-            className="my-8 w-full max-w-md space-y-4 rounded bg-white p-6 text-black shadow"
+            onInvalidCapture={(event) => {
+              const details = event.currentTarget.querySelector("[data-leaderboard-details]");
+              if (details && details.contains(event.target)) details.open = true;
+            }}
+            className="mx-auto my-4 flex max-h-[calc(100dvh-4rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white text-black shadow-xl"
           >
+            <div className="min-h-0 space-y-3 overflow-y-auto p-5">
             <h2 className="text-center text-xl font-bold">
               🎉 Game Complete!
             </h2>
@@ -2246,6 +2315,23 @@ export default function CoreGame({
                 {displayTime}
               </span>
             </p>
+
+            {roundSummary && (
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-xl bg-blue-50 p-3">
+                  <p className="text-xs font-bold text-gray-600">First try</p>
+                  <p className="mt-1 text-xl font-black text-blue-700">{roundSummary.firstEntryAccuracy}%</p>
+                </div>
+                <div className="rounded-xl bg-yellow-100 p-3">
+                  <p className="text-xs font-bold text-gray-600">Errors</p>
+                  <p className="mt-1 text-xl font-black">{roundSummary.incorrectAttempts}</p>
+                </div>
+                <div className="rounded-xl bg-green-50 p-3">
+                  <p className="text-xs font-bold text-gray-600">Corrections</p>
+                  <p className="mt-1 text-xl font-black text-green-700">{roundSummary.corrections}</p>
+                </div>
+              </div>
+            )}
 
             {profileSaveStatus !== "idle" && (
               <div
@@ -2280,11 +2366,20 @@ export default function CoreGame({
               </div>
             )}
 
-            <p className="text-center text-sm text-gray-600">
-              {loggedInPlayer
-                ? "Review your profile details and submit your time to the public leaderboard."
-                : "Enter your information and submit your time to appear on the leaderboard."}
-            </p>
+            {tableGuidance && (
+              <GridPracticeNextStep
+                guidance={tableGuidance}
+                rangeMax={cols}
+                onReplay={() => { setShowForm(false); resetCurrentRun(); }}
+              />
+            )}
+
+            <details data-leaderboard-details className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <summary className="cursor-pointer text-sm font-bold text-blue-800">Public leaderboard details</summary>
+              <div className="mt-3 space-y-3">
+                <p className="text-xs text-gray-600">
+                  {loggedInPlayer ? "Check your details before sharing your time." : "Add your details to share your time."}
+                </p>
 
             {loggedInPlayer ? (
               <div className="space-y-4">
@@ -2297,7 +2392,7 @@ export default function CoreGame({
                     {loggedInPlayer.name}
                   </h3>
 
-                  <dl className="mt-4 grid gap-3 text-sm">
+                  <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <dt className="font-semibold text-gray-500">
                         Category
@@ -2550,7 +2645,11 @@ export default function CoreGame({
               </>
             )}
 
-            <div className="flex justify-between gap-2 pt-2">
+              </div>
+            </details>
+            </div>
+
+            <div className="flex shrink-0 justify-between gap-2 border-t border-gray-200 bg-white p-4">
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -2583,3 +2682,4 @@ export default function CoreGame({
 </div>
   );
 }
+
