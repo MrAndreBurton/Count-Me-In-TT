@@ -115,26 +115,90 @@ export function createGridEvidence(rows, cols) {
   };
 }
 
+export function formatGridDuration(milliseconds) {
+  const totalMs = Math.max(0, Math.round(milliseconds));
+
+  const minutes = Math.floor(totalMs / 60000);
+  const remainingMs = totalMs % 60000;
+
+  const wholeSeconds = Math.floor(remainingMs / 1000);
+  const fractionalMs = remainingMs % 1000;
+
+  let seconds = String(wholeSeconds);
+
+  if (fractionalMs > 0) {
+    const fraction = String(fractionalMs)
+      .padStart(3, "0")
+      .replace(/0+$/, "");
+
+    seconds = seconds + "." + fraction;
+  }
+
+  const secondLabel =
+    remainingMs === 1000 ? "second" : "seconds";
+
+  if (minutes === 0) {
+    return seconds + " " + secondLabel;
+  }
+
+  const minuteLabel =
+    minutes === 1 ? "minute" : "minutes";
+
+  if (remainingMs === 0) {
+    return minutes + " " + minuteLabel;
+  }
+
+  return (
+    minutes +
+    " " +
+    minuteLabel +
+    " " +
+    seconds +
+    " " +
+    secondLabel
+  );
+}
+
 export function describeGridPersonalBest(outcome, durationMs) {
   const previous = outcome.previousBest?.duration_ms;
+
   if (previous === null || previous === undefined) {
-    return 'First completed result saved. Your starting personal best is ' +
-      (durationMs / 1000).toFixed(2) + ' seconds.';
+    return (
+      "First completed result saved. Your starting personal best is " +
+      formatGridDuration(durationMs) +
+      "."
+    );
   }
+
   const previousMs = Number(previous);
+
   if (outcome.isPersonalBest && previousMs > durationMs) {
     const improvementMs = previousMs - durationMs;
-    const seconds = (improvementMs / 1000).toFixed(improvementMs < 10 ? 3 : 2);
-    return 'New personal best! You improved by ' +
-      seconds + ' seconds (' +
-      (previousMs / 1000).toFixed(2) + ' s to ' +
-      (durationMs / 1000).toFixed(2) + ' s).';
+
+    return (
+      "New personal best! You improved by " +
+      formatGridDuration(improvementMs) +
+      " (" +
+      formatGridDuration(previousMs) +
+      " to " +
+      formatGridDuration(durationMs) +
+      ")."
+    );
   }
+
   if (previousMs === durationMs) {
-    return 'You matched your personal best of ' + (previousMs / 1000).toFixed(2) + ' seconds.';
+    return (
+      "You matched your personal best of " +
+      formatGridDuration(previousMs) +
+      "."
+    );
   }
-  return 'Result saved. Your personal best for this grid is ' +
-    (previousMs / 1000).toFixed(2) + ' seconds.';
+
+  return (
+    "Result saved. Your personal best for this grid is " +
+    formatGridDuration(previousMs) +
+    "."
+  );
 }
 
 // These are practice suggestions, not classifications of independent recall.
