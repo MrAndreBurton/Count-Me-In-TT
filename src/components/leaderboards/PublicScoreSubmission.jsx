@@ -58,7 +58,7 @@ export default function PublicScoreSubmission({ identity, resultId, saveStatus }
     } finally { submitting.current = false; if (!stale.current) setBusy(false); }
   }
   if (!identity || invalidated) return <section className="space-y-3 rounded-xl border border-blue-200 bg-blue-50 p-4" aria-label="Enter the public leaderboard">
-    <h3 className="font-black text-blue-950">Want your next time on the leaderboard?</h3>
+    <h3 className="font-black text-blue-950">Create a free account to submit to the leaderboard</h3>
     <p className="text-sm leading-6 text-blue-900">{invalidated ? "Your account changed after this round started." : "You played this round as a guest."} Create a free account or sign in, then start a fresh round to submit a time. This completed round will not be assigned to an account afterward.</p>
     <div className="flex flex-wrap gap-2"><Link to="/register" className={button + " bg-blue-600 text-white"}>Create a free account</Link><Link to="/login" className={button + " bg-white text-blue-800"}>Sign in</Link></div>
   </section>;
