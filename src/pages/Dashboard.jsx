@@ -5,6 +5,8 @@ import SiteFooter from "../components/layout/SiteFooter";
 import { supabase } from "../lib/supabase";
 import { canBypassParentChildLimit } from "../lib/accountCapabilities";
 
+import LearnerLeaderboardLink from "../components/leaderboards/LearnerLeaderboardLink";
+
 const CHILD_LIMIT = 5;
 
 function getInitials(firstName = "", lastName = "") {
@@ -875,7 +877,8 @@ setLinkedProfiles(summaries);
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col flex-wrap gap-3 sm:flex-row">
+              <LearnerLeaderboardLink />
               {isParentAccount &&
                 (bypassChildLimit ||
                   childProfiles.length < CHILD_LIMIT) && (
@@ -1417,5 +1420,3 @@ setLinkedProfiles(summaries);
     </div>
   );
 }
-
-

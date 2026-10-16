@@ -66,6 +66,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import WorkspaceSelector from "./pages/WorkspaceSelector";
 import OrganisationWorkspace from "./pages/OrganisationWorkspace";
 import LeaderboardsControlCentre from "./pages/LeaderboardsControlCentre";
+import LearnerLeaderboards from "./pages/LearnerLeaderboards";
 
 import StudentsPage from "./pages/admin/StudentsPage";
 import StudentProfilePage from "./pages/admin/StudentProfilePage";
@@ -156,6 +157,8 @@ export default function CountMeInApp() {
           path="/students/:studentId/login-setup"
           element={<StudentLoginSetup />}
         />
+
+        <Route path="/my-leaderboards" element={<LearnerLeaderboards />} />
 
         <Route
           path="/dashboard"

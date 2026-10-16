@@ -62,8 +62,14 @@ function getInitials(fullName = "") {
 
 function isCurrentPath(
   pathname,
-  destination
+  destination,
+  search = ""
 ) {
+  if (destination.startsWith("/my-leaderboards")) {
+    const hall = new URLSearchParams(search).get("view") === "hall-of-fame";
+    return pathname === "/my-leaderboards" && hall === destination.includes("hall-of-fame");
+  }
+
   if (destination === "/games") {
     return pathname === "/games";
   }
@@ -383,11 +389,14 @@ export default function GameHeader() {
           className="hidden items-center gap-1 lg:flex"
           aria-label="Game navigation"
         >
-          {gameLinks.map((link) => {
+          {gameLinks.map((item) => {
+            const link = user && item.to === "/leaderboard" ? { ...item, to: "/my-leaderboards" }
+              : user && item.to === "/hall-of-fame" ? { ...item, to: "/my-leaderboards?view=hall-of-fame" } : item;
             const active =
               isCurrentPath(
                 location.pathname,
-                link.to
+                link.to,
+                location.search
               );
 
             return (
@@ -571,11 +580,14 @@ export default function GameHeader() {
             className="mx-auto grid max-w-7xl gap-2"
             aria-label="Mobile game navigation"
           >
-            {gameLinks.map((link) => {
+            {gameLinks.map((item) => {
+              const link = user && item.to === "/leaderboard" ? { ...item, to: "/my-leaderboards" }
+                : user && item.to === "/hall-of-fame" ? { ...item, to: "/my-leaderboards?view=hall-of-fame" } : item;
               const active =
                 isCurrentPath(
                   location.pathname,
-                  link.to
+                  link.to,
+                  location.search
                 );
 
               return (
@@ -647,5 +659,3 @@ export default function GameHeader() {
     </header>
   );
 }
-
-
