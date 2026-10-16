@@ -48,7 +48,7 @@ test('all legacy school route families resolve to the data-free notice', () => {
 test('public leaderboard entry pages contain no legacy fetches or school records', () => {
   for (const path of ['src/Leaderboard.jsx', 'src/HallOfFame.jsx', 'src/SchoolsPicker.jsx']) {
     const source = read(path);
-    assert.match(source, path === 'src/SchoolsPicker.jsx' ? /LeaderboardUnavailable/ : /PublicLeaderboards/);
+    assert.match(source, path === 'src/SchoolsPicker.jsx' ? /LeaderboardUnavailable/ : path === 'src/HallOfFame.jsx' ? /PublicHallOfFame/ : /PublicLeaderboards/);
     assert.doesNotMatch(source, /fetch\(|docs\.google\.com|script\.google\.com|schoolFilter/);
   }
   const notice = read('src/components/leaderboards/LeaderboardUnavailable.jsx');

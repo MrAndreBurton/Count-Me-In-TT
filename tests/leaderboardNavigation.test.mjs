@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { leaderboardNavigationTarget } from '../src/lib/leaderboardNavigation.js';
 import { LEARNER_LEADERBOARD_GAMES } from '../src/lib/learnerLeaderboards.js';
 
-test('signed-in users open the board chooser and its Hall of Fame view', () => {
+test('signed-in users open the board chooser and the separate Hall of Fame', () => {
   assert.equal(leaderboardNavigationTarget('/leaderboard', true), '/my-leaderboards');
-  assert.equal(leaderboardNavigationTarget('/hall-of-fame', true), '/my-leaderboards?view=hall-of-fame');
+  assert.equal(leaderboardNavigationTarget('/hall-of-fame', true), '/hall-of-fame');
   assert.equal(leaderboardNavigationTarget('/games', true), '/games');
 });
 test('signed-out visitors keep the public entry points', () => {

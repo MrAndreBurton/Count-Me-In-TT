@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { loadPublicLeaderboards } from "../lib/publicLeaderboards";
 import { createPublicLeaderboardService } from "../services/publicLeaderboardService";
@@ -10,7 +10,11 @@ import "../styles/learnerLeaderboards.css";
 
 export default function PublicLeaderboards({ hall = false }) {
   const [params] = useSearchParams();
-  const showingHall = params.has("view") ? params.get("view") === "hall-of-fame" : hall;
+  if (hall || params.get("view") === "hall-of-fame") return <Navigate replace to="/hall-of-fame" />;
+  return <PublicLeaderboardPage />;
+}
+
+function PublicLeaderboardPage() {
   const service = useMemo(() => createPublicLeaderboardService(supabase), []);
   const [state, setState] = useState({ status: "loading", boards: [], revision: 0 });
   const [retry, setRetry] = useState(0);
@@ -41,15 +45,14 @@ export default function PublicLeaderboards({ hall = false }) {
     return () => { active = false; ++request; subscription.unsubscribe(); timers.forEach(t => window.clearTimeout(t)); };
   }, [service, retry]);
   useEffect(() => {
-    document.title = (showingHall ? "Public Hall of Fame" : "Public Leaderboard") + " | CountMeInTT";
-  }, [showingHall]);
+    document.title = "Public Leaderboard | CountMeInTT";
+  }, []);
   return <div className="learner-leaderboard-page min-h-screen text-gray-950"><GameHeader />
-    {state.status === "ready" ? <LearnerLeaderboardView key={state.revision} boards={state.boards} service={service} publicOnly defaultHall={hall} />
+    {state.status === "ready" ? <LearnerLeaderboardView key={state.revision} boards={state.boards} service={service} publicOnly />
       : <main className="mx-auto max-w-2xl px-5 py-16"><section className="rounded-3xl border border-blue-100 p-8 text-center shadow-sm">
         <h1 className="text-2xl font-black">{state.status === "loading" ? "Loading public leaderboards…" : "Public results could not be loaded"}</h1>
         {state.status === "error" && <><p role="alert" className="mt-4 text-gray-700">Please check your connection and try again.</p><button type="button" onClick={() => setRetry(n => n + 1)} className="mt-6 min-h-11 rounded-xl bg-blue-600 px-5 py-3 font-black text-white">Try again</button></>}
       </section></main>}
-    {showingHall && state.status === "ready" && <nav aria-label="Historical Hall of Fame" className="mx-auto max-w-5xl px-4 pb-8 text-center"><Link to="/hall-of-fame/archive" className="inline-flex min-h-12 items-center rounded-xl bg-blue-600 px-5 py-3 font-black text-white hover:bg-blue-700">Past champions · before October 2026 →</Link></nav>}
     <SiteFooter />
   </div>;
 }

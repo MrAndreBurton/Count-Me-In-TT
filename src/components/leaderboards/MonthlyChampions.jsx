@@ -38,7 +38,7 @@ function ChampionCard({ row, index, legacy }) {
     onPointerMove={move} onPointerLeave={reset} onPointerCancel={reset}>
     <article ref={surface} className="champion-card-surface">
       <div className="champion-card-top"><span className="champion-crest"><Trophy aria-hidden="true" /></span>
-        <span className="champion-card-edition">{legacy ? "Legacy collection" : "Hall of Fame"}</span></div>
+        <span className="champion-card-edition">{legacy ? "Legacy collection" : "Champions collection"}</span></div>
       <h3 className="champion-card-name">{row.display_name}</h3>
       <div className="champion-card-time"><span className="sr-only">Winning time: </span>{formatLeaderboardTime(row.metric)}</div>
       <div className="champion-card-badges"><span><span className="sr-only">Grid: </span>{row.variant.replace("x", " × ")}</span>
@@ -47,8 +47,8 @@ function ChampionCard({ row, index, legacy }) {
   </li>;
 }
 
-export default function MonthlyChampions({ rows, month, legacy = false }) {
-  return <section className="champions-collection" aria-label={"Monthly champions, " + monthLabel(month)}>
+export default function MonthlyChampions({ rows, month, legacy = false, featured = false }) {
+  return <section className={"champions-collection" + (featured ? " champions-collection--featured" : "")} aria-label={"Monthly champions, " + monthLabel(month)}>
     <div className="champions-collection-heading"><span className="champions-eyebrow">{legacy ? "The legacy collection" : "A moment to celebrate"}</span>
       <h2 className="champions-title">Monthly champions</h2><p className="champions-month">{monthLabel(month)}</p></div>
     <ul className="champion-card-grid">{rows.map((row, index) => <ChampionCard key={row.variant + ":" + row.category + ":" + index} row={row} index={index} legacy={legacy} />)}</ul>

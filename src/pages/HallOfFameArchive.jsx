@@ -7,7 +7,9 @@ import { formatLeaderboardTime, monthLabel } from "../lib/leaderboardPresentatio
 import GameHeader from "../components/layout/GameHeader";
 import SiteFooter from "../components/layout/SiteFooter";
 import "../styles/learnerLeaderboards.css";
-import { loadArchivedMonthlyChampions } from "../lib/monthlyChampions";
+import { loadChampionCatalogue, loadPublicChampionMonth } from "../lib/publicChampions";
+import useLeaderboardMonth from "../lib/useLeaderboardMonth";
+import { createPublicLeaderboardService } from "../services/publicLeaderboardService";
 import MonthlyChampions, { ChampionMonthPicker } from "../components/leaderboards/MonthlyChampions";
 
 const field = "mt-2 min-h-12 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 font-bold text-gray-950";
@@ -17,6 +19,9 @@ const categoryLabel = value => value === "NoSchool" ? "Open" : value;
 
 export default function HallOfFameArchive({ admin = false }) {
   const service = useMemo(() => createHallOfFameArchiveService(supabase), []);
+  const publicService = useMemo(() => createPublicLeaderboardService(supabase), []);
+  const currentMonth = useLeaderboardMonth();
+  const [catalogue, setCatalogue] = useState(null);
   const [state, setState] = useState({ status: "loading", months: [], candidates: [], batches: [] });
   const [month, setMonth] = useState("");
   const [grid, setGrid] = useState("5x5");
@@ -43,14 +48,17 @@ export default function HallOfFameArchive({ admin = false }) {
           if (active && current === request.current) setState({ status: "ready", candidates: data.candidates, batches: data.batches,
             months: [...new Set(data.candidates.map(c => c.month))].sort().reverse() });
         } else {
-          const months = await service.listMonths();
-          if (active && current === request.current) setState({ status: "ready", months, candidates: [], batches: [] });
+          const data = await loadChampionCatalogue(publicService, service);
+          if (active && current === request.current) {
+            setCatalogue(data);
+            setState({ status: "ready", months: data.archiveMonths, candidates: [], batches: [] });
+          }
         }
       } catch (error) { if (active && current === request.current) setState({ status: error.code === "42501" ? "forbidden" : "error", months: [], candidates: [], batches: [] }); }
     }
     void load();
     return () => { active = false; ++request.current; };
-  }, [service, admin, retry, revision]);
+  }, [service, publicService, admin, retry, revision, currentMonth]);
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(event => {
       if (event === "INITIAL_SESSION") return;
@@ -62,14 +70,14 @@ export default function HallOfFameArchive({ admin = false }) {
     return () => subscription.unsubscribe();
   }, []);
   useEffect(() => {
-    if (admin || !selectedMonth || state.status !== "ready") return;
+    if (admin || !catalogue || !selectedMonth || state.status !== "ready") return;
     let active = true;
     setResult({ key: resultKey, status: "loading", rows: [] });
-    loadArchivedMonthlyChampions(service, selectedMonth).then(rows => {
-      if (active) setResult({ key: resultKey, status: "ready", rows });
+    loadPublicChampionMonth(publicService, service, catalogue, selectedMonth).then(data => {
+      if (active) setResult({ key: resultKey, status: "ready", ...data });
     }).catch(() => { if (active) setResult({ key: resultKey, status: "error", rows: [] }); });
     return () => { active = false; };
-  }, [service, admin, state.status, selectedMonth, resultKey, retry, revision]);
+  }, [service, publicService, catalogue, admin, state.status, selectedMonth, resultKey, retry, revision]);
   useEffect(() => { document.title = (admin ? "Review Hall of Fame Archive" : "Past Champions") + " | CountMeInTT"; }, [admin]);
   const rows = admin ? state.candidates.filter(c => c.month === selectedMonth && c.variant === grid && c.category === category &&
     (reviewStatus === "all" || c.review_status === reviewStatus)) : result.key === resultKey ? result.rows : [];
@@ -90,13 +98,13 @@ export default function HallOfFameArchive({ admin = false }) {
           <Link to="/games" className="leaderboard-logo-tile leaderboard-banner-left"><img src="/CountmeIn Logo No bg.png" alt="CountMeInTT" /></Link>
           <div className="leaderboard-banner-copy"><p className="text-xs font-black uppercase tracking-widest text-yellow-300">Multiplication Challenge</p>
             <h1 className="leaderboard-banner-title mt-2 font-black">{admin ? "Review historical champions" : "Past champions"}</h1>
-            <p className="mt-3 text-sm leading-6 text-blue-100">A place for our earlier achievements. August 2025 – September 2026.</p></div>
+            <p className="mt-3 text-sm leading-6 text-blue-100">{admin ? "Review recovered historical achievements." : "A lasting home for our champions, month after month."}</p></div>
           <div className="leaderboard-banner-right"><Trophy aria-hidden="true" className="h-12 w-12 text-yellow-300" /></div>
         </div>
         <div className="p-5 sm:p-8">
           <p className="text-sm leading-7 text-blue-950">{admin
             ? "These records reconstruct the old Hall of Fame rules; they are not saved, confirmed award snapshots. Review the public display name before approving. Approval publishes this record to Past champions. School records and complete source backups stay private."
-            : "These historical records were recovered from the earlier leaderboard and reviewed for this archive. They follow the original winner rules and remain separate from competitions starting October 2026."}</p>
+            : "Explore earlier monthly champions across every grid and category. Recovered legacy achievements and confirmed competition winners are preserved here as each new collection takes its place in the Hall of Fame."}</p>
           {state.status === "loading" ? <p role="status" className="py-10">Loading archive…</p>
             : state.status === "forbidden" ? <p role="alert" className="py-10 font-bold">Only the active superadmin can review historical records.</p>
             : state.status === "error" ? <p role="alert" className="py-10">The archive could not be loaded. <button className="min-h-11 font-bold underline" onClick={() => setRetry(n => n + 1)}>Try again</button></p>
@@ -114,7 +122,7 @@ export default function HallOfFameArchive({ admin = false }) {
                   {!admin && (result.key !== resultKey || result.status === "loading") ? <p role="status" className="py-8">Loading historical records…</p>
                     : !admin && result.status === "error" ? <p role="alert" className="py-8">Results could not be loaded. <button className="min-h-11 underline" onClick={() => setRetry(n => n + 1)}>Try again</button></p>
                     : !rows.length ? <p className="py-8">No {admin ? "matching" : "reviewed"} historical record for this selection.</p>
-                    : !admin ? <MonthlyChampions rows={rows} month={selectedMonth} legacy /> : <ul className="mt-5 space-y-4">{rows.map((row, i) => <li key={row.id || i} className="rounded-2xl border border-yellow-300 bg-white p-5">
+                    : !admin ? <MonthlyChampions rows={rows} month={selectedMonth} legacy={result.legacy} /> : <ul className="mt-5 space-y-4">{rows.map((row, i) => <li key={row.id || i} className="rounded-2xl border border-yellow-300 bg-white p-5">
                       <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-lg font-black text-blue-950">{row.public_display_name || row.display_name}</p><p className="mt-1 text-sm text-gray-600">Historical champion · legacy record{admin ? " · " + row.review_status : ""}</p></div><p className="text-xl font-black tabular-nums text-blue-950">{formatLeaderboardTime(row.metric)}</p>
                         {admin && <button className={button} onClick={() => setReview({ id: row.id, name: row.public_display_name || row.display_name, status: row.review_status === "approved" ? "approved" : "pending", reason: "" })}>Review record</button>}</div>
                       {admin && <p className="mt-3 text-xs leading-6 text-gray-600">Source: {row.source_key}, row {row.source_row} · {row.evidence?.legacy_rule} · Archived flag: {row.evidence?.archived_flag || "not recorded"}</p>}
