@@ -1,0 +1,96 @@
+/* Restore the site's maths-pattern background outside the leaderboard card. */
+.learner-leaderboard-page {
+  background-color: #ffffff;
+  background-image: url("/math-symbol-pattern.svg");
+  background-repeat: repeat;
+  background-size: 320px 320px;
+  background-position: top left;
+  background-attachment: fixed;
+}
+
+/* The yellow belongs to the card behind the controls and results table. */
+.learner-leaderboard-page main > section {
+  background-color: #ffe16b;
+}
+
+.leaderboard-banner {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr) 7rem;
+  grid-template-areas: "left copy right";
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2.25rem 2rem;
+  color: #ffffff;
+  background: #172554;
+}
+.leaderboard-banner-left { grid-area: left; }
+.leaderboard-banner-right { grid-area: right; justify-self: end; }
+.leaderboard-banner-copy { grid-area: copy; min-width: 0; text-align: center; }
+.leaderboard-banner-title {
+  font-size: clamp(1.55rem, 3.3vw, 2.15rem);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  text-shadow: 0 2px 8px #02061733;
+}
+.leaderboard-logo-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 7rem;
+  height: 7rem;
+  padding: 0.75rem;
+  border: 1px solid #ffffffcc;
+  border-radius: 1.35rem;
+  background: #fffffff5;
+  box-shadow: 0 8px 24px #02061740, 0 0 24px #ffffff12;
+}
+.leaderboard-logo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px #17255424);
+}
+@media (max-width: 639px) {
+  .leaderboard-banner {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "left right" "copy copy";
+    gap: 1.25rem;
+    padding: 1.5rem 1.25rem 1.75rem;
+  }
+  .leaderboard-logo-tile { width: 5rem; height: 5rem; padding: 0.6rem; border-radius: 1.1rem; }
+}
+
+.learner-rank {
+  display: inline-flex;
+  min-width: 2.75rem;
+  min-height: 3.25rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  border: 1px solid;
+  border-radius: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  box-shadow: 0 2px 5px #1725540d;
+  animation: learner-medal-arrive 550ms ease-out both;
+}
+.learner-rank--1 { color: #854d0e; border-color: #eab308; background: linear-gradient(140deg, #fef9c3, #fde047); }
+.learner-rank--2 { color: #334155; border-color: #94a3b8; background: linear-gradient(140deg, #f8fafc, #cbd5e1); animation-delay: 80ms; }
+.learner-rank--3 { color: #9a3412; border-color: #fdba74; background: linear-gradient(140deg, #fff7ed, #fed7aa); animation-delay: 160ms; }
+.learner-rank--1 svg { animation: learner-trophy-glow 2s ease-in-out 2; }
+.learner-podium-row--1 { background-color: #fffdf0; }
+.learner-podium-row--2 { background-color: #f8fafc; }
+.learner-podium-row--3 { background-color: #fff9f3; }
+
+@keyframes learner-medal-arrive {
+  from { opacity: 0; transform: translateY(5px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes learner-trophy-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 4px #eab30880); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .learner-rank, .learner-rank--1 svg { animation: none; }
+}

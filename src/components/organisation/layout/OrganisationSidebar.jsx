@@ -5,6 +5,7 @@ import {
   Layers3,
   LogOut,
   MenuSquare,
+  Trophy,
   UsersRound,
   X,
 } from "lucide-react";
@@ -162,6 +163,21 @@ export default function OrganisationSidebar({
               );
             })}
           </div>
+
+          <Link
+            to={`${organisationPath}/leaderboards`}
+            onClick={handleNavigationClick}
+            aria-current={location.pathname === `${organisationPath}/leaderboards` ? "page" : undefined}
+            className={[
+              "mt-2 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition",
+              location.pathname === `${organisationPath}/leaderboards`
+                ? "bg-yellow-100 text-yellow-900"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
+            ].join(" ")}
+          >
+            <Trophy size={19} />
+            <span>Leaderboards</span>
+          </Link>
 
           <div className="my-5 border-t border-slate-200" />
 

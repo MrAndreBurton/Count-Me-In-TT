@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import GameHeader from "../layout/GameHeader.jsx";
+import LearnerLeaderboardLink from "../leaderboards/LearnerLeaderboardLink";
 import { createGridEvidence, describeGridPersonalBest, buildGridTableGuidance } from "./gridEvidence";
 import { createGridAttemptRecorder } from "../../services/multiplicationGridAttempts";
 import {
@@ -1498,6 +1499,7 @@ export default function CoreGame({
       }}
     >
        <GameHeader />
+       <div className="mx-auto flex max-w-5xl justify-end px-4 pt-4"><LearnerLeaderboardLink /></div>
 <div className="px-4 py-6 sm:px-5">
       <style>{`
         .cmi-grid-picker-overlay {
@@ -2692,4 +2694,3 @@ export default function CoreGame({
 </div>
   );
 }
-
