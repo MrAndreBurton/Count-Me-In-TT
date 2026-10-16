@@ -9,6 +9,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import { leaderboardNavigationTarget } from "../../lib/leaderboardNavigation";
 
 const gameLinks = [
   {
@@ -390,8 +391,7 @@ export default function GameHeader() {
           aria-label="Game navigation"
         >
           {gameLinks.map((item) => {
-            const link = user && item.to === "/leaderboard" ? { ...item, to: "/my-leaderboards" }
-              : user && item.to === "/hall-of-fame" ? { ...item, to: "/my-leaderboards?view=hall-of-fame" } : item;
+            const link = { ...item, to: leaderboardNavigationTarget(item.to, Boolean(user)) };
             const active =
               isCurrentPath(
                 location.pathname,
@@ -581,8 +581,7 @@ export default function GameHeader() {
             aria-label="Mobile game navigation"
           >
             {gameLinks.map((item) => {
-              const link = user && item.to === "/leaderboard" ? { ...item, to: "/my-leaderboards" }
-                : user && item.to === "/hall-of-fame" ? { ...item, to: "/my-leaderboards?view=hall-of-fame" } : item;
+              const link = { ...item, to: leaderboardNavigationTarget(item.to, Boolean(user)) };
               const active =
                 isCurrentPath(
                   location.pathname,
