@@ -936,6 +936,17 @@ export default function MultiplicationPractice() {
 
                 <button
                   type="button"
+                  onPointerDown={(event) => {
+                    // Keep an already-focused answer field focused on tap.
+                    // Keyboard and assistive-technology clicks still use onClick.
+                    if (
+                      event.isPrimary &&
+                      event.button === 0 &&
+                      document.activeElement === answerInputRef.current
+                    ) {
+                      event.preventDefault();
+                    }
+                  }}
                   onClick={checkAnswer}
                   disabled={
                     !answer || feedback === "correct"
