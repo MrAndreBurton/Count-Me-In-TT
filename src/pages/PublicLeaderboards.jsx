@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { loadPublicLeaderboards } from "../lib/publicLeaderboards";
 import { createPublicLeaderboardService } from "../services/publicLeaderboardService";
@@ -49,6 +49,7 @@ export default function PublicLeaderboards({ hall = false }) {
         <h1 className="text-2xl font-black">{state.status === "loading" ? "Loading public leaderboards…" : "Public results could not be loaded"}</h1>
         {state.status === "error" && <><p role="alert" className="mt-4 text-gray-700">Please check your connection and try again.</p><button type="button" onClick={() => setRetry(n => n + 1)} className="mt-6 min-h-11 rounded-xl bg-blue-600 px-5 py-3 font-black text-white">Try again</button></>}
       </section></main>}
+    {showingHall && state.status === "ready" && <nav aria-label="Historical Hall of Fame" className="mx-auto max-w-5xl px-4 pb-8 text-center"><Link to="/hall-of-fame/archive" className="inline-flex min-h-12 items-center rounded-xl bg-blue-600 px-5 py-3 font-black text-white hover:bg-blue-700">Past champions · before October 2026 →</Link></nav>}
     <SiteFooter />
   </div>;
 }

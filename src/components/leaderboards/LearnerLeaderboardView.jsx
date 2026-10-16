@@ -6,6 +6,8 @@ import { learnerBoardSelection, learnerMonths, LEARNER_LEADERBOARD_GAMES } from 
 import { organisationLeaderboardBranding } from "../../lib/leaderboardBranding";
 import { ordinalRank } from "../../lib/leaderboardRanks";
 import { publicLeaderboardParams } from "../../lib/publicLeaderboards";
+import { loadMonthlyChampions } from "../../lib/monthlyChampions";
+import MonthlyChampions, { ChampionMonthPicker } from "./MonthlyChampions";
 
 const selectStyle = "mt-2 min-h-12 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-base font-bold text-gray-950 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200";
 const buttonStyle = "inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-3 text-sm font-black transition";
@@ -41,7 +43,7 @@ export default function LearnerLeaderboardView({ boards, service, publicService,
   const month = months.includes(params.get("month")) ? params.get("month") : currentMonth;
   const selectedSeason = seasonState.key === board?.id ? seasonState.rows.find(s => s.month === month) : null;
   const branding = organisationLeaderboardBranding(board);
-  const key = JSON.stringify([board?.id, grid, month, category, hall]);
+  const key = JSON.stringify([board?.id, hall ? null : grid, month, hall ? null : category, hall]);
   const seasonsReady = seasonState.key === board?.id && seasonState.status === "ready";
   const rows = resultState.key === key && seasonsReady ? resultState.rows : [];
   const resultStatus = seasonsReady && resultState.key === key ? resultState.status : "loading";
@@ -67,8 +69,9 @@ export default function LearnerLeaderboardView({ boards, service, publicService,
     if (!board || !grid || !seasonsReady || resultBlocked) return;
     let active = true;
     setResultState({ key, status: "loading", rows: [] });
-    const method = hall ? "getHallOfFame" : "getStandings";
-    resultService[method](board.id, { month, variant: grid, category }).then(rows => {
+    const request = hall ? loadMonthlyChampions(resultService, board, month)
+      : resultService.getStandings(board.id, { month, variant: grid, category });
+    request.then(rows => {
       if (active) setResultState({ key, status: "ready", rows });
     }).catch(() => { if (active) setResultState({ key, status: "error", rows: [] }); });
     return () => { active = false; };
@@ -98,11 +101,11 @@ export default function LearnerLeaderboardView({ boards, service, publicService,
         </div>
       </div>
       <div className="p-5 sm:p-8">
-        <label className="mb-5 block max-w-sm text-sm font-bold text-gray-700">Game
+        {!hall && <label className="mb-5 block max-w-sm text-sm font-bold text-gray-700">Game
           <select className={selectStyle} value={game.key} onChange={e => change({ game: e.target.value }, ["board", "grid", "month", "category"])}>
             {LEARNER_LEADERBOARD_GAMES.map(g => <option key={g.key} value={g.key}>{g.name}</option>)}
           </select>
-        </label>
+        </label>}
         {publicOnly ? <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-bold text-blue-950">Everyone can explore the public competition.</p>
         </div> : <nav className="flex flex-wrap gap-2" aria-label="Leaderboard audience">
@@ -118,22 +121,22 @@ export default function LearnerLeaderboardView({ boards, service, publicService,
           <Link to="/games/multiplication" className={buttonStyle + " mt-6 bg-yellow-400 text-gray-950 hover:bg-yellow-300"}>Keep practising</Link>
         </div> : <>
           <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <label className="text-sm font-bold text-gray-700">{audience === "public" ? "Leaderboard" : "Organisation / class"}
+            {(!hall || audience !== "public" || available.length > 1) && <label className="text-sm font-bold text-gray-700">{audience === "public" ? "Leaderboard" : "Organisation / class"}
               <select className={selectStyle} value={board.id} onChange={e => change({ board: e.target.value }, ["grid", "month"])}>
                 {available.map(b => <option key={b.id} value={b.id}>{b.scope === "class" ? (b.organisation_name + " · " + (b.group_name || b.name)) : b.scope === "public" ? b.name : b.organisation_name + " · Whole organisation"}</option>)}
               </select>
-            </label>
-            <label className="text-sm font-bold text-gray-700">Grid
+            </label>}
+            {!hall && <label className="text-sm font-bold text-gray-700">Grid
               <select className={selectStyle} value={grid} onChange={e => change({ grid: e.target.value })}>
                 {board.variants.map(g => <option key={g} value={g}>{g.replace("x", " × ")}</option>)}
               </select>
-            </label>
-            <label className="text-sm font-bold text-gray-700">Month
+            </label>}
+            {hall ? <div className="sm:col-span-2"><ChampionMonthPicker months={months} value={month} disabled={!seasonsReady} fieldClass={selectStyle} onChange={value => change({ month: value })} /></div> : <label className="text-sm font-bold text-gray-700">Month
               <select className={selectStyle} value={month} disabled={!seasonsReady} onChange={e => change({ month: e.target.value })}>
                 {months.map(m => <option key={m} value={m}>{monthLabel(m)}{m === currentMonth ? " · This month" : ""}</option>)}
               </select>
-            </label>
-            {audience === "public" && <label className="text-sm font-bold text-gray-700">Category
+            </label>}
+            {!hall && audience === "public" && <label className="text-sm font-bold text-gray-700">Category
               <select className={selectStyle} value={category} onChange={e => change({ category: e.target.value })}>
                 <option value="Primary">Primary</option><option value="Secondary">Secondary</option><option value="NoSchool">Open</option>
               </select>
@@ -148,8 +151,8 @@ export default function LearnerLeaderboardView({ boards, service, publicService,
             </nav>
             <button type="button" onClick={() => setRetry(n => n + 1)} className="min-h-11 rounded-lg px-3 text-sm font-bold text-blue-700 hover:bg-blue-50">Refresh results</button>
           </div>
-          <h2 className="mt-6 text-2xl font-black text-blue-950">{hall ? "Monthly champions" : "Monthly leaderboard"}</h2>
-          <p className="mt-2 text-sm leading-6 text-gray-600">{grid.replace("x", " × ")} · {monthLabel(month)}{audience === "public" ? " · " + (category === "NoSchool" ? "Open" : category) : ""} · {hall ? "Joint winners are celebrated together." : "Fastest time per learner. Equal times share a rank."}</p>
+          {!hall && <><h2 className="mt-6 text-2xl font-black text-blue-950">Monthly leaderboard</h2>
+          <p className="mt-2 text-sm leading-6 text-gray-600">{grid.replace("x", " × ")} · {monthLabel(month)}{audience === "public" ? " · " + (category === "NoSchool" ? "Open" : category) : ""} · Fastest time per learner. Equal times share a rank.</p></>}
           <div aria-live="polite" aria-busy={!seasonError && resultStatus === "loading" && !resultBlocked} className="mt-5">
             {seasonError || (!resultBlocked && resultStatus === "error") ? <div role="alert" className="rounded-xl bg-red-50 p-5 text-red-800">Results could not be loaded. Please try again.<button type="button" onClick={() => setRetry(n => n + 1)} className="ml-2 min-h-11 font-black underline">Try again</button></div>
               : resultBlocked ? <p className="rounded-2xl bg-blue-50 p-6 text-blue-950">Select a month with confirmed champions to view this class’s history.</p>
@@ -161,16 +164,16 @@ export default function LearnerLeaderboardView({ boards, service, publicService,
                   : audience === "public" ? "Only results deliberately submitted to the public competition appear here."
                     : month === currentMonth ? "Complete an eligible grid while signed in to your learner account. Your result is added automatically."
                       : "Try another grid or month to explore your community’s results."}</p>
-              </div> : <div className="overflow-hidden rounded-2xl border border-gray-200">
+              </div> : hall ? <MonthlyChampions rows={rows} month={month} /> : <div className="overflow-hidden rounded-2xl border border-gray-200">
                 <table className="w-full table-fixed text-left">
-                  <caption className="sr-only">{title}, {grid}, {monthLabel(month)}{audience === "public" ? ", " + (category === "NoSchool" ? "Open" : category) : ""}, {hall ? "Hall of Fame" : "leaderboard"}</caption>
+                  <caption className="sr-only">{title}, {grid}, {monthLabel(month)}{audience === "public" ? ", " + (category === "NoSchool" ? "Open" : category) : ""}, leaderboard</caption>
                   <thead className="bg-blue-50 text-xs font-black uppercase tracking-wide text-blue-900"><tr>
-                    <th scope="col" className="w-16 px-3 py-4 sm:w-24 sm:px-5">{hall ? "Award" : "Rank"}</th>
+                    <th scope="col" className="w-16 px-3 py-4 sm:w-24 sm:px-5">Rank</th>
                     <th scope="col" className="px-3 py-4 sm:px-5">Learner</th>
                     <th scope="col" className="w-28 px-3 py-4 text-right sm:w-36 sm:px-5">Time</th>
                   </tr></thead>
                   <tbody className="divide-y divide-gray-100">{rows.map((row, i) => <tr key={i} className={row.is_me ? "bg-yellow-50" : !hall && Number(row.rank) <= 3 ? "learner-podium-row--" + row.rank : "bg-white"}>
-                    <td className="px-2 py-5 text-base font-black text-blue-800 sm:px-5">{hall ? <Trophy aria-label="Monthly champion" className="h-5 w-5 text-yellow-600" /> : <RankMarker rank={row.rank} />}</td>
+                    <td className="px-2 py-5 text-base font-black text-blue-800 sm:px-5"><RankMarker rank={row.rank} /></td>
                     <th scope="row" className="break-words px-3 py-5 text-base font-bold text-gray-950 sm:px-5">{row.display_name}{row.is_me && <span className="ml-2 inline-block rounded-full bg-yellow-200 px-2 py-1 text-xs font-black">You</span>}</th>
                     <td className="whitespace-nowrap px-3 py-5 text-right font-black tabular-nums text-blue-950 sm:px-5">{formatLeaderboardTime(row.metric)}</td>
                   </tr>)}</tbody>

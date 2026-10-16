@@ -20,7 +20,7 @@ test('legacy public data sources and top-player panels are disconnected', () => 
   }
 });
 
-test('public submit handler exits before collecting or sending player details', async () => {
+test('completion form blocks default submission; public sharing uses its protected component', async () => {
   const start = game.indexOf('  const handleSubmit =');
   const end = game.indexOf('  const gridPresentation =', start);
   assert.ok(start >= 0 && end > start);
@@ -32,6 +32,8 @@ test('public submit handler exits before collecting or sending player details', 
   vm.runInContext(game.slice(start, end) + '\nglobalThis.submit = handleSubmit;', context);
   await context.submit({ preventDefault() { prevented = true; } });
   assert.equal(prevented, true);
+  assert.doesNotMatch(game.slice(start, end), /fetch\(|WEBHOOKS|formData/);
+  assert.match(game, /<PublicScoreSubmission/);
 });
 
 test('all legacy school route families resolve to the data-free notice', () => {
