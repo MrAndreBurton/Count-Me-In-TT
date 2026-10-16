@@ -1,5 +1,5 @@
-import LeaderboardUnavailable from "./components/leaderboards/LeaderboardUnavailable";
+import PublicLeaderboards from "./pages/PublicLeaderboards";
 
 export default function HallOfFame() {
-  return <LeaderboardUnavailable title="Hall of Fame is being updated" />;
+  return <PublicLeaderboards hall />;
 }
