@@ -5,6 +5,7 @@ import { currentLeaderboardMonth, formatLeaderboardTime, monthLabel } from "../.
 import { learnerBoardSelection, learnerMonths, LEARNER_LEADERBOARD_GAMES } from "../../lib/learnerLeaderboards";
 import { organisationLeaderboardBranding } from "../../lib/leaderboardBranding";
 import { ordinalRank } from "../../lib/leaderboardRanks";
+import { publicLeaderboardParams } from "../../lib/publicLeaderboards";
 
 const selectStyle = "mt-2 min-h-12 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-base font-bold text-gray-950 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200";
 const buttonStyle = "inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-3 text-sm font-black transition";
@@ -26,10 +27,12 @@ function OrganisationBrand({ branding }) {
   </div>;
 }
 
-export default function LearnerLeaderboardView({ boards, service }) {
+export default function LearnerLeaderboardView({ boards, service, publicService, publicOnly = false, defaultHall = false }) {
   const [params, setParams] = useSearchParams();
   const game = LEARNER_LEADERBOARD_GAMES.find(g => g.key === params.get("game")) || LEARNER_LEADERBOARD_GAMES[0];
-  const { audience, available, board, grid, category, hall } = learnerBoardSelection(boards, params);
+  const selectionParams = publicOnly ? publicLeaderboardParams(params, defaultHall) : params;
+  const { audience, available, board, grid, category, hall } = learnerBoardSelection(boards, selectionParams);
+  const resultService = board?.scope === "public" ? publicService || service : service;
   const [seasonState, setSeasonState] = useState({ key: "", status: "loading", rows: [] });
   const [resultState, setResultState] = useState({ key: "", status: "loading", rows: [] });
   const [retry, setRetry] = useState(0);
@@ -55,26 +58,26 @@ export default function LearnerLeaderboardView({ boards, service }) {
     if (!board) return;
     let active = true;
     setSeasonState({ key: board.id, status: "loading", rows: [] });
-    service.listSeasons(board.id).then(rows => {
+    resultService.listSeasons(board.id).then(rows => {
       if (active) setSeasonState({ key: board.id, status: "ready", rows });
     }).catch(() => { if (active) setSeasonState({ key: board.id, status: "error", rows: [] }); });
     return () => { active = false; };
-  }, [board, service, retry]);
+  }, [board, resultService, retry]);
   useEffect(() => {
     if (!board || !grid || !seasonsReady || resultBlocked) return;
     let active = true;
     setResultState({ key, status: "loading", rows: [] });
     const method = hall ? "getHallOfFame" : "getStandings";
-    service[method](board.id, { month, variant: grid, category }).then(rows => {
+    resultService[method](board.id, { month, variant: grid, category }).then(rows => {
       if (active) setResultState({ key, status: "ready", rows });
     }).catch(() => { if (active) setResultState({ key, status: "error", rows: [] }); });
     return () => { active = false; };
-  }, [board, grid, month, category, hall, key, service, seasonsReady, resultBlocked, retry]);
+  }, [board, grid, month, category, hall, key, resultService, seasonsReady, resultBlocked, retry]);
   const title = board ? board.name : audience === "public" ? "Public leaderboard" : "My organisation leaderboards";
 
   return <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
     <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm font-bold">
-      <Link to="/dashboard" className="text-blue-700 hover:underline">← My dashboard</Link>
+      <Link to={publicOnly ? "/games" : "/dashboard"} className="text-blue-700 hover:underline">{publicOnly ? "← All games" : "← My dashboard"}</Link>
       <Link to="/games/multiplication" className="text-blue-700 hover:underline">Play Multiplication Challenge →</Link>
     </div>
     <section className="overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-sm">
@@ -84,9 +87,9 @@ export default function LearnerLeaderboardView({ boards, service }) {
         </Link>
         <div className="leaderboard-banner-copy">
           <p className="text-xs font-black uppercase tracking-widest text-yellow-300">{game.name}</p>
-          <h1 className="leaderboard-banner-title mt-2 font-black leading-tight">{title}</h1>
+          <h1 className="leaderboard-banner-title mt-2 font-black leading-tight">{hall && audience === "public" ? "CountMeInTT Hall of Fame" : title}</h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-blue-100 sm:text-base">{audience === "public"
-            ? "Explore the public competition, one grid and one month at a time."
+            ? hall ? "Celebrate our monthly champions, across every grid and category." : "Explore the public competition, one grid and one month at a time."
             : "Celebrate your progress. Cheer on your community. Aim for your next personal best."}</p>
           {board && <span className="mt-4 inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-bold">{board.scope === "public" ? "Public competition" : board.scope === "class" ? "Private class leaderboard" : "Private organisation leaderboard"}</span>}
         </div>
@@ -100,11 +103,13 @@ export default function LearnerLeaderboardView({ boards, service }) {
             {LEARNER_LEADERBOARD_GAMES.map(g => <option key={g.key} value={g.key}>{g.name}</option>)}
           </select>
         </label>
-        <nav className="flex flex-wrap gap-2" aria-label="Leaderboard audience">
+        {publicOnly ? <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm font-bold text-blue-950">Everyone can explore the public competition.</p>
+        </div> : <nav className="flex flex-wrap gap-2" aria-label="Leaderboard audience">
           {[['organisation', 'My organisation'], ['public', 'Public leaderboard']].map(([value, label]) => <button key={value} type="button" aria-pressed={audience === value}
             onClick={() => change({ audience: value }, ["board", "grid", "month", "category"])}
             className={buttonStyle + (audience === value ? " bg-blue-600 text-white" : " bg-blue-50 text-blue-800 hover:bg-blue-100")}>{label}</button>)}
-        </nav>
+        </nav>}
         {!board ? <div className="py-12 text-center">
           <h2 className="text-xl font-black">{audience === "public" ? "Public leaderboard coming soon" : "No organisation leaderboard available yet"}</h2>
           <p className="mx-auto mt-3 max-w-lg text-base leading-7 text-gray-600">{audience === "public"
@@ -130,7 +135,7 @@ export default function LearnerLeaderboardView({ boards, service }) {
             </label>
             {audience === "public" && <label className="text-sm font-bold text-gray-700">Category
               <select className={selectStyle} value={category} onChange={e => change({ category: e.target.value })}>
-                <option value="Primary">Primary</option><option value="Secondary">Secondary</option><option value="NoSchool">Open / not in school</option>
+                <option value="Primary">Primary</option><option value="Secondary">Secondary</option><option value="NoSchool">Open</option>
               </select>
             </label>}
           </div>
@@ -144,7 +149,7 @@ export default function LearnerLeaderboardView({ boards, service }) {
             <button type="button" onClick={() => setRetry(n => n + 1)} className="min-h-11 rounded-lg px-3 text-sm font-bold text-blue-700 hover:bg-blue-50">Refresh results</button>
           </div>
           <h2 className="mt-6 text-2xl font-black text-blue-950">{hall ? "Monthly champions" : "Monthly leaderboard"}</h2>
-          <p className="mt-2 text-sm leading-6 text-gray-600">{grid.replace("x", " × ")} · {monthLabel(month)} · {hall ? "Joint winners are celebrated together." : "Fastest time per learner. Equal times share a rank."}</p>
+          <p className="mt-2 text-sm leading-6 text-gray-600">{grid.replace("x", " × ")} · {monthLabel(month)}{audience === "public" ? " · " + (category === "NoSchool" ? "Open" : category) : ""} · {hall ? "Joint winners are celebrated together." : "Fastest time per learner. Equal times share a rank."}</p>
           <div aria-live="polite" aria-busy={!seasonError && resultStatus === "loading" && !resultBlocked} className="mt-5">
             {seasonError || (!resultBlocked && resultStatus === "error") ? <div role="alert" className="rounded-xl bg-red-50 p-5 text-red-800">Results could not be loaded. Please try again.<button type="button" onClick={() => setRetry(n => n + 1)} className="ml-2 min-h-11 font-black underline">Try again</button></div>
               : resultBlocked ? <p className="rounded-2xl bg-blue-50 p-6 text-blue-950">Select a month with confirmed champions to view this class’s history.</p>
@@ -158,7 +163,7 @@ export default function LearnerLeaderboardView({ boards, service }) {
                       : "Try another grid or month to explore your community’s results."}</p>
               </div> : <div className="overflow-hidden rounded-2xl border border-gray-200">
                 <table className="w-full table-fixed text-left">
-                  <caption className="sr-only">{title}, {grid}, {monthLabel(month)}, {hall ? "Hall of Fame" : "leaderboard"}</caption>
+                  <caption className="sr-only">{title}, {grid}, {monthLabel(month)}{audience === "public" ? ", " + (category === "NoSchool" ? "Open" : category) : ""}, {hall ? "Hall of Fame" : "leaderboard"}</caption>
                   <thead className="bg-blue-50 text-xs font-black uppercase tracking-wide text-blue-900"><tr>
                     <th scope="col" className="w-16 px-3 py-4 sm:w-24 sm:px-5">{hall ? "Award" : "Rank"}</th>
                     <th scope="col" className="px-3 py-4 sm:px-5">Learner</th>
@@ -173,7 +178,7 @@ export default function LearnerLeaderboardView({ boards, service }) {
               </div>}
           </div>
           <div className="mt-5 space-y-2 text-sm leading-6 text-gray-500">
-            {!hall && <p>Top 10 ranks are shown, plus your own result when you are further down the board.</p>}
+            {!hall && <p>Top 10 ranks are shown. Signed-in learners also see their own result when further down the board.</p>}
             <p>{audience === "public" ? "Public submissions are separate from your private organisation and class results." : "Only authorised members can view this board. Your school and class results are not automatically published publicly."}</p>
             <p>Each month starts a fresh competition. Past results and confirmed champions remain available. Months follow Trinidad and Tobago time.</p>
           </div>

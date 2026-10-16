@@ -1,5 +1,5 @@
-import LeaderboardUnavailable from "./components/leaderboards/LeaderboardUnavailable";
+import PublicLeaderboards from "./pages/PublicLeaderboards";
 
 export default function Leaderboard() {
-  return <LeaderboardUnavailable title="Leaderboards are being updated" />;
+  return <PublicLeaderboards />;
 }
