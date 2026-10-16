@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Trophy, Medal } from "lucide-react";
 import { currentLeaderboardMonth, formatLeaderboardTime, monthLabel } from "../../lib/leaderboardPresentation";
-import { learnerBoardSelection, learnerMonths } from "../../lib/learnerLeaderboards";
+import { learnerBoardSelection, learnerMonths, LEARNER_LEADERBOARD_GAMES } from "../../lib/learnerLeaderboards";
 import { organisationLeaderboardBranding } from "../../lib/leaderboardBranding";
 import { ordinalRank } from "../../lib/leaderboardRanks";
 
@@ -28,6 +28,7 @@ function OrganisationBrand({ branding }) {
 
 export default function LearnerLeaderboardView({ boards, service }) {
   const [params, setParams] = useSearchParams();
+  const game = LEARNER_LEADERBOARD_GAMES.find(g => g.key === params.get("game")) || LEARNER_LEADERBOARD_GAMES[0];
   const { audience, available, board, grid, category, hall } = learnerBoardSelection(boards, params);
   const [seasonState, setSeasonState] = useState({ key: "", status: "loading", rows: [] });
   const [resultState, setResultState] = useState({ key: "", status: "loading", rows: [] });
@@ -82,7 +83,7 @@ export default function LearnerLeaderboardView({ boards, service }) {
           <img src="/CountmeIn Logo No bg.png" alt="CountMeInTT" />
         </Link>
         <div className="leaderboard-banner-copy">
-          <p className="text-xs font-black uppercase tracking-widest text-yellow-300">Multiplication Challenge</p>
+          <p className="text-xs font-black uppercase tracking-widest text-yellow-300">{game.name}</p>
           <h1 className="leaderboard-banner-title mt-2 font-black leading-tight">{title}</h1>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-blue-100 sm:text-base">{audience === "public"
             ? "Explore the public competition, one grid and one month at a time."
@@ -94,6 +95,11 @@ export default function LearnerLeaderboardView({ boards, service }) {
         </div>
       </div>
       <div className="p-5 sm:p-8">
+        <label className="mb-5 block max-w-sm text-sm font-bold text-gray-700">Game
+          <select className={selectStyle} value={game.key} onChange={e => change({ game: e.target.value }, ["board", "grid", "month", "category"])}>
+            {LEARNER_LEADERBOARD_GAMES.map(g => <option key={g.key} value={g.key}>{g.name}</option>)}
+          </select>
+        </label>
         <nav className="flex flex-wrap gap-2" aria-label="Leaderboard audience">
           {[['organisation', 'My organisation'], ['public', 'Public leaderboard']].map(([value, label]) => <button key={value} type="button" aria-pressed={audience === value}
             onClick={() => change({ audience: value }, ["board", "grid", "month", "category"])}

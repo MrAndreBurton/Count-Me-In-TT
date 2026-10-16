@@ -10,6 +10,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import { leaderboardNavigationTarget } from "../../lib/leaderboardNavigation";
 
 const navLinkClass = ({ isActive }) =>
   [
@@ -354,7 +355,7 @@ export default function SiteHeader() {
           </NavLink>
 
           <NavLink
-            to="/leaderboard"
+            to={leaderboardNavigationTarget("/leaderboard", Boolean(user))}
             className={navLinkClass}
           >
             Leaderboards
@@ -661,7 +662,7 @@ export default function SiteHeader() {
             </NavLink>
 
             <NavLink
-              to="/leaderboard"
+              to={leaderboardNavigationTarget("/leaderboard", Boolean(user))}
               className={navLinkClass}
               onClick={closeMenu}
             >

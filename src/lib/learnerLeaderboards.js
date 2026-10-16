@@ -1,5 +1,10 @@
 import { createLeaderboardService } from "../services/leaderboardService.js";
 
+// Add games here only when their learner leaderboard presentation is connected.
+export const LEARNER_LEADERBOARD_GAMES = Object.freeze([
+  Object.freeze({ key: "multiplication", name: "Multiplication Challenge" }),
+]);
+
 // All board access is resolved by the protected API, never by a URL or profile picker.
 export async function loadLearnerLeaderboards(client) {
   const { data: { user }, error } = await client.auth.getUser();
