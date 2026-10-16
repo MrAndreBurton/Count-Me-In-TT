@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Plus, RefreshCw, Settings2, ShieldCheck, Trophy } from "lucide-react";
 import LeaderboardBoardForm from "./LeaderboardBoardForm";
 import LeaderboardClassAccessForm from "./LeaderboardClassAccessForm";
@@ -142,6 +143,7 @@ export default function LeaderboardManager({ context, service }) {
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Manage competitions, follow progress and celebrate monthly champions.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {context.isSuperadmin && <Link className={secondaryButton} to="/admin/leaderboards/archive">Historical Hall of Fame</Link>}
           {context.isSuperadmin && <button className={secondaryButton} disabled={boot.loading || !boot.games.length || !boot.organisations.length}
             onClick={() => setModal({ type: "access" })}><ShieldCheck size={16} className="mr-2 inline" />Class access</button>}
           {(context.isSuperadmin || orgAdmin) && <button className="rounded-xl bg-yellow-400 px-4 py-2.5 text-sm font-black text-slate-950 hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50"

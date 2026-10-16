@@ -9,6 +9,7 @@ import {
 import SchoolsPicker from "./SchoolsPicker";
 import Leaderboard from "./Leaderboard";
 import HallOfFame from "./HallOfFame";
+import HallOfFameArchive from "./pages/HallOfFameArchive";
 import Challenges from "./Challenges";
 import BocasChallenge from "./BocasChallenge";
 import BocasLitFestLeaderboard from "./BocasLitFestLeaderboard";
@@ -233,6 +234,8 @@ export default function CountMeInApp() {
           path="/admin/leaderboards"
           element={<AdminRoute><LeaderboardsControlCentre /></AdminRoute>}
         />
+        <Route path="/admin/leaderboards/archive" element={<AdminRoute><HallOfFameArchive admin /></AdminRoute>} />
+        <Route path="/hall-of-fame/archive" element={<HallOfFameArchive />} />
         <Route
           path="/organisation/:organisationId/leaderboards"
           element={<LeaderboardsControlCentre />}
