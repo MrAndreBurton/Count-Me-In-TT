@@ -921,7 +921,6 @@ export default function MultiplicationPractice() {
                   onDrop={(event) =>
                     event.preventDefault()
                   }
-                  readOnly={feedback === "correct"}
                   aria-invalid={feedback === "incorrect"}
                   aria-describedby="practice-feedback"
                   className={[
