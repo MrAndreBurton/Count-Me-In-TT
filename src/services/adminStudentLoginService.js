@@ -5,6 +5,13 @@ const INSTITUTIONAL_CREDENTIAL_ADMIN_ROLES = [
   "admin",
 ];
 
+export const ORGANISATION_CREDENTIAL_STATES = {
+  NONE: "NONE",
+  CURRENT_ORGANISATION_MANAGED:
+    "CURRENT_ORGANISATION_MANAGED",
+  EXTERNAL: "EXTERNAL",
+};
+
 export function validateStudentUsername(value) {
   const username = String(value || "")
     .trim()
@@ -63,6 +70,8 @@ export async function fetchInstitutionalLoginContext({
     organisationResult,
     enrolmentResult,
     studentResult,
+    credentialStateResult,
+    staffResult,
     loginResult,
   ] = await Promise.all([
     supabase
@@ -99,6 +108,22 @@ export async function fetchInstitutionalLoginContext({
       .eq("id", studentId)
       .maybeSingle(),
 
+    supabase.rpc(
+      "discover_organisation_student_credential_state",
+      {
+        target_organisation_id: organisationId,
+        target_student_id: studentId,
+      },
+    ),
+
+    supabase
+      .from("organisation_staff")
+      .select("id, status, ended_at, organisation_staff_roles(role)")
+      .eq("organisation_id", organisationId)
+      .eq("profile_id", user.id)
+      .eq("status", "active")
+      .is("ended_at", null),
+
     supabase
       .from("student_login_accounts")
       .select(`
@@ -113,6 +138,11 @@ export async function fetchInstitutionalLoginContext({
         organisation_id
       `)
       .eq("student_id", studentId)
+      .eq(
+        "provisioning_type",
+        "organisation",
+      )
+      .eq("organisation_id", organisationId)
       .maybeSingle(),
   ]);
 
@@ -121,6 +151,8 @@ export async function fetchInstitutionalLoginContext({
     organisationResult.error ||
     enrolmentResult.error ||
     studentResult.error ||
+    credentialStateResult.error ||
+    staffResult.error ||
     loginResult.error;
 
   if (firstError) {
@@ -131,7 +163,24 @@ export async function fetchInstitutionalLoginContext({
   const organisation = organisationResult.data;
   const enrolment = enrolmentResult.data;
   const student = studentResult.data;
+  const credentialState =
+    credentialStateResult.data;
   const login = loginResult.data;
+  const isOrganisationAdmin = (staffResult.data || []).some(
+    (staff) => (staff.organisation_staff_roles || []).some(
+      (role) => role.role === "organisation_admin",
+    ),
+  );
+
+  if (
+    !Object.values(
+      ORGANISATION_CREDENTIAL_STATES,
+    ).includes(credentialState)
+  ) {
+    throw new Error(
+      "The learner credential state could not be determined.",
+    );
+  }
 
   const isActiveSiteCredentialAdmin =
     profile?.account_status === "active" &&
@@ -141,10 +190,8 @@ export async function fetchInstitutionalLoginContext({
 
   const isValidInstitutionalTarget =
     organisation?.status === "active" &&
-    organisation?.organisation_type === "school" &&
     enrolment?.organisation_id === organisationId &&
     enrolment?.student_id === studentId &&
-    student?.origin_type === "organisation" &&
     student?.profile_status === "active";
 
   return {
@@ -152,9 +199,10 @@ export async function fetchInstitutionalLoginContext({
     organisation,
     enrolment,
     student,
+    credentialState,
     login,
     canManageCredentials:
-      isActiveSiteCredentialAdmin &&
+      (isActiveSiteCredentialAdmin || isOrganisationAdmin) &&
       isValidInstitutionalTarget,
   };
 }

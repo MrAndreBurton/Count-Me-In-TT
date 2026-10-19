@@ -144,7 +144,6 @@ async function authorizeOrganisationStudentManagement({
     .from("student_profiles")
     .select("id")
     .eq("id", studentId)
-    .eq("origin_type", "organisation")
     .eq("profile_status", "active")
     .maybeSingle();
 

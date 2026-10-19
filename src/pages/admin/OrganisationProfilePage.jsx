@@ -1399,8 +1399,7 @@ export default function OrganisationProfilePage() {
                             </span>
                           </div>
 
-                         {student.origin_type === "organisation" &&
-  student.profile_status === "active" && (
+                         {student.profile_status === "active" && (
     <div className="mt-4">
       <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
         <span className="text-slate-500">
