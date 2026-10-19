@@ -106,7 +106,7 @@ export default function AdminRoute({ children }) {
   }
 
   if (status === "forbidden") {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/workspace" replace />;
   }
 
   if (status === "error") {

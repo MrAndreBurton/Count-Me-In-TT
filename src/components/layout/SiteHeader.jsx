@@ -444,6 +444,14 @@ export default function SiteHeader() {
                   <div className="grid p-2">
                     <Link
                       role="menuitem"
+                      to="/workspace"
+                      className="rounded-lg px-3 py-2.5 text-sm font-black text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      My Workspaces
+                    </Link>
+
+                    <Link
+                      role="menuitem"
                       to="/dashboard"
                       className="rounded-lg px-3 py-2.5 text-sm font-black text-gray-700 transition hover:bg-blue-50 hover:text-blue-700"
                     >
@@ -549,6 +557,13 @@ export default function SiteHeader() {
                   </div>
 
                   <div className="grid p-2">
+                    <Link
+                      to="/workspace"
+                      className="rounded-lg px-3 py-2.5 text-sm font-black text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      My Workspaces
+                    </Link>
+
                     <Link
                       to="/dashboard"
                       className="rounded-lg px-3 py-2.5 text-sm font-black text-gray-700 hover:bg-blue-50 hover:text-blue-700"

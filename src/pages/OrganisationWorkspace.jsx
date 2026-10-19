@@ -2893,6 +2893,15 @@ const learnerProfileLevelOptions =
                           Not created
                         </p>
                       )}
+                      {hasOrganisationAdminRole && selectedLearnerDetail.student?.id && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/organisation/${organisationId}/learners/${selectedLearnerDetail.student.id}/login`)}
+                          className="mt-4 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-yellow-400 hover:text-slate-950"
+                        >
+                          {selectedLearnerDetail.login.exists ? "Manage Login" : "Create Login"}
+                        </button>
+                      )}
                     </section>
 
                     {!isEditingLearnerProfile && (

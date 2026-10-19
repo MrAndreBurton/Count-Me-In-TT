@@ -9,10 +9,12 @@ import {
 
 import {
   Link,
+  useLocation,
   useParams,
 } from "react-router-dom";
 
 import {
+  Fragment,
   useEffect,
   useMemo,
   useState,
@@ -27,6 +29,7 @@ import {
   validateInitialPassword,
   validateNewPassword,
   validateStudentUsername,
+  ORGANISATION_CREDENTIAL_STATES,
 } from "../../services/adminStudentLoginService";
 
 function getStudentName(student) {
@@ -57,6 +60,9 @@ export default function OrganisationStudentLoginPage() {
     organisationId,
     studentId,
   } = useParams();
+  const location = useLocation();
+  const isOrganisationWorkspace = location.pathname.startsWith("/organisation/");
+  const PageLayout = isOrganisationWorkspace ? Fragment : AdminLayout;
 
   const [context, setContext] =
     useState(null);
@@ -228,6 +234,11 @@ export default function OrganisationStudentLoginPage() {
       return;
     }
 
+    if (context?.credentialState !== ORGANISATION_CREDENTIAL_STATES.NONE) {
+      setSubmitError("This learner cannot receive a new login from this organisation.");
+      return;
+    }
+
     if (context?.login) {
       setSubmitError(
         "This learner already has a login.",
@@ -294,6 +305,11 @@ export default function OrganisationStudentLoginPage() {
       return;
     }
 
+    if (context?.credentialState !== ORGANISATION_CREDENTIAL_STATES.CURRENT_ORGANISATION_MANAGED) {
+      setPasswordChangeError("This organisation cannot manage these credentials.");
+      return;
+    }
+
     if (!context?.login) {
       setPasswordChangeError(
         "This learner does not have a login.",
@@ -336,22 +352,23 @@ export default function OrganisationStudentLoginPage() {
 
   if (isLoading) {
     return (
-      <AdminLayout>
+      <PageLayout>
         <section className="py-16 text-center">
           <p className="font-bold text-slate-600">
             Loading learner login...
           </p>
         </section>
-      </AdminLayout>
+      </PageLayout>
     );
   }
 
-  const schoolPath =
-    `/admin/schools/${organisationId}`;
+  const schoolPath = isOrganisationWorkspace
+    ? `/organisation/${organisationId}`
+    : `/admin/schools/${organisationId}`;
 
   if (loadError || !context) {
     return (
-      <AdminLayout>
+      <PageLayout>
         <section className="py-16 text-center">
           <h1 className="text-2xl font-black text-red-700">
             Unable to load learner login
@@ -367,10 +384,10 @@ export default function OrganisationStudentLoginPage() {
             className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
           >
             <ArrowLeft size={18} />
-            Return to school
+            Return to organisation
           </Link>
         </section>
-      </AdminLayout>
+      </PageLayout>
     );
   }
 
@@ -378,6 +395,7 @@ export default function OrganisationStudentLoginPage() {
     organisation,
     student,
     login,
+    credentialState,
     canManageCredentials,
   } = context;
 
@@ -385,7 +403,7 @@ export default function OrganisationStudentLoginPage() {
     getStudentName(student);
 
   return (
-    <AdminLayout>
+    <PageLayout>
       <section className="mx-auto max-w-3xl pb-12">
         <Link
           to={schoolPath}
@@ -401,9 +419,11 @@ export default function OrganisationStudentLoginPage() {
           </p>
 
           <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950">
-            {login
-              ? "Manage Student Login"
-              : "Create Student Login"}
+            {credentialState === ORGANISATION_CREDENTIAL_STATES.EXTERNAL
+              ? "Login Managed Elsewhere"
+              : login
+                ? "Manage Student Login"
+                : "Create Student Login"}
           </h1>
 
           <div className="mt-6 flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -446,7 +466,15 @@ export default function OrganisationStudentLoginPage() {
           </div>
         )}
 
-        {login ? (
+        {credentialState === ORGANISATION_CREDENTIAL_STATES.EXTERNAL ? (
+          <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-6">
+            <h2 className="text-lg font-black text-amber-900">Login managed elsewhere</h2>
+            <p className="mt-2 text-sm leading-6 text-amber-800">
+              This learner already has a login managed by another account or organisation.
+              You cannot create a second login or reset those credentials here.
+            </p>
+          </div>
+        ) : login ? (
           <div className="mt-6 grid gap-6">
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-start gap-4">
@@ -831,6 +859,6 @@ export default function OrganisationStudentLoginPage() {
           </form>
         )}
       </section>
-    </AdminLayout>
+    </PageLayout>
   );
 }
