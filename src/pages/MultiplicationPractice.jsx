@@ -24,6 +24,8 @@ import {
   subscribeToPracticeAuthChanges,
 } from "../services/multiplicationPracticeResults";
 
+import { createPracticeEvidence } from "../components/multiplication/practice/practiceEvidence";
+
 const CORRECT_ADVANCE_DELAY_MS = 180;
 
 function readPracticeSelection(search) {
@@ -78,9 +80,8 @@ export default function MultiplicationPractice() {
   const timerRef = useRef(null);
   const advanceTimerRef = useRef(null);
   const focusTimerRef = useRef(null);
-  const incorrectAttemptsRef = useRef(0);
-  const missedFactsRef = useRef(new Set());
-  const lastCountedWrongRef = useRef("");
+  const evidenceRef = useRef(null);
+  const roundRef = useRef(null);
 
   const currentFact = facts[currentIndex] || null;
   const displayTime = formatPracticeTime(elapsed);
@@ -167,13 +168,14 @@ export default function MultiplicationPractice() {
 
   useEffect(() => {
     if (
+      screen === "setup" &&
       access.status === "ready" &&
       !canUseTable(tableNumber)
     ) {
       setLockedTable(tableNumber);
       setTableNumber(2);
     }
-  }, [access.status, canUseTable, tableNumber]);
+  }, [access.status, canUseTable, screen, tableNumber]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -264,19 +266,31 @@ export default function MultiplicationPractice() {
 
     answerValueRef.current = "";
     startTimestampRef.current = null;
-    incorrectAttemptsRef.current = 0;
-    missedFactsRef.current = new Set();
-    lastCountedWrongRef.current = "";
+    evidenceRef.current = null;
+    roundRef.current = null;
   }, [clearRoundTimers]);
 
   const openRound = useCallback(
     (nextFacts) => {
+      if (access.status !== "ready" || !nextFacts.length) return;
+      if (!canUseTable(nextFacts[0].tableNumber)) {
+        setLockedTable(nextFacts[0].tableNumber);
+        return;
+      }
+      if (access.authenticated && (!access.accountId || !access.profile?.id)) return;
       resetRoundState();
+      evidenceRef.current = createPracticeEvidence(nextFacts);
+      roundRef.current = {
+        attemptId: window.crypto.randomUUID(),
+        accountId: access.authenticated ? access.accountId : null,
+        studentId: access.authenticated ? access.profile.id : null,
+        finished: false,
+      };
       setFacts(nextFacts.map((fact) => ({ ...fact })));
       setScreen("play");
       focusAnswer();
     },
-    [focusAnswer, resetRoundState]
+    [access, canUseTable, focusAnswer, resetRoundState]
   );
 
   const startNewRound = ({
@@ -310,6 +324,9 @@ export default function MultiplicationPractice() {
   };
 
   const finishRound = async () => {
+    const round = roundRef.current;
+    if (!round || round.finished) return;
+    round.finished = true;
     clearRoundTimers();
 
     const finalElapsed =
@@ -322,17 +339,24 @@ export default function MultiplicationPractice() {
       mode,
       rangeMax,
       durationMs: finalElapsed,
-      incorrectAttempts:
-        incorrectAttemptsRef.current,
-      factsMissedFirstTry:
-        missedFactsRef.current.size,
+      ...evidenceRef.current.summary(),
     });
+
+    completedResult.practiceEvidence = {
+      version: 2,
+      attemptId: round.attemptId,
+      facts: evidenceRef.current.snapshot(),
+    };
+    completedResult.expectedIdentity = {
+      accountId: round.accountId,
+      studentId: round.studentId,
+    };
 
     setElapsed(finalElapsed);
     setResult(completedResult);
     setScreen("results");
 
-    if (!access.authenticated) {
+    if (!round.accountId) {
       setSaveState({
         status: "guest",
         data: null,
@@ -400,8 +424,6 @@ export default function MultiplicationPractice() {
     setFeedback("idle");
 
     answerValueRef.current = "";
-    lastCountedWrongRef.current = "";
-
     focusAnswer();
   };
 
@@ -420,16 +442,6 @@ export default function MultiplicationPractice() {
   const registerIncorrectAnswer = useCallback(
     (value, fact) => {
       if (!fact || !value) return;
-
-      const wrongKey = `${fact.id}:${value}`;
-
-      // Repeated checks of the same unchanged wrong answer
-      // count as one mistake.
-      if (lastCountedWrongRef.current !== wrongKey) {
-        lastCountedWrongRef.current = wrongKey;
-        incorrectAttemptsRef.current += 1;
-        missedFactsRef.current.add(fact.id);
-      }
 
       setFeedback("incorrect");
 
@@ -454,6 +466,7 @@ export default function MultiplicationPractice() {
       .replace(/\D+/g, "")
       .slice(0, 3);
 
+    evidenceRef.current?.edit(currentIndex, cleanValue);
     setAnswer(cleanValue);
     answerValueRef.current = cleanValue;
     setFeedback("idle");
@@ -482,9 +495,10 @@ export default function MultiplicationPractice() {
       return;
     }
 
-    if (Number(value) === currentFact.answer) {
+    const submission = evidenceRef.current?.submit(currentIndex, value);
+    if (submission?.correct) {
       acceptCorrectAnswer();
-    } else {
+    } else if (Number(value) !== currentFact.answer) {
       registerIncorrectAnswer(value, currentFact);
     }
   };
@@ -842,7 +856,8 @@ export default function MultiplicationPractice() {
                 <button
                   type="button"
                   onClick={() => startNewRound()}
-                  className="rounded-xl bg-blue-600 px-7 py-3 font-black text-white shadow transition hover:bg-blue-700"
+                  disabled={access.status !== "ready"}
+                  className="rounded-xl bg-blue-600 px-7 py-3 font-black text-white shadow transition hover:bg-blue-700 disabled:opacity-60"
                 >
                   Start Round
                 </button>
@@ -1216,6 +1231,7 @@ export default function MultiplicationPractice() {
     </div>
   );
 }
+
 
 
 
