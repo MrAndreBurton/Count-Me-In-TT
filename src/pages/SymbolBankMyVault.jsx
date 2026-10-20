@@ -174,6 +174,58 @@ export default function SymbolBankMyVault() {
     );
   }
 
+   if (!data.memberAccess) {
+    const isExpired =
+      data.membership?.status === "expired" ||
+      (data.membership?.expiresAt &&
+        new Date(data.membership.expiresAt) <= new Date());
+
+    return (
+      <SymbolBankShell>
+        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
+          <p className="text-xs font-black uppercase tracking-[.2em] text-blue-600">
+            My Vault
+          </p>
+
+          <h1 className="mt-2 text-3xl font-black sm:text-4xl">
+            {isExpired
+              ? "Renew access to My Vault"
+              : "Unlock your Mathematics Vault"}
+          </h1>
+
+          <p className="mt-4 max-w-2xl text-slate-600">
+            {isExpired
+              ? "Your membership access has ended. Your previously recorded discoveries and learning evidence are preserved. Renew your membership to access My Vault again."
+              : "My Vault is available with a paid membership. Unlock your personal symbol discoveries, learning history, and progress tracking."}
+          </p>
+
+          <p className="mt-3 max-w-2xl text-sm text-slate-500">
+            You can continue browsing the public Mathematics Symbol Bank
+            without a paid membership.
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              to="/membership"
+              className="rounded-xl bg-blue-600 px-5 py-3 font-black text-white"
+            >
+              {isExpired
+                ? "View renewal options"
+                : "Explore membership"}
+            </Link>
+
+            <Link
+              to="/symbol-bank/vault"
+              className="rounded-xl border border-slate-200 bg-white px-5 py-3 font-black text-slate-800"
+            >
+              Browse the Symbol Bank
+            </Link>
+          </div>
+        </section>
+      </SymbolBankShell>
+    );
+  }
+
   const displayName =
     data.profile?.public_display_name ||
     data.profile?.first_name ||
