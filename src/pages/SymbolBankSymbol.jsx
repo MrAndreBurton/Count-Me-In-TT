@@ -5,8 +5,10 @@ import SymbolRenderer from "../components/symbolBank/SymbolRenderer";
 import LockedSymbolPreview from "../components/symbolBank/LockedSymbolPreview";
 import { getSymbolBankSymbol } from "../lib/symbolBank";
 import { getPlayableProfileMembership } from "../lib/membership";
-import { isPaidMembership } from "../lib/membershipAccess";
-import { discoverSymbolForPlayableProfile } from "../lib/symbolVault";
+import {
+  discoverSymbolForPlayableProfile,
+  hasActiveSymbolEvidenceMembership,
+} from "../lib/symbolVault";
 
 export default function SymbolBankSymbol() {
   const { symbolId } = useParams();
@@ -44,7 +46,7 @@ export default function SymbolBankSymbol() {
         setRecord(result.record);
 
         setMemberAccess(
-          isPaidMembership(access.membership)
+          hasActiveSymbolEvidenceMembership(access.membership)
         );
 
         setAccessResolved(true);
@@ -84,6 +86,9 @@ export default function SymbolBankSymbol() {
   */
   useEffect(() => {
     if (!record || !accessResolved) return;
+
+    // Persistent discovery evidence is for paid members only.
+    if (!memberAccess) return;
 
     const locked =
       record.access_tier === "member" &&
@@ -260,5 +265,3 @@ export default function SymbolBankSymbol() {
     </SymbolBankShell>
   );
 }
-
-
