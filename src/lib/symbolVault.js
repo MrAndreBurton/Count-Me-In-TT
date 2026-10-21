@@ -1,7 +1,6 @@
 import { supabase } from "./supabase";
 import { getActiveSymbolBankRecords } from "./symbolBank";
 import { getPlayableProfileMembership } from "./membership";
-import { isPaidMembership } from "./membershipAccess";
 
 export const VAULT_STATES = Object.freeze([
   "UNSEEN",
@@ -10,6 +9,35 @@ export const VAULT_STATES = Object.freeze([
   "SECURE",
   "REVIEW",
 ]);
+
+export function hasActiveSymbolEvidenceMembership(membership) {
+  if (!membership?.isCurrent) return false;
+
+  if (!["active", "grace"].includes(membership.status)) {
+    return false;
+  }
+
+  if (!membership.plan?.isPaid || !membership.plan?.isActive) {
+    return false;
+  }
+
+  const now = Date.now();
+  const startsAt = Date.parse(membership.startsAt);
+
+  if (!Number.isFinite(startsAt) || startsAt > now) {
+    return false;
+  }
+
+  if (membership.expiresAt != null) {
+    const expiresAt = Date.parse(membership.expiresAt);
+
+    if (!Number.isFinite(expiresAt) || expiresAt <= now) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 function normaliseStoredState(value) {
   const state = String(value || "").trim().toUpperCase();
@@ -82,7 +110,7 @@ export async function getMyVaultData() {
     getPlayableProfileMembership(),
   ]);
 
-  const memberAccess = isPaidMembership(access.membership);
+  const memberAccess = hasActiveSymbolEvidenceMembership(access.membership);
 
   if (!bank.release) {
     return {
@@ -103,6 +131,22 @@ export async function getMyVaultData() {
       profile: null,
       membership: null,
       memberAccess,
+      release: bank.release,
+      records,
+      summary: summariseVault(records),
+    };
+  }
+
+  // Free and expired members may browse permitted symbols,
+  // but must not retrieve persistent learner evidence.
+  if (!memberAccess) {
+    const records = mergeRecordsWithState(bank.records, [], false);
+
+    return {
+      guest: false,
+      profile: access.profile,
+      membership: access.membership || null,
+      memberAccess: false,
       release: bank.release,
       records,
       summary: summariseVault(records),
@@ -149,11 +193,15 @@ export async function discoverSymbolForPlayableProfile(symbolId) {
 
   const access = await getPlayableProfileMembership();
 
-  if (access.guest || !access.profile) {
+  if (
+    access.guest ||
+    !access.profile ||
+    !hasActiveSymbolEvidenceMembership(access.membership)
+  ) {
     return {
       recorded: false,
-      guest: true,
-      profile: null,
+      guest: Boolean(access.guest),
+      profile: access.profile || null,
       state: null,
     };
   }
