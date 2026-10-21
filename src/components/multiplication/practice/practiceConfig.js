@@ -1,7 +1,7 @@
-export const PRACTICE_TABLES = Array.from(
-  { length: 12 },
-  (_, index) => index + 1
-);
+export const PRACTICE_TABLES = [
+  ...Array.from({ length: 15 }, (_, index) => index + 1),
+  20, 25, 50,
+];
 
 export const FREE_PRACTICE_TABLES = new Set([
   1, 2, 5, 10,
@@ -85,7 +85,7 @@ export function createPracticeFacts({
   const safeRangeMax = Number(rangeMax);
 
   if (!PRACTICE_TABLES.includes(safeTableNumber)) {
-    throw new Error("Choose a times table from 1 to 12.");
+    throw new Error("Choose a times table from 1 to 15, 20, 25 or 50.");
   }
 
   if (!PRACTICE_RANGES.includes(safeRangeMax)) {
@@ -170,3 +170,4 @@ export function createPracticeResult({
     completedAt: new Date().toISOString(),
   };
 }
+
