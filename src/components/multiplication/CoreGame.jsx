@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { PRACTICE_TABLES } from "./practice/practiceConfig";
 import GameHeader from "../layout/GameHeader.jsx";
 import PublicScoreSubmission from "../leaderboards/PublicScoreSubmission";
 import { createGridEvidence, describeGridPersonalBest, buildGridTableGuidance } from "./gridEvidence";
@@ -253,7 +254,7 @@ function focusedSeconds(milliseconds) {
 
 function GridPracticeNextStep({ guidance, rangeMax, onReplay }) {
   const target = guidance.recommended;
-  const supported = target && target.tableNumber <= 12;
+  const supported = target && PRACTICE_TABLES.includes(target.tableNumber);
   const query = target ? new URLSearchParams({
     table: String(target.tableNumber),
     mode: guidance.practiceMode,
@@ -2206,3 +2207,4 @@ export default function CoreGame({
 </div>
   );
 }
+
