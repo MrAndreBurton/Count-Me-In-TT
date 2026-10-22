@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 
 import {
   Plus,
+  RefreshCw,
   UsersRound,
 } from "lucide-react";
 
@@ -22,68 +23,6 @@ import {
 import {
   mapSupabaseStudentToAdminStudent,
 } from "../../utils/adminStudentMapper";
-
-function getInitials(name = "") {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) =>
-      part.charAt(0).toUpperCase(),
-    )
-    .join("");
-}
-
-function formatStatus(
-  status,
-  fallback = "Pending",
-) {
-  if (!status) return fallback;
-
-  return (
-    status.charAt(0).toUpperCase() +
-    status.slice(1).toLowerCase()
-  );
-}
-
-function formatLearningCategory(category) {
-  if (!category) return "No School";
-
-  const normalized =
-    category.toLowerCase();
-
-  if (normalized === "primary") {
-    return "Primary";
-  }
-
-  if (normalized === "secondary") {
-    return "Secondary";
-  }
-
-  if (
-    normalized === "no_school" ||
-    normalized === "no school"
-  ) {
-    return "No School";
-  }
-
-  return category;
-}
-
-function formatDate(
-  dateValue,
-  fallback = "Not available",
-) {
-  if (!dateValue) return fallback;
-
-  return new Date(
-    dateValue,
-  ).toLocaleDateString("en-TT", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] =
@@ -103,6 +42,7 @@ export default function StudentsPage() {
     useState("All");
 
   const [students, setStudents] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [isLoading, setIsLoading] =
     useState(true);
   const [loadError, setLoadError] =
@@ -156,7 +96,7 @@ useEffect(() => {
   return () => {
     isMounted = false;
   };
-}, []);
+}, [refreshKey]);
 
   const filteredStudents = useMemo(() => {
     const normalizedSearch =
@@ -180,7 +120,7 @@ useEffect(() => {
 
       const matchesMembership =
         membershipFilter === "All" ||
-        student.membership === membershipFilter;
+        student.membershipCategory === membershipFilter;
 
       const matchesStatus =
         statusFilter === "All" ||
@@ -237,7 +177,8 @@ useEffect(() => {
 
         </div>
 
-        <div className="mt-8 flex items-center gap-3">
+        <div className="mt-8 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700">
             <UsersRound size={22} />
           </div>
@@ -251,7 +192,14 @@ useEffect(() => {
               Students displayed
             </p>
           </div>
+          </div>
+
+          <button type="button" onClick={() => setRefreshKey((value) => value + 1)} disabled={isLoading} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+            <RefreshCw size={17} /> Refresh students
+          </button>
         </div>
+
+        {loadError && <p role="alert" className="mt-4 text-sm text-red-700">{loadError}</p>}
 
         <div className="mt-8">
           <StudentFilters
