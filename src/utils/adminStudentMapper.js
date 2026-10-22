@@ -109,15 +109,36 @@ export function mapSupabaseStudentToAdminStudent(
       data.current_school ||
       "No school selected",
 
+    membershipId: currentMembership?.id || null,
+
+    membershipCategory: (() => {
+      if (!currentMembership) return "None";
+
+      const plan = currentMembership.membership_plans;
+      const key = String(plan?.plan_key || "")
+        .trim()
+        .toLowerCase();
+
+      if (key === "free") return "Free";
+      if (key.includes("annual")) return "Annual";
+      if (key.includes("term")) return "Term";
+
+      return "Unknown";
+    })(),
+
     membership:
       currentMembership
         ?.membership_plans?.name ||
-      "Free",
+      (currentMembership
+        ? "Unknown Membership Plan"
+        : "No Current Membership"),
 
     membershipStatus:
       formatStatus(
         currentMembership?.status,
-        "Inactive",
+        currentMembership
+          ? "Unknown"
+          : "No Current Membership",
       ),
 
     membershipExpiry:

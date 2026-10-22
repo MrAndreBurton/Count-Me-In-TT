@@ -223,14 +223,25 @@ if (loadError) {
               <div className="flex flex-col gap-3 lg:items-end">
           <div className="flex flex-wrap gap-3">
     <span className="rounded-full bg-white/70 px-4 py-2 text-sm font-bold text-slate-800">
-      {student.membership} Member
+      {student.membership}
     </span>
 
-    <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-700">
+    <span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ${
+        student.membershipStatus === "Active"
+          ? "bg-emerald-100 text-emerald-700"
+          : "bg-amber-100 text-amber-800"
+      }`}>
       <ShieldCheck size={16} />
-      {student.membershipStatus}
+      Membership: {student.membershipStatus}
     </span>
   </div>
+
+  <Link
+    to={student.membershipId ? `/admin/memberships/${student.membershipId}` : "/admin/memberships"}
+    className="inline-flex items-center justify-center rounded-2xl border border-slate-900 px-5 py-3 text-sm font-black text-slate-950 hover:bg-white"
+  >
+    Manage membership
+  </Link>
 
   <Link
     to={`/admin/students/${student.id}/edit`}

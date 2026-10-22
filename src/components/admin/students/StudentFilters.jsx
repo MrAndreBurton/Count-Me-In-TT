@@ -94,6 +94,14 @@ export default function StudentFilters({
             <option value="Free">
               Free
             </option>
+
+            <option value="Unknown">
+              Unknown plan
+            </option>
+
+            <option value="None">
+              No current membership
+            </option>
           </select>
         </label>
 

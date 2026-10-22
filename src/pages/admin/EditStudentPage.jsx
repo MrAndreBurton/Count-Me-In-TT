@@ -46,10 +46,7 @@ export default function EditStudentPage() {
     learningCategory: "Primary",
     level: "",
     school: "",
-    membership: "Free",
-    membershipStatus: "Active",
     status: "Active",
-    membershipExpiry: "",
     parentId: "",
   });
 
@@ -101,13 +98,7 @@ export default function EditStudentPage() {
           mappedStudent.learningCategory,
         level: mappedStudent.level,
         school: mappedStudent.school,
-        membership:
-          mappedStudent.membership,
-        membershipStatus:
-          mappedStudent.membershipStatus,
         status: mappedStudent.status,
-        membershipExpiry:
-          mappedStudent.membershipExpiry,
         parentId:
           mappedStudent.parentId || "",
       });
@@ -247,8 +238,8 @@ export default function EditStudentPage() {
 
           <p className="mt-2 max-w-2xl text-slate-500">
             Update the student’s personal,
-            academic, membership and parent
-            information.
+            academic, profile status and parent
+            information. Memberships are managed separately.
           </p>
         </div>
 
@@ -327,35 +318,14 @@ export default function EditStudentPage() {
             </div>
 
             <div className="mt-7 grid gap-5 md:grid-cols-2">
+              <div className="md:col-span-2 rounded-2xl bg-slate-50 p-5 text-sm text-slate-700">
+                <p><strong>Membership:</strong> {student.membership}</p>
+                <p className="mt-2"><strong>Membership status:</strong> {student.membershipStatus}</p>
+                <p className="mt-2"><strong>Membership expiry:</strong> {student.membershipExpiry}</p>
+                <Link className="mt-4 inline-block font-bold text-blue-700 underline" to={student.membershipId ? `/admin/memberships/${student.membershipId}` : "/admin/memberships"}>Manage membership</Link>
+              </div>
               <SelectField
-                label="Membership"
-                name="membership"
-                value={formData.membership}
-                onChange={handleChange}
-                options={[
-                  "Free",
-                  "Term",
-                  "Annual",
-                ]}
-              />
-
-              <SelectField
-                label="Membership status"
-                name="membershipStatus"
-                value={
-                  formData.membershipStatus
-                }
-                onChange={handleChange}
-                options={[
-                  "Active",
-                  "Pending",
-                  "Inactive",
-                  "Expired",
-                ]}
-              />
-
-              <SelectField
-                label="Account status"
+                label="Student profile status"
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
@@ -367,15 +337,6 @@ export default function EditStudentPage() {
                 ]}
               />
 
-              <FormField
-                label="Membership expiry"
-                name="membershipExpiry"
-                value={
-                  formData.membershipExpiry
-                }
-                onChange={handleChange}
-                placeholder="July 30, 2027"
-              />
             </div>
           </section>
 

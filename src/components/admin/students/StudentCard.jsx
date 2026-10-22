@@ -15,6 +15,10 @@ const membershipStyles = {
     "bg-blue-100 text-blue-700",
   Free:
     "bg-slate-100 text-slate-600",
+  Unknown:
+    "bg-amber-100 text-amber-800",
+  None:
+    "bg-slate-200 text-slate-700",
 };
 
 const statusStyles = {
@@ -28,8 +32,8 @@ const statusStyles = {
 
 export default function StudentCard({ student }) {
   const membershipClass =
-    membershipStyles[student.membership] ||
-    membershipStyles.Free;
+    membershipStyles[student.membershipCategory] ||
+    membershipStyles.Unknown;
 
   const statusClass =
     statusStyles[student.status] ||
@@ -66,6 +70,12 @@ export default function StudentCard({ student }) {
         >
           {student.membership}
         </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+        <span>Profile: {student.status}</span>
+        <span>·</span>
+        <span>Membership: {student.membershipStatus}</span>
       </div>
 
       <div className="mt-6 space-y-3">
