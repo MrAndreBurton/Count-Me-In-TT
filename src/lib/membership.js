@@ -28,6 +28,7 @@ export async function getCurrentStudentMembership(studentId) {
           price_ttd,
           duration_months,
           is_paid,
+          is_active,
           entitlements
         )
       `
@@ -66,6 +67,7 @@ export async function getCurrentStudentMembership(studentId) {
           priceTtd: Number(plan.price_ttd || 0),
           durationMonths: plan.duration_months,
           isPaid: Boolean(plan.is_paid),
+          isActive: Boolean(plan.is_active),
           entitlements: plan.entitlements || {},
         }
       : null,

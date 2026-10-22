@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -22,8 +23,10 @@ import {
 } from "../lib/membership";
 
 import {
-  isPaidMembership,
-} from "../lib/membershipAccess";
+  hasActiveSymbolEvidenceMembership,
+} from "../lib/symbolVault";
+
+import { saveSymbolChallengeEvidence } from "../lib/symbolChallengeEvidence";
 
 import {
   generateSymbolChallengeRound,
@@ -46,6 +49,10 @@ function newRoundSeed() {
 }
 
 export default function SymbolChallenge() {
+  const savingAttempts = useRef(new Set());
+  const [saveState, setSaveState] = useState("idle");
+  const [saveError, setSaveError] = useState("");
+
   const [
     release,
     setRelease,
@@ -181,7 +188,7 @@ export default function SymbolChallenge() {
         if (!live) return;
 
         setMemberAccess(
-          isPaidMembership(
+          hasActiveSymbolEvidenceMembership(
             access.membership
           )
         );
@@ -290,6 +297,8 @@ export default function SymbolChallenge() {
         setCurrentIndex(0);
 
         setResponses([]);
+        setSaveState("idle");
+        setSaveError("");
 
         resetEncounterState();
 
@@ -475,10 +484,21 @@ export default function SymbolChallenge() {
       nextIndex >=
       round.encounters.length
     ) {
-      setScreen(
-        "RESULTS"
-      );
-
+      setScreen("RESULTS");
+      // A paid member's completed round is saved once. Public play remains unchanged.
+      const attemptId = round.config.seed;
+      if (memberAccess && !savingAttempts.current.has(attemptId)) {
+        savingAttempts.current.add(attemptId);
+        setSaveState("saving");
+        setSaveError("");
+        saveSymbolChallengeEvidence(round, responses)
+          .then(() => setSaveState("saved"))
+          .catch((err) => {
+            savingAttempts.current.delete(attemptId);
+            setSaveState("error");
+            setSaveError(err?.message || "Could not save this round.");
+          });
+      }
       return;
     }
 
@@ -495,6 +515,8 @@ export default function SymbolChallenge() {
 
   function handleChangeSettings() {
     setRound(null);
+    setSaveState("idle");
+    setSaveError("");
 
     setResponses([]);
 
@@ -599,6 +621,23 @@ export default function SymbolChallenge() {
       {screen ===
         "RESULTS" &&
       round ? (
+        <>
+        {memberAccess && saveState === "saving" ? <p role="status" className="mx-auto max-w-3xl p-3 text-center">Saving learning evidence…</p> : null}
+        {memberAccess && saveState === "saved" ? <p role="status" className="mx-auto max-w-3xl p-3 text-center">Learning evidence saved.</p> : null}
+        {memberAccess && saveState === "error" ? (
+          <div role="alert" className="mx-auto max-w-3xl p-3 text-center">
+            <p>Evidence was not saved: {saveError}</p>
+            <button type="button" className="underline" onClick={() => {
+              const attemptId = round.config.seed;
+              if (savingAttempts.current.has(attemptId)) return;
+              savingAttempts.current.add(attemptId);
+              setSaveState("saving");
+              saveSymbolChallengeEvidence(round, responses)
+                .then(() => { setSaveState("saved"); setSaveError(""); })
+                .catch((err) => { savingAttempts.current.delete(attemptId); setSaveState("error"); setSaveError(err?.message || "Could not save this round."); });
+            }}>Retry saving</button>
+          </div>
+        ) : null}
         <SymbolChallengeResults
           experienceMode={
             round.config
@@ -618,6 +657,7 @@ export default function SymbolChallenge() {
             handleChangeSettings
           }
         />
+        </>
       ) : null}
     </SymbolBankShell>
   );
