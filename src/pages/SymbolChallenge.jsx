@@ -140,6 +140,16 @@ export default function SymbolChallenge() {
     setScreen,
   ] = useState("SETUP");
 
+// Return to the top whenever the learner advances to a new question.
+useEffect(() => {
+  if (screen === "PLAY" || screen === "RESULTS") {
+    window.scrollTo({
+      top: 0,
+      behavior: "instant",
+    });
+  }
+}, [currentIndex, screen]);
+
   const [
     error,
     setError,
@@ -622,10 +632,10 @@ export default function SymbolChallenge() {
         "RESULTS" &&
       round ? (
         <>
-        {memberAccess && saveState === "saving" ? <p role="status" className="mx-auto max-w-3xl p-3 text-center">Saving learning evidence…</p> : null}
-        {memberAccess && saveState === "saved" ? <p role="status" className="mx-auto max-w-3xl p-3 text-center">Learning evidence saved.</p> : null}
+        {memberAccess && saveState === "saving" ? <p role="status" className="mx-auto max-w-3xl rounded-xl border border-blue-200 bg-blue-50 p-3 text-center font-semibold text-blue-900">Saving learning evidence…</p> : null}
+        {memberAccess && saveState === "saved" ? <p role="status" className="mx-auto max-w-3xl rounded-xl border border-blue-200 bg-blue-50 p-3 text-center font-semibold text-blue-900">Learning evidence saved.</p> : null}
         {memberAccess && saveState === "error" ? (
-          <div role="alert" className="mx-auto max-w-3xl p-3 text-center">
+          <div role="alert" className="mx-auto max-w-3xl rounded-xl border border-blue-200 bg-blue-50 p-3 text-center font-semibold text-blue-900">
             <p>Evidence was not saved: {saveError}</p>
             <button type="button" className="underline" onClick={() => {
               const attemptId = round.config.seed;

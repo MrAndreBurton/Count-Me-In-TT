@@ -47,11 +47,11 @@ function choiceClass(
   selected
 ) {
   return [
-    "rounded-2xl border p-5 text-left transition",
+    "relative rounded-2xl border-2 p-5 text-left transition duration-200 focus-visible:outline-none",
     "focus:outline-none focus:ring-4 focus:ring-blue-100",
     selected
-      ? "border-blue-600 bg-blue-50 shadow-sm"
-      : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm",
+      ? "border-amber-400 bg-amber-50 shadow-md shadow-amber-900/10"
+      : "border-blue-100 bg-white hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-md",
   ].join(" ");
 }
 
@@ -74,13 +74,17 @@ export default function SymbolChallengeSetup({
 
   return (
     <div className="mx-auto max-w-5xl">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <div className="relative mb-6 overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-950 via-blue-950 to-blue-800 px-6 py-9 text-white shadow-xl sm:px-10 sm:py-12">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full border-[30px] border-white/5" />
+        <div className="relative"><p className="text-xs font-black uppercase tracking-[0.22em] text-amber-300">Mathematics Symbol Bank · Challenge chamber</p><h1 className="mt-3 text-3xl font-black sm:text-5xl">Put your symbol knowledge to the test.</h1><p className="mt-4 max-w-2xl text-base leading-7 text-blue-100">Choose your mode, set your level and step into a new round. Every symbol is another opportunity to learn.</p></div>
+      </div>
+      <section className="rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-950/5 sm:p-8">
         <p className="text-xs font-black uppercase tracking-[.2em] text-blue-600">
           Mathematics Symbol Challenge
         </p>
 
         <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-          How would you like to play?
+          Choose your playing style
         </h1>
 
         <p className="mt-3 max-w-2xl leading-7 text-slate-600">
@@ -140,7 +144,7 @@ export default function SymbolChallengeSetup({
         </div>
       </section>
 
-      <section className="mt-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="mt-5 rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-950/5 sm:p-8">
         <h2 className="text-xl font-black">
           Choose your level
         </h2>
@@ -174,7 +178,7 @@ export default function SymbolChallengeSetup({
         </div>
       </section>
 
-      <section className="mt-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="mt-5 rounded-[1.75rem] border border-blue-100 bg-white p-6 shadow-lg shadow-blue-950/5 sm:p-8">
         <h2 className="text-xl font-black">
           Choose your challenge
         </h2>
@@ -241,7 +245,7 @@ export default function SymbolChallengeSetup({
           type="button"
           onClick={onStart}
           disabled={loading}
-          className="mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-blue-600 px-7 py-3 font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-amber-400 px-8 py-3 font-black text-slate-950 shadow-md shadow-amber-900/10 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading
             ? "Preparing round…"
