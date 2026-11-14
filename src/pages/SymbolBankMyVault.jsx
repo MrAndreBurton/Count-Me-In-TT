@@ -42,7 +42,10 @@ export default function SymbolBankMyVault() {
     };
   }, []);
 
-  const records = data?.records || [];
+  const records = useMemo(
+    () => data?.records ?? [],
+    [data?.records]
+  );
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -233,41 +236,40 @@ export default function SymbolBankMyVault() {
 
   return (
     <SymbolBankShell>
-      <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-xs font-black uppercase tracking-[.2em] text-blue-600">
-          My Vault
-        </p>
-
-        <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-          {displayName}&apos;s Mathematics Vault
-        </h1>
-
-        <p className="mt-3 text-slate-600">
-          {data.release
-            ? `${data.summary.total} symbols · active release ${data.release.symbol_bank_version}`
-            : "No active Symbol Bank release."}
-        </p>
-
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-          Symbol Balance counts only symbols that
-          have reached SECURE through verified
-          learning evidence. Browsing a symbol can
-          mark it DISCOVERED, but it does not create
-          mastery.
-        </p>
+      <section className="relative mb-6 overflow-hidden rounded-[2rem] border border-amber-300/30 bg-gradient-to-br from-slate-950 via-blue-950 to-blue-800 p-6 text-white shadow-lg sm:p-9">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full border-[30px] border-amber-300/10" />
+        <div className="relative">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-amber-300">CountMeInTT · Personal Knowledge Vault</p>
+          <h1 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">{displayName}&apos;s Mathematics Vault</h1>
+          <p className="mt-3 text-blue-100">
+            {data.release
+              ? `${data.summary.total} symbols · active release ${data.release.symbol_bank_version}`
+              : "No active Symbol Bank release."}
+          </p>
+          <div className="mt-6 max-w-3xl rounded-2xl border border-white/15 bg-white/10 p-4 text-sm leading-6 text-blue-50">
+            <strong className="text-amber-200">Your knowledge has value.</strong>{" "}
+            Symbol Balance counts only symbols that reach SECURE through verified learning evidence.
+            Browsing can mark a symbol DISCOVERED, but does not demonstrate mastery.
+          </div>
+          <Link to="/symbol-bank/vault" className="mt-5 inline-flex rounded-xl border border-amber-200 bg-amber-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-200">
+            Explore the public Vault →
+          </Link>
+        </div>
       </section>
 
       <MyVaultSummary summary={data.summary} />
 
-      <section className="my-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section aria-label="Find symbols in My Vault" className="my-6 rounded-[1.75rem] border border-blue-100 bg-white p-5 shadow-sm sm:p-6">
         <div className="grid gap-4">
+          <div><p className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Explore your collection</p><h2 className="mt-1 text-xl font-black text-slate-950">Find a knowledge deposit</h2></div>
           <input
             type="search"
             value={query}
             onChange={(event) =>
               setQuery(event.target.value)
             }
-            placeholder="Search symbol, name, meaning or read-as..."
+            placeholder="Search your symbols, names and meanings..."
+            aria-label="Search My Vault symbols"
             className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
           />
 
@@ -359,7 +361,7 @@ export default function SymbolBankMyVault() {
         </div>
       </section>
 
-      <p className="mb-4 text-sm font-bold text-slate-600">
+      <p aria-live="polite" className="mb-4 text-sm font-bold text-slate-600">
         Showing {filtered.length} of{" "}
         {records.length}
         {data.memberAccess

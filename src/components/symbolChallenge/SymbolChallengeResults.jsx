@@ -31,12 +31,13 @@ export default function SymbolChallengeResults({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <section className="rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm sm:p-10">
+      <div className="mb-5 rounded-[1.75rem] bg-gradient-to-br from-slate-950 via-blue-950 to-blue-800 px-7 py-8 text-center text-white shadow-xl sm:p-10"><p className="text-xs font-black uppercase tracking-[0.2em] text-amber-300">Challenge chamber · Round complete</p><h1 className="mt-3 text-3xl font-black sm:text-4xl">Knowledge grows with practice.</h1><p className="mt-3 text-blue-100">Review your results and decide where to go next.</p></div>
+      <section className="rounded-[1.75rem] border border-blue-100 bg-white p-7 text-center shadow-xl shadow-blue-950/5 sm:p-10">
         <p className="text-xs font-black uppercase tracking-[.2em] text-blue-600">
           Round Complete
         </p>
 
-        <h1 className="mt-3 text-4xl font-black sm:text-5xl">
+        <h1 className="mt-3 text-5xl font-black text-blue-950 sm:text-6xl">
           {finalCorrect} / {total}
         </h1>
 
@@ -79,7 +80,7 @@ export default function SymbolChallengeResults({
           <button
             type="button"
             onClick={onPlayAgain}
-            className="rounded-xl bg-blue-600 px-6 py-3 font-black text-white hover:bg-blue-700"
+            className="rounded-xl bg-amber-400 px-6 py-3 font-black text-slate-950 hover:bg-amber-300"
           >
             Play Again
           </button>
@@ -87,14 +88,14 @@ export default function SymbolChallengeResults({
           <button
             type="button"
             onClick={onChangeSettings}
-            className="rounded-xl border border-slate-300 bg-white px-6 py-3 font-black text-slate-800 hover:bg-slate-50"
+            className="rounded-xl border border-blue-200 bg-white px-6 py-3 font-black text-slate-800 hover:bg-slate-50"
           >
             Change Settings
           </button>
 
           <Link
             to="/symbol-bank"
-            className="rounded-xl border border-slate-300 bg-white px-6 py-3 font-black text-slate-800 hover:bg-slate-50"
+            className="rounded-xl border border-blue-200 bg-white px-6 py-3 font-black text-slate-800 hover:bg-slate-50"
           >
             Back to Symbol Bank
           </Link>
