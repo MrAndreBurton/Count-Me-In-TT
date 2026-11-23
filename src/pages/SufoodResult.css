@@ -1,0 +1,128 @@
+.sf-serving{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0 .7rem;background:#132f59;color:white;padding:1rem 1.2rem;border-radius:18px;border-bottom:5px solid #ffd34e}
+.sf-serving strong{grid-row:span 2;line-height:1;font-size:clamp(2.5rem,5vw,4rem);color:#ffda63;font-weight:900;overflow-wrap:anywhere}
+.sf-serving span{font-weight:750;align-self:end}.sf-serving small{align-self:start;color:#e1edff}
+.sf-equation{background:white;border-radius:10px;padding:.65rem .9rem;font-weight:680}.sf-equation b{color:#144abc}
+.sf-work{background:white;border:1px solid #c3d5eb;border-radius:14px;padding:.75rem 1rem}
+.sf-work summary{font-weight:800;cursor:pointer;color:#153865}.sf-work summary span{float:right}.sf-work[open] summary span{transform:rotate(180deg)}
+.sf-work ol{counter-reset:steps;display:grid;gap:.75rem;margin-top:1rem}
+.sf-work li{counter-increment:steps;position:relative;padding-left:2.4rem;list-style:none}
+.sf-work li::before{content:counter(steps);position:absolute;left:0;top:0;border-radius:50%;background:#ffdc72;color:#193255;width:1.75rem;height:1.75rem;display:grid;place-items:center;font-weight:800}
+.sf-work li p{margin:.12rem 0 .25rem;color:#384d69}.sf-work em{display:inline-block;font-weight:750;font-style:normal;background:#edf4ff;color:#143969;padding:.15rem .55rem;border-radius:6px}
+@media(prefers-reduced-motion:no-preference){.sf-serving strong,.sf-work[open] li{animation:sf-rise .32s backwards}.sf-work[open] li:nth-child(2){animation-delay:65ms}.sf-work[open] li:nth-child(n+3){animation-delay:130ms}@keyframes sf-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}}
+.sufood-hero {
+  display: flex;
+  align-items: center;
+  min-height: 160px;
+  margin-bottom: 1rem;
+  padding: 1.25rem clamp(1rem, 4vw, 3rem);
+  border-radius: 18px;
+  background-color: #faead3;
+  background-image:
+    linear-gradient(to right, #faead3 38%, transparent 70%),
+    url("/images/sufood/elixir-hero.webp");
+  background-position: center, right center;
+  background-size: cover, auto 100%;
+  background-repeat: no-repeat;
+}
+
+.sufood-hero-copy {
+  width: 62%;
+  color: #102e53;
+}
+
+.sufood-hero h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.5vw, 2.75rem);
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.sufood-hero p {
+  margin: 0.5rem 0 0;
+  line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+  .sufood-hero {
+    min-height: 128px;
+    padding: 1rem;
+  }
+
+  .sufood-hero p {
+    font-size: 0.875rem;
+  }
+}
+
+/* Sufood calculator form */
+#sufood-form {
+  gap: 1rem;
+  border-color: #e6d7b9;
+  background: linear-gradient(160deg, #fffaf0 0%, #ffffff 55%);
+  box-shadow: 0 6px 22px rgb(54 40 14 / 7%);
+}
+
+#sufood-form label {
+  display: block;
+  color: #17365c;
+  font-size: 0.95rem;
+  font-weight: 750;
+}
+
+#sufood-form select,
+#sufood-form input {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 0.35rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #96a6b8;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: #17365c;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+#sufood-form select:focus-visible,
+#sufood-form input:focus-visible {
+  outline: 3px solid #b9d6ff;
+  outline-offset: 2px;
+  border-color: #245cb3;
+  background-color: #f7faff;
+}
+
+#sufood-form select:disabled {
+  background-color: #f1f3f5;
+  color: #657386;
+  border-color: #cbd3dc;
+}
+
+#sufood-form small {
+  margin-top: -0.6rem;
+  color: #526479;
+  line-height: 1.45;
+}
+
+#sufood-form button[type="submit"] {
+  min-height: 46px;
+  border-radius: 12px;
+  background-color: #174fae;
+  color: white;
+  font-size: 1.05rem;
+  font-weight: 750;
+  box-shadow: 0 3px 0 #103773;
+}
+
+#sufood-form button[type="submit"]:hover {
+  background-color: #123f90;
+}
+
+#sufood-form button[type="submit"]:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #103773;
+}
+
+#sufood-form button[type="submit"]:focus-visible {
+  outline: 3px solid #245cb3;
+  outline-offset: 3px;
+}
+
