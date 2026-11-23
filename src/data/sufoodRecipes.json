@@ -1,0 +1,114 @@
+[
+  {
+    "group": "Hot drinks",
+    "subgroup": "Tea and spice tea",
+    "examples": "spice tea in hot water, black or green tea, chai",
+    "unit": "cup (250 mL)",
+    "teaspoons_per_unit": 1,
+    "status": "Confirmed (1 tsp makes a cup of spice tea)"
+  },
+  {
+    "group": "Hot drinks",
+    "subgroup": "Coffee and lattes",
+    "examples": "coffee, latte, cappuccino",
+    "unit": "cup (250 mL)",
+    "teaspoons_per_unit": 1,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Hot drinks",
+    "subgroup": "Cocoa and hot chocolate",
+    "examples": "cocoa tea, hot chocolate, matcha latte",
+    "unit": "cup (250 mL)",
+    "teaspoons_per_unit": 1,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Cold drinks",
+    "subgroup": "Juices and iced drinks",
+    "examples": "juices, iced tea, iced coffee, smoothies, milkshakes",
+    "unit": "glass (250 mL)",
+    "teaspoons_per_unit": 1,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Cold drinks",
+    "subgroup": "Big-batch drinks",
+    "examples": "sorrel, punch, ponche de creme, mauby, lemonade",
+    "unit": "litre",
+    "teaspoons_per_unit": 2,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Cold drinks",
+    "subgroup": "Cocktails and mocktails",
+    "examples": "rum punch, mocktails, spiced cocktails",
+    "unit": "drink",
+    "teaspoons_per_unit": 0.5,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Cooking",
+    "subgroup": "Stews soups and one-pot",
+    "examples": "pelau, stewed chicken, soups, peas, curries",
+    "unit": "pot of 4 servings",
+    "teaspoons_per_unit": 1,
+    "status": "Based on \"one teaspoon flavours a pot\" - confirm pot size"
+  },
+  {
+    "group": "Cooking",
+    "subgroup": "Marinades glazes and sauces",
+    "examples": "meat or fish marinade, ham glaze, BBQ sauce",
+    "unit": "500 g of meat or 1 cup of sauce",
+    "teaspoons_per_unit": 1,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Baking",
+    "subgroup": "Cakes and breads",
+    "examples": "sweet bread, black cake, banana bread, sponge cake",
+    "unit": "loaf or cake",
+    "teaspoons_per_unit": 2,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Baking",
+    "subgroup": "Small bakes",
+    "examples": "cookies, muffins, cupcakes, tarts",
+    "unit": "batch of 12",
+    "teaspoons_per_unit": 1,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Baking",
+    "subgroup": "Pancakes and waffles",
+    "examples": "pancakes, waffles, French toast",
+    "unit": "batch of 8",
+    "teaspoons_per_unit": 1,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Desserts and breakfast",
+    "subgroup": "Ice cream and frozen treats",
+    "examples": "homemade ice cream, popsicles",
+    "unit": "litre",
+    "teaspoons_per_unit": 2,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Desserts and breakfast",
+    "subgroup": "Puddings fudge and sweets",
+    "examples": "fudge, rice pudding, custard, sweet potato pudding",
+    "unit": "batch (about 6 servings)",
+    "teaspoons_per_unit": 1,
+    "status": "Proposed - Sufood to confirm"
+  },
+  {
+    "group": "Desserts and breakfast",
+    "subgroup": "Porridge oats and yogurt",
+    "examples": "porridge, oats, cereal, yogurt bowls",
+    "unit": "bowl",
+    "teaspoons_per_unit": 0.5,
+    "status": "Proposed - Sufood to confirm"
+  }
+]

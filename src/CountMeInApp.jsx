@@ -1,3 +1,4 @@
+import SufoodCalculator from "./pages/SufoodCalculator";
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -114,6 +115,7 @@ export default function CountMeInApp() {
       <ScrollToTop />
 
       <Routes>
+        <Route path="/sufood-elixir-calculator" element={<SufoodCalculator />} />
         <Route path="/" element={<Home />} />
 
         <Route path="/games" element={<Games />} />
